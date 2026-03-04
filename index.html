@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<!-- saved from url=(0036)https://fxclient.github.io/FXclient/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <!-- Google tag (gtag.js) -->
+  <!--<script async src="https://www.googletagmanager.com/gtag/js?id=G-WYYDMY13BG"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-WYYDMY13BG');
+</script>-->
+  
+  <title>FX Client</title>
+  <meta name="description" content="Modified Version of Territorial.io - FX Client">
+  <meta name="keywords" content="territorial.io,territory games,territorial io,map games,conquest games,conquest game,david tschacher,territorial,territory game,io game,io games,territory.io,territory io,territory games io">
+  <meta name="author" content="MohsenEMX, peshomir,orlemley1, David Tschacher">
+  <meta name="viewport" content="width=device-width, maximum-scale=1">
+  <link rel="shortcut icon" href="https://fxclient.github.io/FXclient/favicon.ico" type="image/x-icon">
+  <link rel="manifest" href="https://fxclient.github.io/FXclient/manifest.json">
+
+  <meta name="og:image" content="https://fxclient.github.io/FXclient/assets/logo.png">
+  <meta property="og:url" content="https://fxclient.github.io/FXclient/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="FX Client">
+  <meta property="og:description" content="Modified Version of Territorial.io - FX Client">
+  <meta property="og:image" content="https://fxclient.github.io/FXclient/assets/logo.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="FX Client">
+  <meta name="twitter:description" content="Modified Version of Territorial.io - FX Client">
+  <meta name="twitter:image" content="https://fxclient.github.io/FXclient/assets/logo.png">
+  <meta itemprop="name" content="FX Client">
+  <meta itemprop="description" content="Modified Version of Territorial.io - FX Client">
+  <meta itemprop="image" content="https://fxclient.github.io/FXclient/assets/logo.png">
+
+  <!-- FX Client CSS -->
+  <link rel="stylesheet" href="./FX Client_files/main.css">
+  <!-- Game CSS -->
+  <style>
+    html,
+    body {
+      overflow: hidden;
+      padding: 0;
+      margin: 0;
+      background: rgb(0, 0, 0);
+      color: rgb(255, 255, 255);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    a {
+      color: rgb(225, 225, 255);
+    }
+  </style>
+  <script>
+    // adapted from https://stackoverflow.com/a/44593894 and https://stackoverflow.com/a/40446448
+
+    function showUpdatePrompt(/** @type {ServiceWorker} */ sw) {
+      console.log("showing update prompt")
+      document.getElementById("updateNotification").style.display = "block";
+      document.getElementById("swUpdateButton").addEventListener("click", () => {
+        sw.postMessage({ update: true });
+      })
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      if (!("serviceWorker" in navigator)) return;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        console.log("Controlling service worker changed, refreshing page");
+        window.location.reload();
+      });
+
+      navigator.serviceWorker.register("./sw2.js").then(function (registration) {
+        if (!navigator.serviceWorker.controller) return;
+        // if there's an updated worker already waiting, update
+        if (registration.waiting) return showUpdatePrompt(registration.waiting);
+
+        // if a worker in the "installing" state becomes "installed", update
+        function handleInstalling() {
+          var sw = registration.installing;
+          sw.addEventListener("statechange", function () {
+            if (sw.state === "installed") showUpdatePrompt(sw);
+          })
+        }
+        // if there's an updated worker installing, track its progress
+        if (registration.installing) handleInstalling();
+        // otherwise, listen for new workers arriving
+        registration.addEventListener('updatefound', handleInstalling);
+      });
+    });
+  </script>
+<style id="ss"></style></head>
+
+<body onload="aiCommand746(0);">
+  <canvas id="canvasA" width="2560" height="1305" style="width: 2560px; height: 1305px;"></canvas>
+  <span id="windowContainer">
+    <div class="window flex-column settings" style="display:none">
+      <h1>Settings</h1>
+      <div class="scrollable"><label class="checkbox">Display win counter <br><small>The win counter tracks multiplayer solo wins (not in team games)</small><input type="checkbox"><span class="checkmark"></span></label><br><label><button>Reset win counter</button><br></label><br><label class="checkbox">Use fullscreen mode <br><small>Note: fullscreen mode will trigger after you click anywhere on the page due to browser policy restrictions.</small><input type="checkbox"><span class="checkmark"></span></label><br><label class="checkbox">Hovering tooltip <br><small>Display map territory info constantly (on mouse hover) instead of only when right clicking on the map</small><input type="checkbox"><span class="checkmark"></span></label><br><label class="checkbox">Realistic Bot Names <input type="checkbox"><span class="checkmark"></span></label><br><label class="checkbox">Show player density <input type="checkbox"><span class="checkmark"></span></label><br><label class="checkbox">Colored density <br><small>Display the density with a color between red and green depending on the density value</small><input type="checkbox"><span class="checkmark"></span></label><br><label title="Controls how the territorial density value should be rendered">Density value display style: <select><option value="percentage">Percentage</option><option value="absoluteQuotient">Value from 0 to 150 (BetterTT style)</option></select><br></label><br><label class="checkbox">Hide bot names <input type="checkbox"><span class="checkmark"></span></label><br><label class="checkbox">Highlight clan spawnpoints <br><small>Increases the spawnpoint glow size for members of your clan</small><input type="checkbox"><span class="checkmark"></span></label><br><label class="checkbox">Hide propaganda popup <input type="checkbox"><span class="checkmark"></span></label><br><label class="checkbox">Detailed team pie chart percentage <br><small>For example: this would show 25.82% instead of 26% on the pie chart in team games</small><input type="checkbox"><span class="checkmark"></span></label><br><label class="checkbox">Open donation history from the leaderboard <br><small>Changes whether or not clicking on a player's name in the in-game leaderboard in team games will open their donation history</small><input type="checkbox"><span class="checkmark"></span></label><br><label title="A custom image to be shown as the main menu background instead of the currently selected map.">Custom main menu background: <input type="text" placeholder="Enter an image URL here"><br></label><br><div class="keybinds-input"><p>Attack Percentage Keybinds</p><div class="arrayinput"></div><button>Add</button></div><label class="checkbox">Keybind buttons <br><small>Show keybind buttons above the troop selector (max 6)</small><input type="checkbox"><span class="checkmark"></span></label><br><div><p>FX Client v0.6.18.1</p><p><a href="https://discord.gg/dyxcwdNKwK" target="_blank">Discord server</a> |
+        <a href="https://github.com/fxclient/FXclient#readme">Github repository</a></p><button>Changelog</button></div></div>
+      <hr>
+      <footer>
+        <button onclick="__fx.settingsManager.resetAll()">Reset Settings</button>
+        <button onclick="__fx.settingsManager.save()">Save Settings</button>
+        <button onclick="__fx.settingsManager.importFromFile()">Import</button>
+        <button onclick="__fx.settingsManager.exportToFile()">Export</button>
+      </footer>
+    </div>
+    <div class="window flex-column" id="customLobbyJoinMenu" style="display: none">
+      <input type="text" id="lobbyCode" placeholder="Enter lobby code">
+      or
+      <div>
+        <button id="createLobbyButton">Create new lobby</button>
+        <label for="region">in region:</label>
+        <select id="customLobbyRegion" name="region" title="Note: Region selection is a best effort, not a guarantee. The regions listed are only a subset of all the possible locations where a lobby can be created.">
+          <option value="default" selected="">Automatic (closest to you)</option>
+          <option value="wnam">Western North America</option>
+          <option value="enam">Eastern North America</option>
+          <option value="weur">Western Europe</option>
+          <option value="eeur">Eastern Europe</option>
+          <option value="apac">Asia-Pacific</option>
+          <option value="oc">Oceania</option>
+        </select>
+      </div>
+    </div>
+    <div class="window scrollable selectable" id="playerlist" style="display: none;">
+      <h1>Player List</h1>
+      <table>
+        <tbody id="playerlist_content"></tbody>
+      </table>
+    </div>
+    <div class="window scrollable selectable" id="donationhistory" style="display:none">
+      <h1>Donation history for </h1>
+      <p id="donationhistory_note">Note: donations from bots are not shown here</p>
+      <table>
+        <tbody id="donationhistory_content"></tbody>
+      </table>
+    </div>
+    <div class="window" style="display: none" id="updateNotification">
+      <h3>A new version of FX is available! Click the "Update" button below to update</h3>
+      <button id="swUpdateButton">Update</button>
+      <button onclick="document.getElementById(&#39;updateNotification&#39;).style.display = &#39;none&#39;">Dismiss</button>
+    </div>
+  <div class="window scrollable selectable" style="display: none;"><h1>What's new</h1><p>in FX Client v0.6.18.1</p><ul><li>Fixes for game update v2.15.3</li><li>The "What's new" screen is no longer shown automatically after insignificant updates (such as this one)</li></ul><button>Close</button></div><div class="window scrollable selectable" style="display: none;"><p>The latest version of FX Client doesn't support custom lobbies yet. Use the stable version at <a href="https://fxclient.github.io/custom-lobbies/">https://fxclient.github.io/custom-lobbies</a></p><button>Close</button></div><div class="window scrollable selectable flex-column text-align-center" style="display: none;"><h2 style="margin-bottom: 0px; margin-block-start: 0.5em;">Custom Lobby</h2><p style="margin-top: 0px;"></p><div class="customlobby-main"><div><p>0 Players</p><div></div></div><div class="text-align-left"><label>Mode: <select><option value="0">2 Teams</option><option value="1">3 Teams</option><option value="2">4 Teams</option><option value="3">5 Teams</option><option value="4">6 Teams</option><option value="5">7 Teams</option><option value="6">8 Teams</option><option value="7">Battle Royale</option><option value="10">No Fullsend Battle Royale</option><option value="9">Zombie mode</option></select><br></label><label>Map: <select><option value="0">White Arena</option><option value="1">Black Arena</option><option value="2">Island</option><option value="3">Mountains 1</option><option value="4">Desert</option><option value="5">Swamp</option><option value="6">White Plains</option><option value="7">Cliffs</option><option value="8">Pond</option><option value="9">Halo</option><option value="10">Europe</option><option value="11">World 1</option><option value="12">Caucasia</option><option value="13">Africa</option><option value="14">Middle East</option><option value="15">Scandinavia</option><option value="16">North America</option><option value="17">South America</option><option value="18">Asia</option><option value="19">Australia</option><option value="20">Island Kingdom</option><option value="21">Mountains 2</option><option value="22">World 2</option><option value="23">British Isles</option><option value="24"></option></select><br></label><label>Difficulty: <select><option value="0">Very Easy (Default)</option><option value="1">Easy (1v1)</option><option value="2">Normal</option><option value="3">Hard</option><option value="4">Very Hard</option><option value="5">Impossible</option></select><br></label><label class="checkbox">Spawn selection <input type="checkbox"><span class="checkmark"></span></label><label>Bot &amp; player count: <input type="number" min="1" max="512"><br></label></div></div><footer style="margin-top: 10px;"><button>Start game</button><button>Leave lobby</button><button>Copy link</button></footer></div></span>
+  <script src="./FX Client_files/variables.js"></script>
+  <script src="./FX Client_files/fx.bundle.js"></script>
+  <script src="./FX Client_files/game.js"></script>
+
+
+<div style="position: absolute; left: 25px; top: 1115.8px; width: 656.9px; height: 164.2px; border: 4.3px solid rgb(255, 255, 255);"><div style="width: 25%; height: 100%; background-color: rgba(0, 0, 0, 0.85); border-right: 4.3px solid rgb(255, 255, 255);"><canvas width="119" height="100" style="width: 24%; position: absolute; left: 0px; top: 7%;"></canvas></div><div style="position: absolute; width: 75%; height: 100%; background-color: rgba(0, 0, 0, 0.85); right: 0px; top: 0px; overflow: auto hidden; white-space: nowrap;"><div style="max-height: 100%; height: 100%;"><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(60, 0, 60, 0.85); border-top: none; border-right: 4.3px solid rgb(255, 255, 255); border-bottom: none; border-left: none; border-image: initial; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 1.1em; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; padding: 0em 0.3em; position: absolute; max-height: 100%; height: 100%; left: 0px; width: 279.2px;"><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 26.6px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">Top Clan</span><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: bold; font-stretch: inherit; font-size: 41.2px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">[OG]</span></button><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(0, 60, 60, 0.85); border-top: none; border-right: 4.3px solid rgb(255, 255, 255); border-bottom: none; border-left: none; border-image: initial; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 1.1em; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; padding: 0em 0.3em; position: absolute; max-height: 100%; height: 100%; left: 279px;"><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 26.6px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">Best Clan Member</span><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: bold; font-stretch: inherit; font-size: 41.2px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">[CAT]👀Simon☕️</span></button><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(60, 0, 0, 0.85); border-top: none; border-right: 4.3px solid rgb(255, 255, 255); border-bottom: none; border-left: none; border-image: initial; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 1.1em; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; padding: 0em 0.3em; position: absolute; max-height: 100%; height: 100%; left: 680px;"><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 26.6px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">Top Admin</span><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: bold; font-stretch: inherit; font-size: 41.2px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">autistic[af]</span></button><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(0, 60, 0, 0.8); border-top: none; border-right: 4.3px solid rgb(255, 255, 255); border-bottom: none; border-left: none; border-image: initial; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 1.1em; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; padding: 0em 0.3em; position: absolute; max-height: 100%; height: 100%; left: 934px;"><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 26.6px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">Best 1v1 Player</span><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: bold; font-stretch: inherit; font-size: 41.2px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">Joshua18</span></button><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(70, 40, 0, 0.85); border-top: none; border-right: 4.3px solid rgb(255, 255, 255); border-bottom: none; border-left: none; border-image: initial; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 1.1em; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; padding: 0em 0.3em; position: absolute; max-height: 100%; height: 100%; left: 1163px;"><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 26.6px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">Best Battle Royale Player</span><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: bold; font-stretch: inherit; font-size: 41.2px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">W</span></button><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(60, 60, 0, 0.85); border-top: none; border-right: 4.3px solid rgb(255, 255, 255); border-bottom: none; border-left: none; border-image: initial; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 1.1em; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; padding: 0em 0.3em; position: absolute; max-height: 100%; height: 100%; left: 1484px;"><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 26.6px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">Richest Player</span><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: bold; font-stretch: inherit; font-size: 41.2px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">[OG] 𝗛𝗬𝗗𝗥𝗔©</span></button><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(70, 40, 0, 0.85); border: none; font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 1.1em; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; padding: 0em 0.3em; position: absolute; max-height: 100%; height: 100%; left: 1819px;"><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: inherit; font-stretch: inherit; font-size: 26.6px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">Top Patreon</span><span style="color: rgb(255, 255, 255); font-style: inherit; font-variant: inherit; font-weight: bold; font-stretch: inherit; font-size: 41.2px; line-height: inherit; font-family: inherit; font-optical-sizing: inherit; font-size-adjust: inherit; font-kerning: inherit; font-feature-settings: inherit; font-variation-settings: inherit; font-language-override: inherit; margin: 0.1em 0.6em; pointer-events: none; white-space: nowrap; display: block;">[CN] Cosmic</span></button></div></div></div><input type="text" id="input0" placeholder="Your Kingdom&#39;s Name" style="width: 443.1px; user-select: none; outline: none; resize: none; border: 4.3px solid rgb(255, 255, 255); font: 41.73px system-ui; color: rgb(255, 255, 255); background-color: rgba(0, 0, 0, 0.7); padding: 0.1em 0.2em; position: absolute; text-align: center; left: 1010.5px; top: 502.9px; height: 83.5px;"><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(0, 70, 0, 0.85); border: 4.3px solid rgb(255, 255, 255); font: 33.91px system-ui; padding: 0em 0.3em; position: absolute; left: 1010.5px; top: 598.9px; width: 263.3px; height: 151px;">⚔️<br>Multiplayer</button><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(0, 60, 60, 0.85); border: 4.3px solid rgb(255, 255, 255); font: 33.91px system-ui; padding: 0em 0.3em; position: absolute; left: 1286.3px; top: 598.9px; width: 263.3px; height: 151px;">🗡️<br>Custom Scenario</button><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(70, 50, 20, 0.85); border: 4.3px solid rgb(255, 255, 255); font: 33.91px system-ui; padding: 0em 0.3em; position: absolute; left: 1010.5px; top: 762.4px; width: 263.3px; height: 151px;">🔑<br>My Account</button><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(80, 60, 60, 0.85); border: 4.3px solid rgb(255, 255, 255); font: 33.91px system-ui; padding: 0em 0.3em; position: absolute; left: 1286.3px; top: 762.4px; width: 263.3px; height: 151px;">☰<br>Game Menu</button><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgb(206, 52, 76); border: 4.3px solid rgb(255, 255, 255); font: 33.91px system-ui; padding: 0em 0.3em; position: absolute; left: 1466.1px; top: 502.9px; width: 83.5px; height: 83.5px;"></button><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(0, 0, 20, 0.5); border: 4.3px solid rgb(255, 255, 255); font: 33.91px system-ui; padding: 0em 0.3em; position: absolute; left: 1010.5px; top: 925.8px; width: 539px; height: 50.3px;">FX Client settings</button><button style="color: rgb(255, 255, 255); user-select: none; outline: none; overflow-wrap: break-word; background-color: rgba(20, 9, 77, 0.5); border: 4.3px solid rgb(255, 255, 255); font: 33.91px system-ui; padding: 0em 0.3em; position: absolute; left: 1010.5px; top: 988.1px; width: 539px; height: 50.3px;">Join/Create custom lobby</button></body></html>
