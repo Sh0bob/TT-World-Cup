@@ -173,59 +173,80 @@
   </script>
 
   <script>
-  (function () {
-    function findButton(labelIncludes) {
-      const buttons = Array.from(document.querySelectorAll("button"));
-      return buttons.find(b => (b.innerText || "").includes(labelIncludes));
+  (() => {
+    const WANT = {
+      moveJoinTo: "Multiplayer",
+      moveSettingsTo: "Custom Scenario",
+      joinText: "Join/Create custom lobby",
+      settingsText: "FX Client settings",
+    };
+  
+    function findBtnContains(text) {
+      const btns = Array.from(document.querySelectorAll("button"));
+      return btns.find(b => (b.innerText || "").includes(text));
     }
+
+    function placeLike(sourceBtn, targetBtn) {
+      const srcRect = sourceBtn.getBoundingClientRect();
+      const tgtRect = targetBtn.getBoundingClientRect();
+
+      // Convert viewport coords -> parent coords.
+      // These menu buttons are usually absolutely positioned under body.
+      const parent = targetBtn.offsetParent || document.body;
+      const parentRect = parent.getBoundingClientRect();
+
+      const left = srcRect.left - parentRect.left;
+      const top  = srcRect.top  - parentRect.top;
+
+      targetBtn.style.position = "absolute";
+      targetBtn.style.left = `${left}px`;
+      targetBtn.style.top = `${top}px`;
+      targetBtn.style.width = `${srcRect.width}px`;
+      targetBtn.style.height = `${srcRect.height}px`;
+
+      // Optional: copy font + border so it matches the “main button” style
+      const cs = getComputedStyle(sourceBtn);
+      targetBtn.style.font = cs.font;
+      targetBtn.style.border = cs.border;
+    }
+
+    function isMenu() {
+      // Best-effort; if MenuManager exists, only run on main menu
+      try { return window.MenuManager?.getState?.() === 6; } catch { return true; }
+    }
+
+    function apply() {
+      if (!isMenu()) return;
+
+      const multi = findBtnContains(WANT.moveJoinTo);
+      const scen  = findBtnContains(WANT.moveSettingsTo);
+      const join  = findBtnContains(WANT.joinText);
+      const sett  = findBtnContains(WANT.settingsText);
+
+      if (!multi || !scen || !join || !sett) return;
  
-    function copyBoxStyle(fromBtn, toBtn) {
-      // Copy the box geometry from one button to another
-      toBtn.style.position = "absolute";
-      toBtn.style.left = fromBtn.style.left;
-      toBtn.style.top = fromBtn.style.top;
-      toBtn.style.width = fromBtn.style.width;
-      toBtn.style.height = fromBtn.style.height;
+      // Move the two buttons into the big slots
+      placeLike(multi, join);
+      placeLike(scen, sett);
 
-      // Optional: copy border thickness so it matches
-      toBtn.style.border = fromBtn.style.border;
-
-      // Optional: make the moved buttons look like "main" buttons
-      toBtn.style.font = fromBtn.style.font;
+      // Remove the old ones
+      multi.remove();
+      scen.remove();
     }
 
-    function runOnceWhenReady() {
-      const multiplayer = findButton("Multiplayer");
-      const customScenario = findButton("Custom Scenario");
-      const joinLobby = findButton("Join/Create custom lobby");
-      const fxSettings = findButton("FX Client settings");
-
-      // Wait until all buttons exist
-      if (!multiplayer || !customScenario || !joinLobby || !fxSettings) return false;
-
-      // Move Join/Create -> Multiplayer slot
-      copyBoxStyle(multiplayer, joinLobby);
- 
-      // Move FX Client settings -> Custom Scenario slot
-      copyBoxStyle(customScenario, fxSettings);
-
-      // (Optional) change the text to be shorter / nicer
-      // joinLobby.innerText = "Join / Create Lobby";
-      // fxSettings.innerText = "Settings";
-
-      // Remove the old buttons
-      multiplayer.remove();
-      customScenario.remove();
-
-      return true;
-    }
-
-    // Try a few times because the game injects UI after load
-    let tries = 0;
+    // Re-apply for a short while because the UI can re-render buttons after load
+    let ticks = 0;
     const timer = setInterval(() => {
-      tries++;
-      if (runOnceWhenReady() || tries > 60) clearInterval(timer); // ~30 seconds max
-    }, 500);
+      ticks++;
+      apply();
+      if (ticks > 80) clearInterval(timer); // ~20 seconds
+    }, 250);
+ 
+    // Also re-apply when DOM changes (more reliable than hoping timing is right)
+    const mo = new MutationObserver(() => apply());
+    mo.observe(document.documentElement, { childList: true, subtree: true });
+
+    console.log("[TTWC] button mover installed");
   })();
   </script>
   
