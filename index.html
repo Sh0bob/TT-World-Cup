@@ -37,34 +37,34 @@
   <link rel="stylesheet" href="./FX Client_files/main.css">
   <!-- Game CSS -->
   <style>
-    #wcLogo{
-    position:absolute;
-    top:235px;
-    left:50%;
-    transform:translateX(-50%);
-    width:620px;
-    z-index:9999;
-    pointer-events:none;
+    #wcLogoWrap{
+      position:absolute;
+      left:0;
+      top:0;
+      width:100%;
+      z-index:9999;
+      pointer-events:none;
     }
-    html,
-    body {
-      overflow: hidden;
-      padding: 0;
-      margin: 0;
-      background: rgb(0, 0, 0);
-      color: rgb(255, 255, 255);
-    }
+
     #wcLogoCover{
       position:absolute;
       left:50%;
-      top:235px;                 /* match your logo area */
+      top:215px;                 /* adjust with the logo */
       transform:translateX(-50%);
-      width:760px;
-      height:140px;
-      background:rgba(0,0,0,0.55);
-      border-radius:14px;
-      z-index:9998;
-      pointer-events:none;
+      width:900px;               /* wider to cover side icons */
+     height:170px;              /* taller */
+     background:rgba(0,0,0,0.65);
+     border-radius:16px;
+     z-index:9998;
+    }
+
+    #wcLogo{
+      position:absolute;
+      left:50%;
+      top:235px;                 /* logo sits inside the cover */
+      transform:translateX(-50%);
+      width:680px;               /* logo size */
+      z-index:9999;
     }
     
     * {
@@ -117,8 +117,8 @@
 
 <body onload="aiCommand746(0);">
   <div id="wcLogoWrap">
-  <div id="wcLogoCover"></div>
-  <img id="wcLogo" src="assets/ttwc-logo.png" alt="TTWC">
+   <div id="wcLogoCover"></div>
+   <img id="wcLogo" src="assets/ttwc-logo.png" alt="TTWC">
   </div>
   <canvas id="canvasA" width="2560" height="1305" style="width: 2560px; height: 1305px;"></canvas>
   <span id="windowContainer">
@@ -178,19 +178,33 @@
     const wrap = document.getElementById("wcLogoWrap");
     if (!wrap) return;
 
-    function isMainMenuVisible() {
-      const input = document.getElementById("input0"); // kingdom name input on main menu
-      if (!input) return false;
-      const style = window.getComputedStyle(input);
-      return style && style.display !== "none" && style.visibility !== "hidden" && input.offsetParent !== null;
+    function isVisibleEl(el) {
+      if (!el) return false;
+      const style = window.getComputedStyle(el);
+      if (!style) return false;
+      if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
+      const r = el.getBoundingClientRect();
+      return r.width > 10 && r.height > 10; // robust for absolute/fixed
+    }
+
+    function shouldShowLogo() {
+      // Main menu has the kingdom name input
+      const nameInput = document.getElementById("input0");
+      if (isVisibleEl(nameInput)) return true;
+
+      // Custom lobby menu has the lobby code input
+      const lobbyInput = document.getElementById("lobbyCode");
+      if (isVisibleEl(lobbyInput)) return true;
+
+      return false;
     }
 
     function update() {
-      wrap.style.display = isMainMenuVisible() ? "block" : "none";
+      wrap.style.display = shouldShowLogo() ? "block" : "none";
     }
 
-    // Update frequently because the game UI is canvas-driven and changes fast
-    setInterval(update, 250);
+    // Poll because this UI changes dynamically
+    setInterval(update, 200);
     window.addEventListener("resize", update);
     document.addEventListener("click", () => setTimeout(update, 50));
     update();
