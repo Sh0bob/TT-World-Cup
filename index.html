@@ -243,7 +243,27 @@
   <script src="./FX Client_files/variables.js"></script>
   <script src="./FX Client_files/fx.bundle.js"></script>
   <script src="./FX Client_files/game.js"></script>
+  <script>
+(() => {
+  const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+  const seen = new Set();
 
+  CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+    try {
+      if (typeof text === "string" && text.trim()) {
+        if (!seen.has(text)) {
+          seen.add(text);
+          console.log("[TTWC fillText]", text);
+        }
+      }
+    } catch (e) {}
+
+    return originalFillText.call(this, text, x, y, maxWidth);
+  };
+
+  console.log("[TTWC] fillText logger active");
+})();
+  </script>
   <script>
 (() => {
   // 1) Add logo once
@@ -391,101 +411,6 @@
   }
 
   setInterval(applyEmojiFilter, 100);
-})();
-</script>
-<script>
-(() => {
-  const GAME_KEY = "aD";
-  const PLAYER_DATA_KEY = "ag";
-  const RAW_NAMES_KEY = "a1c";
-  const PLAYER_ID_KEY = "ep";
-  const TERRITORIES_KEY = "gt";
-  const GAME_STATE_KEY = "a0u";
-
-  const anonMap = new Map();
-  let lastSignature = "";
-
-  function getGame() {
-    return window[GAME_KEY];
-  }
-
-  function getPlayerData() {
-    return window[PLAYER_DATA_KEY];
-  }
-
-  function getRawNames() {
-    try {
-      return getPlayerData()?.[RAW_NAMES_KEY] || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function inActiveGame() {
-    try {
-      const game = getGame();
-      return !!game && game[GAME_STATE_KEY] !== 0;
-    } catch {
-      return false;
-    }
-  }
-
-  function isSpectating() {
-    try {
-      const game = getGame();
-      const playerData = getPlayerData();
-      if (!game || !playerData) return false;
-
-      const myId = game[PLAYER_ID_KEY];
-      const territories = playerData[TERRITORIES_KEY];
-
-      if (myId == null || !territories) return false;
-
-      return territories[myId] === 0;
-    } catch {
-      return false;
-    }
-  }
-
-  function getAnon(realName, index) {
-    if (!anonMap.has(realName)) {
-      anonMap.set(realName, "Anon " + Math.floor(1000 + Math.random() * 9000));
-    }
-    return anonMap.get(realName);
-  }
-
-  function refreshMatch(names) {
-    const sig = names.join("|");
-    if (sig && sig !== lastSignature) {
-      lastSignature = sig;
-      anonMap.clear();
-    }
-  }
-
-  const originalFillText = CanvasRenderingContext2D.prototype.fillText;
-
-  CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
-    try {
-      if (typeof text === "string" && inActiveGame() && !isSpectating()) {
-        const names = getRawNames();
-        if (Array.isArray(names) && names.length) {
-          refreshMatch(names);
-
-          // exact replacement only
-          const idx = names.indexOf(text);
-          if (idx !== -1) {
-            text = getAnon(text, idx);
-          }
-        }
-      }
-    } catch (e) {
-      // stay silent so we don't break rendering
-    }
-
-    return originalFillText.call(this, text, x, y, maxWidth);
-  };
-
-  console.log("[TTWC] canvas name randomiser active");
 })();
 </script>
 </body>
