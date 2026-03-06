@@ -393,6 +393,72 @@
   setInterval(applyEmojiFilter, 100);
 })();
 </script>
+<script>
+(() => {
+  window.__ttwc = window.__ttwc || {};
+  window.__ttwc.disableEmoji = false;
+
+  function addEmojiToggle() {
+    const lobbyMenu = document.getElementById("customLobbyJoinMenu") || document.querySelector(".customlobby-main");
+    if (!lobbyMenu) return;
+
+    if (document.getElementById("ttwcDisableEmojiWrap")) return;
+
+    const wrap = document.createElement("label");
+    wrap.id = "ttwcDisableEmojiWrap";
+    wrap.className = "checkbox";
+    wrap.style.display = "block";
+    wrap.style.marginTop = "8px";
+    wrap.innerHTML = 'Disable emoji usage <input type="checkbox" id="ttwcDisableEmoji"><span class="checkmark"></span>';
+
+    const spawnLabel = Array.from(lobbyMenu.querySelectorAll("label")).find(el =>
+      (el.textContent || "").includes("Spawn selection")
+    );
+
+    if (spawnLabel && spawnLabel.parentNode) {
+      spawnLabel.parentNode.insertBefore(wrap, spawnLabel.nextSibling);
+    } else {
+      lobbyMenu.appendChild(wrap);
+    }
+
+    const cb = document.getElementById("ttwcDisableEmoji");
+    cb.checked = !!window.__ttwc.disableEmoji;
+    cb.addEventListener("change", () => {
+      window.__ttwc.disableEmoji = cb.checked;
+      localStorage.setItem("ttwc_disableEmoji", cb.checked ? "1" : "0");
+    });
+  }
+
+  function loadSetting() {
+    window.__ttwc.disableEmoji = localStorage.getItem("ttwc_disableEmoji") === "1";
+  }
+
+  loadSetting();
+
+  const obs = new MutationObserver(() => addEmojiToggle());
+  obs.observe(document.body, { childList: true, subtree: true });
+
+  setInterval(addEmojiToggle, 500);
+})();
+</script>
+<script>
+(() => {
+  function stripEmoji(str) {
+    return str.replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}\u200D\uFE0F]/gu, "");
+  }
+
+  function applyEmojiRule() {
+    if (!window.__ttwc?.disableEmoji) return;
+
+    document.querySelectorAll("input[type='text']").forEach(input => {
+      const clean = stripEmoji(input.value);
+      if (input.value !== clean) input.value = clean;
+    });
+  }
+
+  setInterval(applyEmojiRule, 100);
+})();
+</script>
 </body>
 
 </html>
