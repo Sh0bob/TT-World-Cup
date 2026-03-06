@@ -242,7 +242,6 @@
   </script>
   <script src="./FX Client_files/variables.js"></script>
   <script src="./FX Client_files/fx.bundle.js"></script>
-  <script src="./FX Client_files/game.js"></script>
   <script>
 (() => {
   const PLAYER_DATA = "ag";
@@ -279,9 +278,11 @@
     return origStrokeText.call(this, text, x, y, maxWidth);
   };
 
-  console.log("[TTWC] player-name logger active");
+  console.log("[TTWC] player-name logger installed before game.js");
 })();
   </script>
+  <script src="./FX Client_files/game.js"></script>
+  
   <script>
 (() => {
   // 1) Add logo once
