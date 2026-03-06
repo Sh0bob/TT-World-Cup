@@ -242,46 +242,90 @@
   </script>
   <script src="./FX Client_files/variables.js"></script>
   <script src="./FX Client_files/fx.bundle.js"></script>
+  <script src="./FX Client_files/game.js"></script>
+
   <script>
 (() => {
-  const PLAYER_DATA = "ag";
-  const RAW_NAMES = "a1c";
+  const GAME_KEY = "aD";
+  const GAME_STATE_KEY = "a0u";
+  const PLAYER_ID_KEY = "ep";
+  const PLAYER_DATA_KEY = "ag";
+  const TERRITORIES_KEY = "gt";
 
-  function getPlayerNames() {
+  const anonMap = new Map();
+
+  const UI_BLACKLIST = new Set([
+    "Humans",
+    "Bots",
+    "Spectators",
+    "Percentage",
+    "Income",
+    "Interest",
+    "Time"
+  ]);
+
+  function inActiveGame() {
     try {
-      return window[PLAYER_DATA]?.[RAW_NAMES] || [];
+      const game = window[GAME_KEY];
+      return !!game && game[GAME_STATE_KEY] !== 0;
     } catch {
-      return [];
+      return false;
     }
   }
 
-  const origFillText = CanvasRenderingContext2D.prototype.fillText;
-  const origStrokeText = CanvasRenderingContext2D.prototype.strokeText;
+  function isSpectating() {
+    try {
+      const game = window[GAME_KEY];
+      const data = window[PLAYER_DATA_KEY];
+      const myId = game?.[PLAYER_ID_KEY];
+      const territories = data?.[TERRITORIES_KEY];
+      if (!territories || myId == null) return false;
+      return territories[myId] === 0;
+    } catch {
+      return false;
+    }
+  }
+
+  function isNumericLike(text) {
+    return /^[-+0-9.%: ()]+$/.test(text.trim());
+  }
+
+  function looksLikePlayerName(text) {
+    const t = text.trim();
+    if (!t) return false;
+    if (UI_BLACKLIST.has(t)) return false;
+    if (isNumericLike(t)) return false;
+    if (t.length < 2) return false;
+    return true;
+  }
+
+  function getAnon(text) {
+    if (!anonMap.has(text)) {
+      anonMap.set(text, "Anon " + Math.floor(1000 + Math.random() * 9000));
+    }
+    return anonMap.get(text);
+  }
+
+  const originalFillText = CanvasRenderingContext2D.prototype.fillText;
 
   CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
     try {
-      const players = getPlayerNames();
-      if (typeof text === "string" && players.includes(text)) {
-        console.log("[TTWC fill player]", text, x, y, this.font);
+      if (
+        typeof text === "string" &&
+        inActiveGame() &&
+        !isSpectating() &&
+        looksLikePlayerName(text)
+      ) {
+        text = getAnon(text);
       }
-    } catch {}
-    return origFillText.call(this, text, x, y, maxWidth);
+    } catch (e) {}
+
+    return originalFillText.call(this, text, x, y, maxWidth);
   };
 
-  CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
-    try {
-      const players = getPlayerNames();
-      if (typeof text === "string" && players.includes(text)) {
-        console.log("[TTWC stroke player]", text, x, y, this.font);
-      }
-    } catch {}
-    return origStrokeText.call(this, text, x, y, maxWidth);
-  };
-
-  console.log("[TTWC] player-name logger installed before game.js");
+  console.log("[TTWC] heuristic name randomiser active");
 })();
-  </script>
-  <script src="./FX Client_files/game.js"></script>
+</script>
   
   <script>
 (() => {
