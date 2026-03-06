@@ -57,42 +57,7 @@
     }
   </style>
   <script>
-    // adapted from https://stackoverflow.com/a/44593894 and https://stackoverflow.com/a/40446448
-
-    function showUpdatePrompt(/** @type {ServiceWorker} */ sw) {
-      console.log("showing update prompt")
-      document.getElementById("updateNotification").style.display = "block";
-      document.getElementById("swUpdateButton").addEventListener("click", () => {
-        sw.postMessage({ update: true });
-      })
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-      if (!("serviceWorker" in navigator)) return;
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        console.log("Controlling service worker changed, refreshing page");
-        window.location.reload();
-      });
-/*
-      navigator.serviceWorker.register("./sw2.js").then(function (registration) {
-        if (!navigator.serviceWorker.controller) return;
-        // if there's an updated worker already waiting, update
-        if (registration.waiting) return showUpdatePrompt(registration.waiting);
-
-        // if a worker in the "installing" state becomes "installed", update
-        function handleInstalling() {
-          var sw = registration.installing;
-          sw.addEventListener("statechange", function () {
-            if (sw.state === "installed") showUpdatePrompt(sw);
-          })
-        }
-        // if there's an updated worker installing, track its progress
-        if (registration.installing) handleInstalling();
-        // otherwise, listen for new workers arriving
-        registration.addEventListener('updatefound', handleInstalling);
-      });
-    });
-    */
+// Service worker disabled for this fork (prevents sw2.js 404 + caching headaches during development)
   </script>
   <style>
     /* Prevent menu flicker while we reposition/hide buttons */
