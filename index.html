@@ -395,18 +395,14 @@
 </script>
 <script>
 (() => {
-  // Current keys from this FX/custom-lobbies build
   const GAME_KEY = "aD";
   const PLAYER_DATA_KEY = "ag";
   const RAW_NAMES_KEY = "a1c";
-  const PLAYER_NAMES_KEY = "a1X";
   const PLAYER_ID_KEY = "ep";
   const TERRITORIES_KEY = "gt";
   const GAME_STATE_KEY = "a0u";
 
-  let originalRawNames = null;
-  let originalPlayerNames = null;
-  let anonMap = {};
+  const anonMap = new Map();
   let lastSignature = "";
 
   function getGame() {
@@ -418,11 +414,11 @@
   }
 
   function getRawNames() {
-    return getPlayerData()?.[RAW_NAMES_KEY] || null;
-  }
-
-  function getPlayerNames() {
-    return window[PLAYER_NAMES_KEY] || null;
+    try {
+      return getPlayerData()?.[RAW_NAMES_KEY] || [];
+    } catch {
+      return [];
+    }
   }
 
   function inActiveGame() {
@@ -451,93 +447,45 @@
     }
   }
 
-  function makeAnonName(i) {
-    if (!anonMap[i]) {
-      anonMap[i] = "Anon " + Math.floor(1000 + Math.random() * 9000);
+  function getAnon(realName, index) {
+    if (!anonMap.has(realName)) {
+      anonMap.set(realName, "Anon " + Math.floor(1000 + Math.random() * 9000));
     }
-    return anonMap[i];
+    return anonMap.get(realName);
   }
 
-  function matchSignature(names) {
-    try {
-      return names.join("|");
-    } catch {
-      return "";
-    }
-  }
-
-  function resetForNewMatch(names) {
-    const sig = matchSignature(names);
+  function refreshMatch(names) {
+    const sig = names.join("|");
     if (sig && sig !== lastSignature) {
       lastSignature = sig;
-      anonMap = {};
-      originalRawNames = null;
-      originalPlayerNames = null;
+      anonMap.clear();
     }
   }
 
-  function storeOriginals() {
-    const raw = getRawNames();
-    const names = getPlayerNames();
+  const originalFillText = CanvasRenderingContext2D.prototype.fillText;
 
-    if (Array.isArray(raw) && !originalRawNames) {
-      originalRawNames = raw.slice();
-    }
-
-    if (Array.isArray(names) && !originalPlayerNames) {
-      originalPlayerNames = names.slice();
-    }
-  }
-
-  function restoreOriginals() {
-    const raw = getRawNames();
-    const names = getPlayerNames();
-
-    if (Array.isArray(raw) && Array.isArray(originalRawNames)) {
-      for (let i = 0; i < raw.length; i++) {
-        if (originalRawNames[i] != null) raw[i] = originalRawNames[i];
-      }
-    }
-
-    if (Array.isArray(names) && Array.isArray(originalPlayerNames)) {
-      for (let i = 0; i < names.length; i++) {
-        if (originalPlayerNames[i] != null) names[i] = originalPlayerNames[i];
-      }
-    }
-  }
-
-  function applyAnon() {
-    const raw = getRawNames();
-    const names = getPlayerNames();
-
-    if (!Array.isArray(raw)) return;
-
-    resetForNewMatch(raw);
-    storeOriginals();
-
-    for (let i = 0; i < raw.length; i++) {
-      const anon = makeAnonName(i);
-      raw[i] = anon;
-      if (Array.isArray(names)) names[i] = anon;
-    }
-  }
-
-  function tick() {
+  CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
     try {
-      if (inActiveGame() && !isSpectating()) {
-        applyAnon();
-      } else {
-        restoreOriginals();
+      if (typeof text === "string" && inActiveGame() && !isSpectating()) {
+        const names = getRawNames();
+        if (Array.isArray(names) && names.length) {
+          refreshMatch(names);
+
+          // exact replacement only
+          const idx = names.indexOf(text);
+          if (idx !== -1) {
+            text = getAnon(text, idx);
+          }
+        }
       }
     } catch (e) {
-      console.log("[TTWC anon error]", e);
+      // stay silent so we don't break rendering
     }
 
-    requestAnimationFrame(tick);
-  }
+    return originalFillText.call(this, text, x, y, maxWidth);
+  };
 
-  console.log("[TTWC] name randomiser active");
-  requestAnimationFrame(tick);
+  console.log("[TTWC] canvas name randomiser active");
 })();
 </script>
 </body>
