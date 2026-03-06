@@ -245,13 +245,8 @@
   <script src="./FX Client_files/game.js"></script>
   <script>
 (() => {
-
   const PLAYER_DATA = "ag";
   const RAW_NAMES = "a1c";
-  const PLAYER_ID = "ep";
-  const TERRITORIES = "gt";
-
-  const anonMap = {};
 
   function getPlayerNames() {
     try {
@@ -261,53 +256,30 @@
     }
   }
 
-  function getAnon(name) {
-    if (!anonMap[name]) {
-      anonMap[name] = "Anon " + Math.floor(1000 + Math.random()*9000);
-    }
-    return anonMap[name];
-  }
+  const origFillText = CanvasRenderingContext2D.prototype.fillText;
+  const origStrokeText = CanvasRenderingContext2D.prototype.strokeText;
 
-  function isSpectating() {
+  CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
     try {
-      const game = window.aD;
-      const data = window.ag;
-
-      const myId = game?.[PLAYER_ID];
-      const territories = data?.[TERRITORIES];
-
-      if (!territories) return false;
-
-      return territories[myId] === 0;
-    } catch {
-      return false;
-    }
-  }
-
-  const originalFillText = CanvasRenderingContext2D.prototype.fillText;
-
-  CanvasRenderingContext2D.prototype.fillText = function(text,x,y,maxWidth){
-
-    try {
-
-      if(typeof text === "string" && !isSpectating()){
-
-        const players = getPlayerNames();
-
-        if(players.includes(text)){
-          text = getAnon(text);
-        }
-
+      const players = getPlayerNames();
+      if (typeof text === "string" && players.includes(text)) {
+        console.log("[TTWC fill player]", text, x, y, this.font);
       }
-
-    } catch(e){}
-
-    return originalFillText.call(this,text,x,y,maxWidth);
-
+    } catch {}
+    return origFillText.call(this, text, x, y, maxWidth);
   };
 
-  console.log("[TTWC] name randomiser active");
+  CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
+    try {
+      const players = getPlayerNames();
+      if (typeof text === "string" && players.includes(text)) {
+        console.log("[TTWC stroke player]", text, x, y, this.font);
+      }
+    } catch {}
+    return origStrokeText.call(this, text, x, y, maxWidth);
+  };
 
+  console.log("[TTWC] player-name logger active");
 })();
   </script>
   <script>
