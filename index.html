@@ -393,6 +393,161 @@
   setInterval(applyEmojiFilter, 100);
 })();
 </script>
+<script>
+(() => {
+  // These keys come from the current FX bundle build.
+  // If FX updates later, these may need adjusting.
+  const GAME_KEY = "aD";
+  const PLAYER_DATA_KEY = "ag";
+  const RAW_NAMES_KEY = "a1c";
+  const PLAYER_NAMES_KEY = "a1X";
+  const PLAYER_ID_KEY = "ep";
+  const TERRITORIES_KEY = "gt";
+  const GAME_STATE_KEY = "a0u";
+
+  let originalRawNames = null;
+  let originalPlayerNames = null;
+  let anonMap = {};
+  let lastMatchSignature = "";
+
+  function getGame() {
+    return window[GAME_KEY];
+  }
+
+  function getPlayerData() {
+    return window[PLAYER_DATA_KEY];
+  }
+
+  function inActiveGame() {
+    try {
+      const game = getGame();
+      return !!game && game[GAME_STATE_KEY] !== 0;
+    } catch {
+      return false;
+    }
+  }
+
+  function isSpectating() {
+    try {
+      const game = getGame();
+      const playerData = getPlayerData();
+      if (!game || !playerData) return false;
+
+      const myId = game[PLAYER_ID_KEY];
+      const territories = playerData[TERRITORIES_KEY];
+
+      if (myId == null || !territories) return false;
+
+      // Best practical check:
+      // once your territories are 0, reveal real names again.
+      return territories[myId] === 0;
+    } catch {
+      return false;
+    }
+  }
+
+  function getRawNames() {
+    try {
+      return getPlayerData()?.[RAW_NAMES_KEY];
+    } catch {
+      return null;
+    }
+  }
+
+  function getPlayerNames() {
+    try {
+      return getGame()?.[PLAYER_NAMES_KEY];
+    } catch {
+      return null;
+    }
+  }
+
+  function makeAnonName(index) {
+    if (!anonMap[index]) {
+      anonMap[index] = "Anon " + Math.floor(1000 + Math.random() * 9000);
+    }
+    return anonMap[index];
+  }
+
+  function buildMatchSignature(names) {
+    try {
+      return names.join("|");
+    } catch {
+      return "";
+    }
+  }
+
+  function resetAnonMapIfNewMatch(names) {
+    const sig = buildMatchSignature(names);
+    if (sig && sig !== lastMatchSignature) {
+      lastMatchSignature = sig;
+      anonMap = {};
+    }
+  }
+
+  function storeOriginals() {
+    const raw = getRawNames();
+    const names = getPlayerNames();
+
+    if (Array.isArray(raw) && !originalRawNames) {
+      originalRawNames = raw.slice();
+    }
+
+    if (Array.isArray(names) && !originalPlayerNames) {
+      originalPlayerNames = names.slice();
+    }
+  }
+
+  function restoreOriginals() {
+    const raw = getRawNames();
+    const names = getPlayerNames();
+
+    if (Array.isArray(raw) && Array.isArray(originalRawNames)) {
+      for (let i = 0; i < raw.length; i++) {
+        if (originalRawNames[i] != null) raw[i] = originalRawNames[i];
+      }
+    }
+
+    if (Array.isArray(names) && Array.isArray(originalPlayerNames)) {
+      for (let i = 0; i < names.length; i++) {
+        if (originalPlayerNames[i] != null) names[i] = originalPlayerNames[i];
+      }
+    }
+  }
+
+  function applyAnonNames() {
+    const raw = getRawNames();
+    const names = getPlayerNames();
+
+    if (!Array.isArray(raw)) return;
+
+    resetAnonMapIfNewMatch(raw);
+    storeOriginals();
+
+    for (let i = 0; i < raw.length; i++) {
+      const anon = makeAnonName(i);
+      raw[i] = anon;
+      if (Array.isArray(names)) names[i] = anon;
+    }
+  }
+
+  function tick() {
+    try {
+      if (inActiveGame() && !isSpectating()) {
+        applyAnonNames();
+      } else {
+        restoreOriginals();
+      }
+    } catch (e) {
+      // keep silent so we don't break the client
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+})();
+</script>
 </body>
 
 </html>
