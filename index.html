@@ -364,6 +364,35 @@
   console.log("[TTWC] menu + logo script active");
 })();
 </script>
+<script>
+(() => {
+  function emojisDisabled() {
+    try {
+      return !!window.__fx?.customLobby?.gameInfo?.disableEmoji;
+    } catch {
+      return false;
+    }
+  }
+
+  function stripEmoji(str) {
+    return str.replace(
+      /[\p{Extended_Pictographic}\p{Emoji_Presentation}\u200d\uFE0F]/gu,
+      ""
+    );
+  }
+
+  function applyEmojiFilter() {
+    if (!emojisDisabled()) return;
+
+    document.querySelectorAll("input[type='text']").forEach(input => {
+      const clean = stripEmoji(input.value);
+      if (input.value !== clean) input.value = clean;
+    });
+  }
+
+  setInterval(applyEmojiFilter, 100);
+})();
+</script>
 </body>
 
 </html>
