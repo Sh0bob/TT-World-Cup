@@ -93,6 +93,22 @@
       });
     });
   </script>
+  <style>
+    /* Prevent menu flicker while we reposition/hide buttons */
+    body:not(.ttwc-ready) button { visibility: hidden; }
+
+    /* Our logo overlay */
+    #ttwcLogo {
+      position: absolute;
+      left: 50%;
+      top: 210px;              /* tweak later */
+      transform: translateX(-50%);
+      width: 320px;            /* tweak later */
+      height: auto;
+      z-index: 50;
+      pointer-events: none;
+    }
+  </style>
 </head>
 
 <body onload="aiCommand746(0);">
@@ -149,6 +165,127 @@
   <script src="variables.js?1770714791860"></script>
   <script src="fx.bundle.js?1770714791860"></script>
   <script src="game.js?1770714791860"></script>
+
+  <script>
+(() => {
+  // 1) Add logo once
+  function ensureLogo() {
+    if (document.getElementById("ttwcLogo")) return;
+    const img = document.createElement("img");
+    img.id = "ttwcLogo";
+    img.src = "./assets/ttwc-logo.png";
+    img.alt = "TTWC";
+    document.body.appendChild(img);
+  }
+
+  const TEXT = {
+    multiplayer: "Multiplayer",
+    scenario: "Custom Scenario",
+    settings: "FX Client settings",
+    lobby: "Join/Create custom lobby"
+  };
+
+  const targets = { lobbyBox: null, settingsBox: null };
+
+  function buttons() {
+    return Array.from(document.querySelectorAll("button"));
+  }
+
+  function findBtn(label) {
+    return buttons().find(b => (b.textContent || "").includes(label));
+  }
+
+  function allMatching(label) {
+    return buttons().filter(b => (b.textContent || "").includes(label));
+  }
+
+  function captureBox(btn) {
+    const r = btn.getBoundingClientRect();
+    return {
+      left: r.left + "px",
+      top: r.top + "px",
+      width: r.width + "px",
+      height: r.height + "px",
+      font: getComputedStyle(btn).font,
+      border: getComputedStyle(btn).border,
+      bg: getComputedStyle(btn).backgroundColor
+    };
+  }
+
+  function applyBox(btn, box) {
+    if (!btn || !box) return;
+    btn.style.setProperty("position", "absolute", "important");
+    btn.style.setProperty("left", box.left, "important");
+    btn.style.setProperty("top", box.top, "important");
+    btn.style.setProperty("width", box.width, "important");
+    btn.style.setProperty("height", box.height, "important");
+    btn.style.setProperty("font", box.font, "important");
+    btn.style.setProperty("border", box.border, "important");
+    btn.style.setProperty("background-color", box.bg, "important");
+    btn.style.setProperty("margin", "0", "important");
+  }
+
+  function hide(btn) {
+    if (!btn) return;
+    btn.style.setProperty("display", "none", "important");
+    btn.style.setProperty("pointer-events", "none", "important");
+  }
+
+  // Best effort “are we on main menu”
+  function isMenu() {
+    // Many builds still expose MenuManager; if not, we still run safely.
+    try { return window.MenuManager?.getState?.() === 6; } catch { return true; }
+  }
+
+  function apply() {
+    ensureLogo();
+
+    if (!isMenu()) {
+      // Hide logo outside menu (stops it lingering in other screens)
+      const logo = document.getElementById("ttwcLogo");
+      if (logo) logo.style.display = "none";
+      document.body.classList.add("ttwc-ready");
+      return;
+    } else {
+      const logo = document.getElementById("ttwcLogo");
+      if (logo) logo.style.display = "";
+    }
+
+    const mp = findBtn(TEXT.multiplayer);
+    const sc = findBtn(TEXT.scenario);
+    const lobby = findBtn(TEXT.lobby);
+    const settings = findBtn(TEXT.settings);
+
+    if (!targets.lobbyBox && mp) targets.lobbyBox = captureBox(mp);
+    if (!targets.settingsBox && sc) targets.settingsBox = captureBox(sc);
+
+    // Hide unwanted buttons (don’t remove)
+    allMatching(TEXT.multiplayer).forEach(hide);
+    allMatching(TEXT.scenario).forEach(hide);
+
+    // Move these into the big slots
+    applyBox(lobby, targets.lobbyBox);
+    applyBox(settings, targets.settingsBox);
+
+    // Done — reveal buttons now that layout is correct
+    document.body.classList.add("ttwc-ready");
+  }
+
+  // Run now + keep winning when UI rebuilds
+  apply();
+  new MutationObserver(() => requestAnimationFrame(apply))
+    .observe(document.body, { childList: true, subtree: true });
+
+  // Extra retries in case buttons appear slightly later
+  let n = 0;
+  const t = setInterval(() => {
+    apply();
+    if (++n > 40) clearInterval(t);
+  }, 100);
+
+  console.log("[TTWC] menu + logo script active");
+})();
+</script>
 </body>
 
 </html>
