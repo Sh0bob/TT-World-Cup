@@ -246,86 +246,54 @@
 
   <script>
 (() => {
-  const anonMap = new Map();
-  let endScreenShown = false;
+  const TTWC = window.__TTWC = window.__TTWC || {};
+  TTWC.humanNames = [];
+  TTWC.anonMap = new Map();
+  TTWC.endScreenShown = false;
 
-  function getAllNames() {
-    try {
-      return window.ag?.a1c || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function getHumanCount() {
-    try {
-      return window.aD?.kQ ?? 0;
-    } catch {
-      return 0;
-    }
-  }
-
-  function getHumanNames() {
-    const all = getAllNames();
-    const humans = getHumanCount();
-
-    if (!Array.isArray(all) || !humans) return [];
-    return all.slice(0, humans).filter(n => typeof n === "string" && n.trim());
-  }
-
-  function visibleMainMenuInput() {
+  function onMainMenu() {
     const el = document.querySelector('input[placeholder*="Kingdom"]');
     if (!el) return false;
-
     const style = getComputedStyle(el);
-    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
-      return false;
-    }
-
+    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
     const rect = el.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
   }
 
+  function getAnon(realName) {
+    if (!TTWC.anonMap.has(realName)) {
+      TTWC.anonMap.set(realName, "Anon " + Math.floor(1000 + Math.random() * 9000));
+    }
+    return TTWC.anonMap.get(realName);
+  }
+
   function shouldAnonymise() {
-    // Main menu only = OFF
-    if (visibleMainMenuInput()) {
-      endScreenShown = false;
-      anonMap.clear();
+    if (onMainMenu()) {
+      TTWC.endScreenShown = false;
+      TTWC.humanNames = [];
+      TTWC.anonMap.clear();
       return false;
     }
 
-    // Defeat / victory screen = OFF
-    if (endScreenShown) return false;
+    if (TTWC.endScreenShown) return false;
 
-    // Spawn screen + alive gameplay = ON
-    return true;
+    return TTWC.humanNames.length > 0;
   }
 
-  function getAnon(realName) {
-    if (!anonMap.has(realName)) {
-      anonMap.set(realName, "Anon " + Math.floor(1000 + Math.random() * 9000));
-    }
-    return anonMap.get(realName);
-  }
-
-  function replaceHumanNamesInText(text) {
+  function replaceExactNames(text) {
     let out = text;
-    const humanNames = getHumanNames();
 
-    if (!humanNames.length) return out;
-
-    // longest first to avoid overlap issues
-    const sorted = [...humanNames].sort((a, b) => b.length - a.length);
+    // longest names first
+    const sorted = [...TTWC.humanNames].sort((a, b) => b.length - a.length);
 
     for (const realName of sorted) {
       const anon = getAnon(realName);
 
-      // full exact occurrences inside any text
       if (out.includes(realName)) {
         out = out.split(realName).join(anon);
       }
 
-      // truncated leaderboard names like "Western Roman Em..."
+      // truncated leaderboard style
       if (realName.length > 4) {
         const trunc3 = realName.slice(0, Math.max(1, realName.length - 3)) + "...";
         const trunc1 = realName.slice(0, Math.max(1, realName.length - 1)) + "…";
@@ -342,6 +310,33 @@
     return out;
   }
 
+  function patchPlayerList() {
+    const pl = window.__fx?.playerList;
+    if (!pl || pl.__ttwcPatched) return;
+
+    const originalDisplay = pl.display;
+
+    pl.display = function(names) {
+      const result = originalDisplay.apply(this, arguments);
+
+      try {
+        const listRoot = document.getElementById("playerlist");
+        const text = listRoot?.innerText || "";
+        const match = text.match(/Players\s*\((\d+)\)/i);
+
+        if (Array.isArray(names) && match) {
+          const humanCount = parseInt(match[1], 10);
+          TTWC.humanNames = names.slice(0, humanCount);
+        }
+      } catch (e) {}
+
+      return result;
+    };
+
+    pl.__ttwcPatched = true;
+    console.log("[TTWC] playerList hook installed");
+  }
+
   const originalFillText = CanvasRenderingContext2D.prototype.fillText;
   const originalDrawImage = CanvasRenderingContext2D.prototype.drawImage;
 
@@ -352,7 +347,7 @@
       const victoryImg = window.ab?.aHK?.("victory");
 
       if (img && (img === defeatImg || img === victoryImg)) {
-        endScreenShown = true;
+        TTWC.endScreenShown = true;
       }
     } catch {}
 
@@ -362,14 +357,22 @@
   CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
     try {
       if (typeof text === "string" && shouldAnonymise()) {
-        text = replaceHumanNamesInText(text);
+        text = replaceExactNames(text);
       }
     } catch {}
 
     return originalFillText.call(this, text, x, y, maxWidth);
   };
 
-  console.log("[TTWC] corrected human-only anonymiser active");
+  // keep trying until __fx.playerList exists
+  const hookTimer = setInterval(() => {
+    patchPlayerList();
+    if (window.__fx?.playerList?.__ttwcPatched) {
+      clearInterval(hookTimer);
+    }
+  }, 250);
+
+  console.log("[TTWC] player-list anonymiser active");
 })();
   </script>
   
