@@ -246,101 +246,121 @@
 
   <script>
 (() => {
+  const anonMap = new Map();
+  let endScreenShown = false;
 
-const anonMap = new Map();
-let namesLoaded = false;
-let endScreen = false;
+  function onMainMenu() {
+    return !!document.querySelector('input[placeholder*="Kingdom"]');
+  }
 
-function getPlayerNames() {
+  function getAllNames() {
     try {
-        const arr = window.ag?.a1c;
-        if (!Array.isArray(arr)) return [];
-        return arr.filter(n => typeof n === "string" && n.length > 0);
+      return window.ag?.a1c || [];
     } catch {
-        return [];
+      return [];
     }
-}
+  }
 
-function generateAnonMap() {
-
-    const names = getPlayerNames();
-    if (!names.length) return;
-
-    for (const name of names) {
-        if (!anonMap.has(name)) {
-            anonMap.set(name, "Anon " + Math.floor(1000 + Math.random()*9000));
-        }
+  function getHumanCount() {
+    try {
+      return window.aD?.kQ ?? 0;
+    } catch {
+      return 0;
     }
+  }
 
-    namesLoaded = true;
-}
+  function getHumanNames() {
+    const all = getAllNames();
+    const humans = getHumanCount();
 
-function replaceNames(text) {
+    if (!Array.isArray(all) || !humans) return [];
+    return all.slice(0, humans).filter(n => typeof n === "string" && n.trim());
+  }
 
-    let result = text;
-
-    for (const [real, anon] of anonMap.entries()) {
-
-        if (result.includes(real)) {
-            result = result.split(real).join(anon);
-        }
-
-        // handle truncated leaderboard names
-        if (real.length > 6) {
-            const trunc = real.slice(0, real.length-3) + "...";
-            if (result.includes(trunc)) {
-                result = result.split(trunc).join(anon);
-            }
-        }
-
+  function shouldAnonymise() {
+    // Reset when back on menu
+    if (onMainMenu()) {
+      endScreenShown = false;
+      anonMap.clear();
+      return false;
     }
 
-    return result;
-}
+    // Once defeat/victory has appeared, spectator sees real names
+    if (endScreenShown) return false;
 
-function shouldAnon() {
-    if (endScreen) return false;
+    // Otherwise anonymise (spawn selection + alive gameplay)
     return true;
-}
+  }
 
-const origFill = CanvasRenderingContext2D.prototype.fillText;
-const origDraw = CanvasRenderingContext2D.prototype.drawImage;
+  function getAnon(realName) {
+    if (!anonMap.has(realName)) {
+      anonMap.set(realName, "Anon " + Math.floor(1000 + Math.random() * 9000));
+    }
+    return anonMap.get(realName);
+  }
 
-CanvasRenderingContext2D.prototype.drawImage = function(...args) {
+  function replaceHumanNamesInText(text) {
+    let out = text;
+    const humanNames = getHumanNames();
 
-    try {
+    if (!humanNames.length) return out;
 
-        const img = args[0];
+    // Longest first so partial overlaps don't break anything
+    const sorted = [...humanNames].sort((a, b) => b.length - a.length);
 
-        const defeat = window.ab?.aHK?.("defeat");
-        const victory = window.ab?.aHK?.("victory");
+    for (const realName of sorted) {
+      const anon = getAnon(realName);
 
-        if (img === defeat || img === victory) {
-            endScreen = true;
+      // Exact/full occurrence
+      if (out.includes(realName)) {
+        out = out.split(realName).join(anon);
+      }
+
+      // Truncated leaderboard names
+      if (realName.length > 4) {
+        const trunc3 = realName.slice(0, Math.max(1, realName.length - 3)) + "...";
+        const trunc1 = realName.slice(0, Math.max(1, realName.length - 1)) + "…";
+
+        if (out.includes(trunc3)) {
+          out = out.split(trunc3).join(anon);
         }
+        if (out.includes(trunc1)) {
+          out = out.split(trunc1).join(anon);
+        }
+      }
+    }
 
+    return out;
+  }
+
+  const originalFillText = CanvasRenderingContext2D.prototype.fillText;
+  const originalDrawImage = CanvasRenderingContext2D.prototype.drawImage;
+
+  CanvasRenderingContext2D.prototype.drawImage = function(...args) {
+    try {
+      const img = args[0];
+      const defeatImg = window.ab?.aHK?.("defeat");
+      const victoryImg = window.ab?.aHK?.("victory");
+
+      if (img && (img === defeatImg || img === victoryImg)) {
+        endScreenShown = true;
+      }
     } catch {}
 
-    return origDraw.apply(this,args);
-}
+    return originalDrawImage.apply(this, args);
+  };
 
-CanvasRenderingContext2D.prototype.fillText = function(text,x,y,maxWidth){
-
+  CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
     try {
-
-        if (!namesLoaded) generateAnonMap();
-
-        if (typeof text === "string" && shouldAnon()) {
-            text = replaceNames(text);
-        }
-
+      if (typeof text === "string" && shouldAnonymise()) {
+        text = replaceHumanNamesInText(text);
+      }
     } catch {}
 
-    return origFill.call(this,text,x,y,maxWidth);
-}
+    return originalFillText.call(this, text, x, y, maxWidth);
+  };
 
-console.log("[TTWC] exact-name anonymiser active");
-
+  console.log("[TTWC] human-only anonymiser active");
 })();
   </script>
   
