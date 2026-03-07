@@ -249,10 +249,6 @@
   const anonMap = new Map();
   let endScreenShown = false;
 
-  function onMainMenu() {
-    return !!document.querySelector('input[placeholder*="Kingdom"]');
-  }
-
   function getAllNames() {
     try {
       return window.ag?.a1c || [];
@@ -277,18 +273,31 @@
     return all.slice(0, humans).filter(n => typeof n === "string" && n.trim());
   }
 
+  function visibleMainMenuInput() {
+    const el = document.querySelector('input[placeholder*="Kingdom"]');
+    if (!el) return false;
+
+    const style = getComputedStyle(el);
+    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+      return false;
+    }
+
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
+
   function shouldAnonymise() {
-    // Reset when back on menu
-    if (onMainMenu()) {
+    // Main menu only = OFF
+    if (visibleMainMenuInput()) {
       endScreenShown = false;
       anonMap.clear();
       return false;
     }
 
-    // Once defeat/victory has appeared, spectator sees real names
+    // Defeat / victory screen = OFF
     if (endScreenShown) return false;
 
-    // Otherwise anonymise (spawn selection + alive gameplay)
+    // Spawn screen + alive gameplay = ON
     return true;
   }
 
@@ -305,18 +314,18 @@
 
     if (!humanNames.length) return out;
 
-    // Longest first so partial overlaps don't break anything
+    // longest first to avoid overlap issues
     const sorted = [...humanNames].sort((a, b) => b.length - a.length);
 
     for (const realName of sorted) {
       const anon = getAnon(realName);
 
-      // Exact/full occurrence
+      // full exact occurrences inside any text
       if (out.includes(realName)) {
         out = out.split(realName).join(anon);
       }
 
-      // Truncated leaderboard names
+      // truncated leaderboard names like "Western Roman Em..."
       if (realName.length > 4) {
         const trunc3 = realName.slice(0, Math.max(1, realName.length - 3)) + "...";
         const trunc1 = realName.slice(0, Math.max(1, realName.length - 1)) + "…";
@@ -360,7 +369,7 @@
     return originalFillText.call(this, text, x, y, maxWidth);
   };
 
-  console.log("[TTWC] human-only anonymiser active");
+  console.log("[TTWC] corrected human-only anonymiser active");
 })();
   </script>
   
