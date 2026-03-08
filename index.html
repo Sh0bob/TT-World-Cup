@@ -343,23 +343,6 @@
     console.log("[TTWC] playerList hook installed");
   }
 
-  function autoSeedFromLeaderboard() {
-    if (TTWC.roundSeeded) return;
-    if (onMainMenu()) return;
-    if (!TTWC.lastRoundMarker || TTWC.lastRoundMarker !== "spawn") return;
-
-    try {
-      // Only seed if the game-side name array is available in this scope through the patched playerList path.
-      // We can't access ag directly from index.html, so we use the playerList display hook only when it already exists.
-      if (window.__fx?.playerList?.display && typeof window.__fx.playerList.display === "function") {
-        // Trigger the same display flow that the leaderboard icon uses,
-        // but only once the round-start screen is active.
-        const originalOpen = window.__fx?.WindowManager?.openWindow;
-        window.__fx.playerList.display = window.__fx.playerList.display;
-      }
-    } catch {}
-  }
-
   const originalFillText = CanvasRenderingContext2D.prototype.fillText;
   const originalDrawImage = CanvasRenderingContext2D.prototype.drawImage;
 
