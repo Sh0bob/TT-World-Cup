@@ -4702,6 +4702,14 @@ function cM() {
 			aAy.fillRect(aAs - bc.zq, 0, bc.zq, a8n),
 			aAy.fillRect(0, a8n - bc.zq, aAs, bc.zq), aAy.font = aAt, bA.qr.textBaseline(aAy, 1), bA.qr.textAlign(aAy, 1), aAy.fillText(aBL, Math.floor((aAs + aB3 - 22) / 2), Math.floor(aB1 + aAu / 2));
 		__fx.playerList.drawButton(aAy, 12, 12, aB3 - 22);
+
+		if (window.__TTWC && window.__TTWC.lastRoundMarker === "spawn" && !window.__TTWC.roundSeeded) {
+	       try {
+	        	__fx.playerList.display(ag.a1a);
+	        	f.closeWindow("playerList");
+        		window.__TTWC.roundSeeded = !0;
+        	} catch (e) {}
+        }
 		var fN, gd = playerPos < position + aAw - 1 ? 1 : 2;
 
 		if (__fx.leaderboardFilter.enabled) {
