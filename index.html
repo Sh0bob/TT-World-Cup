@@ -543,280 +543,200 @@
 </script>
 
 <script>
-(() => {
-  const TTWC = window.__TTWC = window.__TTWC || {};
+window.__TTWC = window.__TTWC || {};
+window.__TTWC.peaceVoteHostOnly = true;
+window.__TTWC.isHost = false;
 
-  /* ===== SETTINGS ===== */
-  TTWC.peaceUnlockMinutes = 15;   // change this to 10, 12, 15, 20, etc.
-  TTWC.peaceCallsUnlocked = false;
-  TTWC.roundStartTime = 0;
-  TTWC._peaceUiInstalled = TTWC._peaceUiInstalled || false;
-
-  function peaceVoteActive() {
+(function () {
+  function patchHostTracking() {
     try {
-      return !!window.aw?.hq;
-    } catch {
+      if (!window.__fx || !__fx.customLobby || !__fx.customLobby.isCustomMessage) return false;
+      if (window.__TTWC._hostTrackingPatched) return true;
+
+      const originalIsCustomMessage = __fx.customLobby.isCustomMessage;
+
+      __fx.customLobby.isCustomMessage = function (packet) {
+        const result = originalIsCustomMessage.apply(this, arguments);
+
+        try {
+          if (packet && packet[0] === 120 && packet.length > 1) {
+            const bytes = new Uint8Array(packet.buffer, 1);
+            const msg = JSON.parse(new TextDecoder().decode(bytes));
+
+            if (msg && msg.t === "lobby" && msg.d) {
+              window.__TTWC.isHost = !!msg.d.isHost;
+            } else if (msg && msg.t === "host") {
+              window.__TTWC.isHost = true;
+            }
+          }
+        } catch (e) {
+          console.log("TTWC host tracking parse error:", e);
+        }
+
+        return result;
+      };
+
+      window.__TTWC._hostTrackingPatched = true;
+      console.log("TTWC: host tracking patched");
+      return true;
+    } catch (e) {
+      console.log("TTWC host tracking patch error:", e);
       return false;
     }
   }
 
-  function setPeaceUnlocked(value, reason = "") {
-    TTWC.peaceCallsUnlocked = !!value;
-    updatePeaceUi();
-    console.log("[TTWC] peace calls " + (TTWC.peaceCallsUnlocked ? "UNLOCKED" : "LOCKED") + (reason ? " (" + reason + ")" : ""));
-  }
-
-  function startPeaceTimer() {
-    if (!TTWC.roundStartTime) {
-      TTWC.roundStartTime = Date.now();
-      setPeaceUnlocked(false, "round-start");
-      console.log("[TTWC] peace timer started");
-    }
-  }
-
-  function resetPeaceTimer() {
-    TTWC.roundStartTime = 0;
-    setPeaceUnlocked(false, "round-reset");
-  }
-
-  function getRemainingMs() {
-    if (!TTWC.roundStartTime) return TTWC.peaceUnlockMinutes * 60 * 1000;
-    const unlockAt = TTWC.roundStartTime + TTWC.peaceUnlockMinutes * 60 * 1000;
-    return Math.max(0, unlockAt - Date.now());
-  }
-
-  function formatRemaining(ms) {
-    const totalSeconds = Math.ceil(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return minutes + ":" + String(seconds).padStart(2, "0");
-  }
-
-  function ensurePeaceUi() {
-    if (TTWC._peaceUiInstalled) return;
-
-    const wrap = document.createElement("div");
-    wrap.id = "ttwc-peace-status-wrap";
-    Object.assign(wrap.style, {
-      position: "fixed",
-      top: "12px",
-      right: "12px",
-      zIndex: "999999",
-      display: "flex",
-      flexDirection: "column",
-      gap: "8px",
-      alignItems: "flex-end",
-      fontFamily: "system-ui, Arial, sans-serif",
-      pointerEvents: "none"
-    });
-
-    const status = document.createElement("div");
-    status.id = "ttwc-peace-status";
-    Object.assign(status.style, {
-      padding: "8px 12px",
-      borderRadius: "10px",
-      background: "rgba(120,20,20,0.8)",
-      color: "white",
-      fontSize: "14px",
-      border: "1px solid rgba(255,255,255,0.25)"
-    });
-
-    const timer = document.createElement("div");
-    timer.id = "ttwc-peace-timer";
-    Object.assign(timer.style, {
-      padding: "6px 10px",
-      borderRadius: "10px",
-      background: "rgba(0,0,0,0.7)",
-      color: "white",
-      fontSize: "13px",
-      border: "1px solid rgba(255,255,255,0.2)"
-    });
-
-    wrap.appendChild(status);
-    wrap.appendChild(timer);
-    document.body.appendChild(wrap);
-
-    TTWC._peaceUiInstalled = true;
-    updatePeaceUi();
-  }
-
-  function updatePeaceUi() {
-    const status = document.getElementById("ttwc-peace-status");
-    const timer = document.getElementById("ttwc-peace-timer");
-    if (!status || !timer) return;
-
-    if (!TTWC.peaceCallsUnlocked) {
-      status.textContent = "Peace Calls: LOCKED";
-      status.style.background = "rgba(120,20,20,0.8)";
-      timer.textContent = "Unlocks in " + formatRemaining(getRemainingMs());
-    } else {
-      status.textContent = "Peace Calls: UNLOCKED";
-      status.style.background = "rgba(10,120,10,0.8)";
-      timer.textContent = "Players may now call peace";
-    }
-  }
-
-  function patchPeaceHotkeyLock() {
+  function patchPeaceControl() {
     try {
-      if (!window.bT || typeof window.bT.hp !== "function") return false;
-      if (TTWC._peaceHotkeyLockInstalled) return true;
+      if (!window.bT || !window.b8 || !window.aw || !window.bA || !window.aD) return false;
+      if (!b8.hU || typeof bT.hp !== "function" || typeof b8.hU.hp !== "function") return false;
+      if (!bA.gQ || typeof bA.gQ.hG !== "function" || typeof aw.ht !== "function") return false;
+      if (window.__TTWC._peacePatched) return true;
 
-      const originalPeaceHotkey = window.bT.hp;
+      const originalHotkeyPeace = bT.hp;
+      const originalDirectPeace = b8.hU.hp;
+      const originalAliveCheck = bA.gQ.hG;
+      const originalPeaceEligibility = aw.ht;
 
-      window.bT.hp = function() {
+      function peaceVoteActive() {
         try {
-          /* If a peace vote is already active, keep normal yes/no voting */
-          if (peaceVoteActive()) {
-            return originalPeaceHotkey.apply(this, arguments);
+          return !!aw.hq;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function withHostPeaceBypass(fn, ctx, args) {
+        const oldAliveCheck = bA.gQ.hG;
+        const oldPeaceEligibility = aw.ht;
+
+        try {
+          bA.gQ.hG = function (player) {
+            if (window.__TTWC.isHost && player === aD.eo) return true;
+            return originalAliveCheck.apply(this, arguments);
+          };
+
+          aw.ht = function (player) {
+            if (window.__TTWC.isHost && player === aD.eo) return true;
+            return originalPeaceEligibility.apply(this, arguments);
+          };
+
+          return fn.apply(ctx, args || []);
+        } finally {
+          bA.gQ.hG = oldAliveCheck;
+          aw.ht = oldPeaceEligibility;
+        }
+      }
+
+      bT.hp = function () {
+        try {
+          if (!window.__TTWC.peaceVoteHostOnly) {
+            return originalHotkeyPeace.apply(this, arguments);
           }
 
-          /* No active peace vote: block until unlock time */
-          if (!TTWC.peaceCallsUnlocked) {
-            console.log("[TTWC] peace start blocked: locked");
+          /* Keep normal yes/no voting behaviour when a peace vote already exists */
+          if (peaceVoteActive()) {
+            return originalHotkeyPeace.apply(this, arguments);
+          }
+
+          /* No active peace vote: only host may start one */
+          if (!window.__TTWC.isHost) {
+            console.log("TTWC: non-host peace hotkey blocked");
             return;
           }
 
-          return originalPeaceHotkey.apply(this, arguments);
+          /* Host can start peace even when dead by temporarily bypassing checks */
+          return withHostPeaceBypass(originalHotkeyPeace, this, arguments);
         } catch (e) {
-          console.log("[TTWC] patched peace hotkey error:", e);
+          console.log("TTWC bT.hp patch error:", e);
         }
       };
 
-      TTWC._peaceHotkeyLockInstalled = true;
-      console.log("[TTWC] peace hotkey lock installed");
-      return true;
-    } catch (e) {
-      console.log("[TTWC] patchPeaceHotkeyLock error:", e);
-      return false;
-    }
-  }
-
-  function patchPeaceUiLock() {
-    if (TTWC._peaceUiLockInstalled) return true;
-
-    function updatePeaceButtons() {
-      try {
-        const nodes = document.querySelectorAll("button, div, span, p");
-
-        nodes.forEach((node) => {
-          const text = (node.textContent || "").trim();
-          const isPeaceButton = text === "🕊️ Call Peace Vote" || text === "Call Peace Vote";
-
-          if (!isPeaceButton) return;
-
-          if (!TTWC.peaceCallsUnlocked && !peaceVoteActive()) {
-            node.dataset.ttwcPeaceLocked = "1";
-            node.style.pointerEvents = "none";
-            node.style.opacity = "0.35";
-            node.style.filter = "grayscale(1)";
-          } else if (node.dataset.ttwcPeaceLocked === "1") {
-            node.style.pointerEvents = "";
-            node.style.opacity = "";
-            node.style.filter = "";
-            delete node.dataset.ttwcPeaceLocked;
-          }
-        });
-      } catch (e) {
-        console.log("[TTWC] updatePeaceButtons error:", e);
-      }
-    }
-
-    document.addEventListener("click", (e) => {
-      try {
-        if (TTWC.peaceCallsUnlocked || peaceVoteActive()) return;
-
-        const target = e.target?.closest?.("button, div, span, p");
-        if (!target) return;
-
-        const text = (target.textContent || "").trim();
-        if (text === "🕊️ Call Peace Vote" || text === "Call Peace Vote") {
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-          console.log("[TTWC] peace UI click blocked: locked");
-        }
-      } catch (err) {
-        console.log("[TTWC] peace UI click block error:", err);
-      }
-    }, true);
-
-    const observer = new MutationObserver(updatePeaceButtons);
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    setInterval(updatePeaceButtons, 500);
-
-    TTWC._peaceUiLockInstalled = true;
-    console.log("[TTWC] peace UI lock installed");
-    return true;
-  }
-
-  function patchRoundStartDetection() {
-    try {
-      if (TTWC._roundStartPatchInstalled) return true;
-
-      const originalFillText = CanvasRenderingContext2D.prototype.fillText;
-
-      CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+      b8.hU.hp = function () {
         try {
-          if (typeof text === "string" && text.includes("Choose your start position!")) {
-            if (TTWC._lastPeaceRoundMarker !== "spawn") {
-              TTWC._lastPeaceRoundMarker = "spawn";
-              resetPeaceTimer();
-              startPeaceTimer();
-            }
-          } else if (typeof text === "string" && !text.includes("Choose your start position!")) {
-            TTWC._lastPeaceRoundMarker = "";
+          if (!window.__TTWC.peaceVoteHostOnly) {
+            return originalDirectPeace.apply(this, arguments);
           }
-        } catch (e) {
-          console.log("[TTWC] round detection error:", e);
-        }
 
-        return originalFillText.call(this, text, x, y, maxWidth);
+          /* If a peace vote is already active, do not interfere */
+          if (peaceVoteActive()) {
+            return originalDirectPeace.apply(this, arguments);
+          }
+
+          /* Block direct UI peace starts for non-hosts */
+          if (!window.__TTWC.isHost) {
+            console.log("TTWC: non-host direct peace start blocked");
+            return;
+          }
+
+          /* Host UI path also gets the temporary bypass */
+          return withHostPeaceBypass(originalDirectPeace, this, arguments);
+        } catch (e) {
+          console.log("TTWC b8.hU.hp patch error:", e);
+        }
       };
 
-      TTWC._roundStartPatchInstalled = true;
-      console.log("[TTWC] round start detection installed");
+      document.addEventListener(
+        "click",
+        function (e) {
+          try {
+            if (!window.__TTWC.peaceVoteHostOnly) return;
+            if (peaceVoteActive()) return;
+            if (window.__TTWC.isHost) return;
+
+            const target = e.target && e.target.closest ? e.target.closest("button, div, span, p") : null;
+            if (!target) return;
+
+            const text = (target.textContent || "").trim();
+            if (text.includes("Call Peace Vote") || text.includes("🕊️")) {
+              e.preventDefault();
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+              console.log("TTWC: non-host peace UI click blocked");
+            }
+          } catch (err) {
+            console.log("TTWC peace UI click block error:", err);
+          }
+        },
+        true
+      );
+
+      const hidePeaceButtons = function () {
+        try {
+          if (window.__TTWC.isHost) return;
+          if (peaceVoteActive()) return;
+
+          const nodes = document.querySelectorAll("button, div, span, p");
+          nodes.forEach(function (node) {
+            const text = (node.textContent || "").trim();
+            if (text === "🕊️ Call Peace Vote" || text === "Call Peace Vote") {
+              node.style.display = "none";
+            }
+          });
+        } catch (e) {
+          console.log("TTWC peace UI hide error:", e);
+        }
+      };
+
+      const observer = new MutationObserver(hidePeaceButtons);
+      observer.observe(document.body, { childList: true, subtree: true });
+      setInterval(hidePeaceButtons, 1000);
+
+      window.__TTWC._peacePatched = true;
+      console.log("TTWC: host-only peace start patch loaded");
       return true;
     } catch (e) {
-      console.log("[TTWC] patchRoundStartDetection error:", e);
+      console.log("TTWC patchPeaceControl error:", e);
       return false;
     }
   }
 
-  function installUnlockTimerLoop() {
-    if (TTWC._unlockLoopInstalled) return true;
+  const interval = setInterval(function () {
+    const ok1 = patchHostTracking();
+    const ok2 = patchPeaceControl();
 
-    setInterval(() => {
-      try {
-        if (!TTWC.peaceCallsUnlocked && TTWC.roundStartTime) {
-          if (getRemainingMs() <= 0) {
-            setPeaceUnlocked(true, "timer-finished");
-          }
-        }
-        updatePeaceUi();
-      } catch (e) {
-        console.log("[TTWC] unlock loop error:", e);
-      }
-    }, 500);
-
-    TTWC._unlockLoopInstalled = true;
-    console.log("[TTWC] unlock timer loop installed");
-    return true;
-  }
-
-  const installTimer = setInterval(() => {
-    ensurePeaceUi();
-
-    const ok1 = patchPeaceHotkeyLock();
-    const ok2 = patchPeaceUiLock();
-    const ok3 = patchRoundStartDetection();
-    const ok4 = installUnlockTimerLoop();
-
-    updatePeaceUi();
-
-    if (ok1 && ok2 && ok3 && ok4) {
-      clearInterval(installTimer);
-      console.log("[TTWC] timed peace unlock system installed");
+    if (ok1 && ok2) {
+      clearInterval(interval);
+      console.log("TTWC: all peace patches installed");
     }
   }, 500);
 })();
