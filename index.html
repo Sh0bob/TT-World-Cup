@@ -588,12 +588,14 @@ window.__TTWC.isHost = false;
   function patchPeaceControl() {
     try {
       if (!window.bT || !window.b8 || !window.aw || !window.bA || !window.aD) return false;
-      if (!b8.hU || typeof bT.hp !== "function" || typeof b8.hU.hp !== "function") return false;
-      if (!bA.gQ || typeof bA.gQ.hG !== "function" || typeof aw.ht !== "function") return false;
+      if (!b8.hU || !b8.pG) return false;
+      if (typeof bT.hp !== "function" || typeof b8.hU.hp !== "function" || typeof b8.pG.hp !== "function") return false;
+      if (typeof aw.ht !== "function") return false;
       if (window.__TTWC._peacePatched) return true;
 
       const originalHotkeyPeace = bT.hp;
-      const originalDirectPeace = b8.hU.hp;
+      const originalWrapperPeace = b8.hU.hp;
+      const originalGameplayPeace = b8.pG.hp;
       const originalPeaceEligibility = aw.ht;
 
       function peaceVoteActive() {
@@ -604,11 +606,33 @@ window.__TTWC.isHost = false;
         }
       }
 
+      function isAlive() {
+        try {
+          return !!(window.bA && bA.gQ && typeof bA.gQ.hG === "function" && bA.gQ.hG(aD.eo));
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function callDeadHostGameplayPeace() {
+        const savedHt = aw.ht;
+
+        try {
+          aw.ht = function (player) {
+            if (window.__TTWC.isHost && player === aD.eo) return true;
+            return originalPeaceEligibility.apply(this, arguments);
+          };
+
+          console.log("TTWC: dead host calling gameplay peace sender directly");
+          return originalGameplayPeace.call(b8.pG, aD.eo);
+        } finally {
+          aw.ht = savedHt;
+        }
+      }
+
       /*
-        Make the peace-specific eligibility check always pass
-        for the LOCAL HOST only.
-        This should make the peace button clickable even while dead,
-        because the peace UI uses aw.ht(aD.eo) for availability.
+        Make the peace UI appear clickable for the host even while dead.
+        This affects peace availability checks, but only for the local host.
       */
       aw.ht = function (player) {
         try {
@@ -621,9 +645,10 @@ window.__TTWC.isHost = false;
 
       /*
         Hotkey path:
-        - if peace vote already active, keep original behaviour so players can vote yes/no
-        - if no active peace vote, only host can start it
-        - for host, bypass the original hotkey dead-player gate by calling the direct peace path
+        - active peace vote => keep original yes/no behavior
+        - non-host => blocked
+        - alive host => keep original behavior
+        - dead host => call the real gameplay sender directly
       */
       bT.hp = function () {
         try {
@@ -640,26 +665,32 @@ window.__TTWC.isHost = false;
             return;
           }
 
-          console.log("TTWC: host peace hotkey allowed");
-          return originalDirectPeace.apply(b8.hU, arguments);
+          if (isAlive()) {
+            console.log("TTWC: alive host peace hotkey allowed");
+            return originalHotkeyPeace.apply(this, arguments);
+          }
+
+          return callDeadHostGameplayPeace();
         } catch (e) {
           console.log("TTWC bT.hp patch error:", e);
         }
       };
 
       /*
-        Direct peace-start path:
-        - block non-hosts from starting peace
-        - allow host to use original peace-start logic
+        Wrapper/UI path:
+        - active peace vote => keep original behavior
+        - non-host => blocked
+        - alive host => keep original wrapper behavior
+        - dead host => skip wrapper fallback and call gameplay sender directly
       */
       b8.hU.hp = function () {
         try {
           if (!window.__TTWC.peaceVoteHostOnly) {
-            return originalDirectPeace.apply(this, arguments);
+            return originalWrapperPeace.apply(this, arguments);
           }
 
           if (peaceVoteActive()) {
-            return originalDirectPeace.apply(this, arguments);
+            return originalWrapperPeace.apply(this, arguments);
           }
 
           if (!window.__TTWC.isHost) {
@@ -667,15 +698,19 @@ window.__TTWC.isHost = false;
             return;
           }
 
-          console.log("TTWC: host direct peace start allowed");
-          return originalDirectPeace.apply(this, arguments);
+          if (isAlive()) {
+            console.log("TTWC: alive host wrapper peace allowed");
+            return originalWrapperPeace.apply(this, arguments);
+          }
+
+          return callDeadHostGameplayPeace();
         } catch (e) {
           console.log("TTWC b8.hU.hp patch error:", e);
         }
       };
 
       /*
-        Block non-host UI peace clicks before a peace vote exists.
+        Block non-host UI clicks before a peace vote exists.
       */
       document.addEventListener(
         "click",
