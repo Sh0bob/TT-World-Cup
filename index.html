@@ -679,6 +679,7 @@ window.__TTWC.isHost = false;
 
       function callDeadHostGameplayPeace() {
         const savedHt = aw.ht;
+        const savedKj = aD.kj;
 
         try {
           aw.ht = function (player) {
@@ -686,10 +687,17 @@ window.__TTWC.isHost = false;
             return originalPeaceEligibility.apply(this, arguments);
           };
 
-          console.log("TTWC: dead host calling gameplay peace sender directly");
+          /*
+            Force gameplay packet context while the peace packet is built.
+            qC(...) behaves differently depending on aD.kj.
+          */
+          aD.kj = true;
+
+          console.log("TTWC: dead host calling gameplay peace sender directly with forced gameplay context");
           return originalGameplayPeace.call(b8.pG, aD.eo);
         } finally {
           aw.ht = savedHt;
+          aD.kj = savedKj;
         }
       }
 
