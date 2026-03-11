@@ -514,9 +514,23 @@
 </script>
 <script>
 window.__TTWC = window.__TTWC || {};
-window.__TTWC.disableEmojis = true;
 
 (function () {
+  function emojisDisabled() {
+    try {
+      return !!(
+        window.__fx &&
+        __fx.customLobby &&
+        __fx.customLobby.isActive &&
+        __fx.customLobby.isActive() &&
+        __fx.customLobby.gameInfo &&
+        !__fx.customLobby.gameInfo.spawnSelection
+      );
+    } catch (e) {
+      return false;
+    }
+  }
+
   function patchEmojiDisable() {
     try {
       if (!window.b8 || !window.b0) return false;
@@ -535,70 +549,47 @@ window.__TTWC.disableEmojis = true;
       const originalTargetPacketEmoji = b0.pL.pp;
 
       b8.hU.pZ = function () {
-        if (window.__TTWC.disableEmojis) {
-          console.log("TTWC: wrapper emoji blocked");
+        if (emojisDisabled()) {
+          console.log("TTWC: wrapper emoji blocked by spawnSelection OFF");
           return;
         }
         return originalWrapperEmoji.apply(this, arguments);
       };
 
       b8.gQ.po = function () {
-        if (window.__TTWC.disableEmojis) {
-          console.log("TTWC: target-player emoji blocked");
+        if (emojisDisabled()) {
+          console.log("TTWC: target-player emoji blocked by spawnSelection OFF");
           return;
         }
         return originalTargetEmoji.apply(this, arguments);
       };
 
       b8.pG.pb = function () {
-        if (window.__TTWC.disableEmojis) {
-          console.log("TTWC: gameplay emoji blocked");
+        if (emojisDisabled()) {
+          console.log("TTWC: gameplay emoji blocked by spawnSelection OFF");
           return;
         }
         return originalGameplayEmoji.apply(this, arguments);
       };
 
       b0.pL.pc = function () {
-        if (window.__TTWC.disableEmojis) {
-          console.log("TTWC: local/spectator emoji blocked");
+        if (emojisDisabled()) {
+          console.log("TTWC: local/spectator emoji blocked by spawnSelection OFF");
           return;
         }
         return originalLocalEmoji.apply(this, arguments);
       };
 
       b0.pL.pp = function () {
-        if (window.__TTWC.disableEmojis) {
-          console.log("TTWC: target emoji packet blocked");
+        if (emojisDisabled()) {
+          console.log("TTWC: target emoji packet blocked by spawnSelection OFF");
           return;
         }
         return originalTargetPacketEmoji.apply(this, arguments);
       };
 
-      /*
-        Optional UI cleanup:
-        hide obvious emoji-labelled HTML nodes if any exist.
-        This will not affect canvas-drawn UI, but it's harmless.
-      */
-      const hideEmojiNodes = function () {
-        try {
-          const nodes = document.querySelectorAll("button, div, span, p");
-          nodes.forEach(function (node) {
-            const text = (node.textContent || "").trim().toLowerCase();
-            if (text === "emojis" || text === "emoji" || text.includes("send emoji")) {
-              node.style.display = "none";
-            }
-          });
-        } catch (e) {
-          console.log("TTWC hideEmojiNodes error:", e);
-        }
-      };
-
-      const observer = new MutationObserver(hideEmojiNodes);
-      observer.observe(document.body, { childList: true, subtree: true });
-      setInterval(hideEmojiNodes, 1000);
-
       window.__TTWC._emojiPatchLoaded = true;
-      console.log("TTWC: emoji hard-disable patch loaded");
+      console.log("TTWC: emoji patch linked to spawnSelection");
       return true;
     } catch (e) {
       console.log("TTWC patchEmojiDisable error:", e);
