@@ -792,6 +792,125 @@ window.__TTWC.isHost = false;
   }, 500);
 })();
 </script>
+
+<script>
+(function () {
+  function installPeaceDebug() {
+    try {
+      if (!window.b8 || !window.b0 || !window.aw || !window.bA || !window.aD || !window.b9) return false;
+      if (!b8.pG || !b8.hU || !b0.pL || !b9.qB) return false;
+      if (typeof b8.pG.hp !== "function") return false;
+      if (typeof b8.hU.hp !== "function") return false;
+      if (typeof b0.pL.pY !== "function") return false;
+      if (typeof b9.qB.qC !== "function") return false;
+      if (typeof aw.ht !== "function") return false;
+      if (!bA.gQ || typeof bA.gQ.hG !== "function") return false;
+      if (window.__TTWC && window.__TTWC._peaceDebugInstalled) return true;
+
+      const originalWrapperPeace = b8.hU.hp;
+      const originalGameplayPeace = b8.pG.hp;
+      const originalSpectatorPeace = b0.pL.pY;
+      const originalQC = b9.qB.qC;
+      const originalAwHt = aw.ht;
+      const originalHg = bA.gQ.hG;
+
+      function dbg(label, extra) {
+        try {
+          console.log("[TTWC DEBUG] " + label, extra || "");
+        } catch (e) {}
+      }
+
+      aw.ht = function (player) {
+        const result = originalAwHt.apply(this, arguments);
+        dbg("aw.ht called", {
+          player: player,
+          result: result,
+          isHost: window.__TTWC && window.__TTWC.isHost,
+          localPlayer: aD.eo,
+          aD_kj: aD.kj,
+          aD_hD: aD.hD,
+          aD_kh: aD.kh
+        });
+        return result;
+      };
+
+      bA.gQ.hG = function (player) {
+        const result = originalHg.apply(this, arguments);
+        dbg("bA.gQ.hG called", {
+          player: player,
+          result: result,
+          isHost: window.__TTWC && window.__TTWC.isHost,
+          localPlayer: aD.eo,
+          ag_my: window.ag && ag.my ? ag.my[player] : undefined,
+          ag_a4G: window.ag && ag.a4G ? ag.a4G[player] : undefined
+        });
+        return result;
+      };
+
+      b8.hU.hp = function () {
+        dbg("b8.hU.hp wrapper called", {
+          isHost: window.__TTWC && window.__TTWC.isHost,
+          localPlayer: aD.eo,
+          aD_kj: aD.kj,
+          aD_hD: aD.hD,
+          aD_kh: aD.kh
+        });
+        return originalWrapperPeace.apply(this, arguments);
+      };
+
+      b8.pG.hp = function (player) {
+        dbg("b8.pG.hp gameplay peace called", {
+          player: player,
+          isHost: window.__TTWC && window.__TTWC.isHost,
+          localPlayer: aD.eo,
+          aD_kj: aD.kj,
+          aD_hD: aD.hD,
+          aD_kh: aD.kh
+        });
+        return originalGameplayPeace.apply(this, arguments);
+      };
+
+      b0.pL.pY = function (jY) {
+        dbg("b0.pL.pY spectator/local peace called", {
+          jY: jY,
+          isHost: window.__TTWC && window.__TTWC.isHost,
+          localPlayer: aD.eo,
+          aD_kj: aD.kj,
+          aD_hD: aD.hD,
+          aD_kh: aD.kh
+        });
+        return originalSpectatorPeace.apply(this, arguments);
+      };
+
+      b9.qB.qC = function () {
+        dbg("b9.qB.qC packet send called", {
+          args: Array.from(arguments),
+          isHost: window.__TTWC && window.__TTWC.isHost,
+          localPlayer: aD.eo,
+          aD_kj: aD.kj,
+          aD_hD: aD.hD,
+          aD_kh: aD.kh
+        });
+        return originalQC.apply(this, arguments);
+      };
+
+      window.__TTWC = window.__TTWC || {};
+      window.__TTWC._peaceDebugInstalled = true;
+      dbg("peace debug installed");
+      return true;
+    } catch (e) {
+      console.log("[TTWC DEBUG] installPeaceDebug error", e);
+      return false;
+    }
+  }
+
+  const interval = setInterval(function () {
+    if (installPeaceDebug()) {
+      clearInterval(interval);
+    }
+  }, 500);
+})();
+</script>
 </body>
 
 </html>
