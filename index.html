@@ -648,16 +648,69 @@ window.__TTWC.isHost = false;
     }
   }
 
-  function peaceVoteActive() {
+  function patchNonHostPeaceBlock() {
     try {
-      return !!aw.hq;
+      if (!window.bT || typeof bT.hp !== "function") return false;
+      if (window.__TTWC._peaceHotkeyBlockPatched) return true;
+
+      const originalPeaceHotkey = bT.hp;
+
+      function peaceVoteActive() {
+        try {
+          return !!aw.hq;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      bT.hp = function () {
+        try {
+          if (!window.__TTWC.peaceVoteHostOnly) {
+            return originalPeaceHotkey.apply(this, arguments);
+          }
+
+          /*
+            If a peace vote is already active, keep original behavior
+            so players can still vote yes/no.
+          */
+          if (peaceVoteActive()) {
+            return originalPeaceHotkey.apply(this, arguments);
+          }
+
+          /*
+            No peace vote active:
+            only host may start one.
+          */
+          if (!window.__TTWC.isHost) {
+            console.log("TTWC: non-host peace hotkey blocked");
+            return;
+          }
+
+          return originalPeaceHotkey.apply(this, arguments);
+        } catch (e) {
+          console.log("TTWC peace hotkey block error:", e);
+        }
+      };
+
+      window.__TTWC._peaceHotkeyBlockPatched = true;
+      console.log("TTWC: non-host peace hotkey block patched");
+      return true;
     } catch (e) {
+      console.log("TTWC patchNonHostPeaceBlock error:", e);
       return false;
     }
   }
 
-  function installNonHostPeaceBlock() {
-    if (window.__TTWC._peaceUiBlockInstalled) return true;
+  function installNonHostPeaceUIClickBlock() {
+    if (window.__TTWC._peaceUiClickBlockInstalled) return true;
+
+    function peaceVoteActive() {
+      try {
+        return !!aw.hq;
+      } catch (e) {
+        return false;
+      }
+    }
 
     document.addEventListener(
       "click",
@@ -684,6 +737,22 @@ window.__TTWC.isHost = false;
       true
     );
 
+    window.__TTWC._peaceUiClickBlockInstalled = true;
+    console.log("TTWC: non-host peace UI click block installed");
+    return true;
+  }
+
+  function installNonHostPeaceUIHide() {
+    if (window.__TTWC._peaceUiHideInstalled) return true;
+
+    function peaceVoteActive() {
+      try {
+        return !!aw.hq;
+      } catch (e) {
+        return false;
+      }
+    }
+
     const hidePeaceButtons = function () {
       try {
         if (window.__TTWC.isHost) return;
@@ -705,17 +774,20 @@ window.__TTWC.isHost = false;
     observer.observe(document.body, { childList: true, subtree: true });
     setInterval(hidePeaceButtons, 1000);
 
-    window.__TTWC._peaceUiBlockInstalled = true;
+    window.__TTWC._peaceUiHideInstalled = true;
+    console.log("TTWC: non-host peace UI hide installed");
     return true;
   }
 
   const interval = setInterval(function () {
     const ok1 = patchHostTracking();
-    const ok2 = installNonHostPeaceBlock();
+    const ok2 = patchNonHostPeaceBlock();
+    const ok3 = installNonHostPeaceUIClickBlock();
+    const ok4 = installNonHostPeaceUIHide();
 
-    if (ok1 && ok2) {
+    if (ok1 && ok2 && ok3 && ok4) {
       clearInterval(interval);
-      console.log("TTWC: peace host tracking + non-host block installed");
+      console.log("TTWC: peace control baseline installed");
     }
   }, 500);
 })();
