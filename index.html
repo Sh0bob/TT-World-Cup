@@ -648,206 +648,74 @@ window.__TTWC.isHost = false;
     }
   }
 
-  function patchPeaceControl() {
+  function peaceVoteActive() {
     try {
-      if (!window.bT || !window.b8 || !window.aw || !window.bA || !window.aD) return false;
-      if (!b8.hU || !b8.pG) return false;
-      if (typeof bT.hp !== "function" || typeof b8.hU.hp !== "function" || typeof b8.pG.hp !== "function") return false;
-      if (typeof aw.ht !== "function") return false;
-      if (window.__TTWC._peacePatched) return true;
-
-      const originalHotkeyPeace = bT.hp;
-      const originalWrapperPeace = b8.hU.hp;
-      const originalGameplayPeace = b8.pG.hp;
-      const originalPeaceEligibility = aw.ht;
-
-      function peaceVoteActive() {
-        try {
-          return !!aw.hq;
-        } catch (e) {
-          return false;
-        }
-      }
-
-      function isAlive() {
-        try {
-          return !!(window.bA && bA.gQ && typeof bA.gQ.hG === "function" && bA.gQ.hG(aD.eo));
-        } catch (e) {
-          return false;
-        }
-      }
-
-      function callDeadHostGameplayPeace() {
-        const savedHt = aw.ht;
-        const savedKj = aD.kj;
-
-        try {
-          aw.ht = function (player) {
-            if (window.__TTWC.isHost && player === aD.eo) return true;
-            return originalPeaceEligibility.apply(this, arguments);
-          };
-
-          /*
-            Force gameplay packet context while the peace packet is built.
-            qC(...) behaves differently depending on aD.kj.
-          */
-          aD.kj = true;
-
-          console.log("TTWC: dead host calling gameplay peace sender directly with forced gameplay context");
-          return originalGameplayPeace.call(b8.pG, aD.eo);
-        } finally {
-          aw.ht = savedHt;
-          aD.kj = savedKj;
-        }
-      }
-
-      /*
-        Make the peace UI appear clickable for the host even while dead.
-        This affects peace availability checks, but only for the local host.
-      */
-      aw.ht = function (player) {
-        try {
-          if (window.__TTWC.isHost && player === aD.eo) {
-            return true;
-          }
-        } catch (e) {}
-        return originalPeaceEligibility.apply(this, arguments);
-      };
-
-      /*
-        Hotkey path:
-        - active peace vote => keep original yes/no behavior
-        - non-host => blocked
-        - alive host => keep original behavior
-        - dead host => call the real gameplay sender directly
-      */
-      bT.hp = function () {
-        try {
-          if (!window.__TTWC.peaceVoteHostOnly) {
-            return originalHotkeyPeace.apply(this, arguments);
-          }
-
-          if (peaceVoteActive()) {
-            return originalHotkeyPeace.apply(this, arguments);
-          }
-
-          if (!window.__TTWC.isHost) {
-            console.log("TTWC: non-host peace hotkey blocked");
-            return;
-          }
-
-          if (isAlive()) {
-            console.log("TTWC: alive host peace hotkey allowed");
-            return originalHotkeyPeace.apply(this, arguments);
-          }
-
-          return callDeadHostGameplayPeace();
-        } catch (e) {
-          console.log("TTWC bT.hp patch error:", e);
-        }
-      };
-
-      /*
-        Wrapper/UI path:
-        - active peace vote => keep original behavior
-        - non-host => blocked
-        - alive host => keep original wrapper behavior
-        - dead host => skip wrapper fallback and call gameplay sender directly
-      */
-      b8.hU.hp = function () {
-        try {
-          if (!window.__TTWC.peaceVoteHostOnly) {
-            return originalWrapperPeace.apply(this, arguments);
-          }
-
-          if (peaceVoteActive()) {
-            return originalWrapperPeace.apply(this, arguments);
-          }
-
-          if (!window.__TTWC.isHost) {
-            console.log("TTWC: non-host direct peace start blocked");
-            return;
-          }
-
-          if (isAlive()) {
-            console.log("TTWC: alive host wrapper peace allowed");
-            return originalWrapperPeace.apply(this, arguments);
-          }
-
-          return callDeadHostGameplayPeace();
-        } catch (e) {
-          console.log("TTWC b8.hU.hp patch error:", e);
-        }
-      };
-
-      /*
-        Block non-host UI clicks before a peace vote exists.
-      */
-      document.addEventListener(
-        "click",
-        function (e) {
-          try {
-            if (!window.__TTWC.peaceVoteHostOnly) return;
-            if (peaceVoteActive()) return;
-            if (window.__TTWC.isHost) return;
-
-            const target = e.target && e.target.closest ? e.target.closest("button, div, span, p") : null;
-            if (!target) return;
-
-            const text = (target.textContent || "").trim();
-            if (text.includes("Call Peace Vote") || text.includes("🕊️")) {
-              e.preventDefault();
-              e.stopPropagation();
-              e.stopImmediatePropagation();
-              console.log("TTWC: non-host peace UI click blocked");
-            }
-          } catch (err) {
-            console.log("TTWC peace UI click block error:", err);
-          }
-        },
-        true
-      );
-
-      /*
-        Hide peace button for non-hosts when no peace vote is active.
-      */
-      const hidePeaceButtons = function () {
-        try {
-          if (window.__TTWC.isHost) return;
-          if (peaceVoteActive()) return;
-
-          const nodes = document.querySelectorAll("button, div, span, p");
-          nodes.forEach(function (node) {
-            const text = (node.textContent || "").trim();
-            if (text === "🕊️ Call Peace Vote" || text === "Call Peace Vote") {
-              node.style.display = "none";
-            }
-          });
-        } catch (e) {
-          console.log("TTWC peace UI hide error:", e);
-        }
-      };
-
-      const observer = new MutationObserver(hidePeaceButtons);
-      observer.observe(document.body, { childList: true, subtree: true });
-      setInterval(hidePeaceButtons, 1000);
-
-      window.__TTWC._peacePatched = true;
-      console.log("TTWC: host-only peace patch loaded");
-      return true;
+      return !!aw.hq;
     } catch (e) {
-      console.log("TTWC patchPeaceControl error:", e);
       return false;
     }
   }
 
+  function installNonHostPeaceBlock() {
+    if (window.__TTWC._peaceUiBlockInstalled) return true;
+
+    document.addEventListener(
+      "click",
+      function (e) {
+        try {
+          if (!window.__TTWC.peaceVoteHostOnly) return;
+          if (peaceVoteActive()) return;
+          if (window.__TTWC.isHost) return;
+
+          const target = e.target && e.target.closest ? e.target.closest("button, div, span, p") : null;
+          if (!target) return;
+
+          const text = (target.textContent || "").trim();
+          if (text.includes("Call Peace Vote") || text.includes("🕊️")) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            console.log("TTWC: non-host peace UI click blocked");
+          }
+        } catch (err) {
+          console.log("TTWC peace UI click block error:", err);
+        }
+      },
+      true
+    );
+
+    const hidePeaceButtons = function () {
+      try {
+        if (window.__TTWC.isHost) return;
+        if (peaceVoteActive()) return;
+
+        const nodes = document.querySelectorAll("button, div, span, p");
+        nodes.forEach(function (node) {
+          const text = (node.textContent || "").trim();
+          if (text === "🕊️ Call Peace Vote" || text === "Call Peace Vote") {
+            node.style.display = "none";
+          }
+        });
+      } catch (e) {
+        console.log("TTWC peace UI hide error:", e);
+      }
+    };
+
+    const observer = new MutationObserver(hidePeaceButtons);
+    observer.observe(document.body, { childList: true, subtree: true });
+    setInterval(hidePeaceButtons, 1000);
+
+    window.__TTWC._peaceUiBlockInstalled = true;
+    return true;
+  }
+
   const interval = setInterval(function () {
     const ok1 = patchHostTracking();
-    const ok2 = patchPeaceControl();
+    const ok2 = installNonHostPeaceBlock();
 
     if (ok1 && ok2) {
       clearInterval(interval);
-      console.log("TTWC: all peace patches installed");
+      console.log("TTWC: peace host tracking + non-host block installed");
     }
   }, 500);
 })();
