@@ -384,7 +384,7 @@ function dC() {
 			}
 		}
 	}, this.hp = function() {
-		if (!aD.hD && !aM.hE && bA.gQ.hG(aD.eo) && bA.gQ.hF(1)) return aw.hq ? aw.hr(aD.eo) ? void b8.hU.hs(1) : void 0 : void(aw.ht(aD.eo) && b8.hU.hp())
+		if (!aD.hD && !aM.hE && bA.gQ.hF(1) && (bA.gQ.hG(aD.eo) || window.__TTWC && window.__TTWC.isHost)) return aw.hq ? aw.hr(aD.eo) ? void b8.hU.hs(1) : void 0 : void(aw.ht(aD.eo) && b8.hU.hp())
 	}
 }
 
