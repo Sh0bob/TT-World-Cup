@@ -10348,7 +10348,6 @@ function aTJ() {
 	}, this.pV = function(ig, nL) {
 		bD.a7(31), bD.a8(1, 1), bD.a8(4, 4), bD.a8(10, ig), bD.a8(16, nL), b0.y.send(b0.y.a2C, bD.aC)
 	}, this.pY = function(jY) {
-		if (513 === jY && window.__TTWC && window.__TTWC.isHost) return b8.pG.hp(aD.eo);
 		bD.a7(15), bD.a8(1, 1), bD.a8(4, 5), bD.a8(10, jY), b0.y.send(b0.y.a2C, bD.aC)
 	}, this.pc = function(eB) {
 		bD.a7(15), bD.a8(1, 1), bD.a8(4, 6), bD.a8(10, eB), b0.y.send(b0.y.a2C, bD.aC)
