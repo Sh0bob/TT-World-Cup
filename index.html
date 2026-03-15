@@ -654,6 +654,96 @@ window.__TTWC.isHost = false;
   }, 500);
 })();
 </script>
+
+<script>
+// ── HOST-ONLY PEACE VOTE ─────────────────────────────────────────────────────
+// This patch does two things:
+//   1. Intercepts all outgoing WebSocket packets and BLOCKS the peace-vote
+//      packet (byte 0 = 13) from any player who is NOT the host.
+//   2. Lets the host send the peace packet even while dead, by also patching
+//      the game's own "can I call peace?" check.
+// ─────────────────────────────────────────────────────────────────────────────
+
+(function () {
+
+  // ── STEP 1: Block non-hosts from sending the peace packet ─────────────────
+  // We wrap WebSocket.prototype.send so we can inspect every outgoing message.
+  // Territorial.io sends a Uint8Array; the first byte is the action type.
+  // Byte value 13 (0x0D) = "call peace vote".  Adjust if needed after testing.
+
+  const PEACE_ACTION_BYTE = 13;
+
+  const _origSend = WebSocket.prototype.send;
+
+  WebSocket.prototype.send = function (data) {
+    // Only inspect binary (ArrayBuffer / Uint8Array) messages.
+    if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
+      const view = (data instanceof Uint8Array) ? data : new Uint8Array(data.buffer || data);
+      // If this is a peace packet AND the client is NOT the host → drop it.
+      if (view[0] === PEACE_ACTION_BYTE && !window.__TTWC.isHost) {
+        console.log("[TTWC] Peace packet blocked (not host).");
+        return; // ← silent drop; packet never reaches the server
+      }
+    }
+    return _origSend.apply(this, arguments);
+  };
+
+  console.log("[TTWC] WebSocket peace guard installed.");
+
+
+  // ── STEP 2: Let the host call peace while dead ─────────────────────────────
+  // The game normally hides / disables the "Call Peace Vote" button when you
+  // are dead (a spectator).  We patch the function that checks whether the
+  // local player is alive so the host always appears "alive" for this check.
+  //
+  // We wait for the game object to exist, then overwrite the relevant method.
+
+  function patchPeaceForDeadHost() {
+    try {
+      // FX Client exposes the game via window.__fx.game  (try all known names)
+      const game = (window.__fx && window.__fx.game)
+                || window.game
+                || window.G;
+
+      if (!game) return false;
+
+      // Look for the method that gates "can call peace".
+      // Common names used in minified Territorial.io builds:
+      const candidateKeys = [
+        "canCallPeace", "peaceAllowed", "canVotePeace",
+        "isAlive", "playerAlive", "localAlive"
+      ];
+
+      let patched = false;
+      for (const key of candidateKeys) {
+        if (typeof game[key] === "function") {
+          const _orig = game[key].bind(game);
+          game[key] = function () {
+            // If the caller is the host, always return true.
+            if (window.__TTWC.isHost) return true;
+            return _orig.apply(this, arguments);
+          };
+          console.log("[TTWC] Patched game." + key + " for dead-host peace.");
+          patched = true;
+        }
+      }
+
+      return patched;
+    } catch (e) {
+      console.log("[TTWC] patchPeaceForDeadHost error:", e);
+      return false;
+    }
+  }
+
+  let attempts = 0;
+  const patchInterval = setInterval(function () {
+    if (patchPeaceForDeadHost() || ++attempts > 120) {
+      clearInterval(patchInterval);
+    }
+  }, 500);
+
+})();
+</script>
 </body>
 
 </html>
