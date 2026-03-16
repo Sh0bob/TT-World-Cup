@@ -769,6 +769,13 @@ window.__TTWC.isHost = false;
             aD_kh: window.aD ? aD.kh : undefined,
             aD_a0s: window.aD ? aD.a0s : undefined
           });
+          console.log(
+          "[TTWC PEACE PACKET] qC peace call FLAT",
+          "aD_kj=", window.aD ? aD.kj : undefined,
+          "aD_hD=", window.aD ? aD.hD : undefined,
+          "aD_kh=", window.aD ? aD.kh : undefined,
+          "aD_a0s=", window.aD ? aD.a0s : undefined
+         );
         }
 
         return originalQC.apply(this, arguments);
@@ -787,7 +794,16 @@ window.__TTWC.isHost = false;
             aD_hD: window.aD ? aD.hD : undefined,
             aD_kh: window.aD ? aD.kh : undefined,
             aD_a0s: window.aD ? aD.a0s : undefined
-          });
+           });
+          console.log(
+            "[TTWC PEACE PACKET] send after peace qC FLAT",
+            "arg0=", arguments[0],
+            "arg1Bytes=", JSON.stringify(bytes),
+            "aD_kj=", window.aD ? aD.kj : undefined,
+            "aD_hD=", window.aD ? aD.hD : undefined,
+            "aD_kh=", window.aD ? aD.kh : undefined,
+            "aD_a0s=", window.aD ? aD.a0s : undefined
+          );
         }
 
         return originalSend.apply(this, arguments);
