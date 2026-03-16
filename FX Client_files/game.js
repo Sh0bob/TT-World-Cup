@@ -1196,26 +1196,7 @@ function pH() {
 	}, this.qA = function(player) {
 		b9.qB.qC(9, player), bQ.qA(player)
 	}, this.hp = function(player) {
-		   if (window.__TTWC && window.__TTWC.isHost && player === aD.eo) {
-
-              const originalKj = aD.kj;
-              const originalKh = aD.kh;
-
-              try {
-                  aD.kj = true;
-                  aD.kh = 0;
-
-                  b9.qB.qC(5, player, 513);
-                  aw.hp(player);
-
-              } finally {
-                  aD.kj = originalKj;
-                  aD.kh = originalKh;
-              }
-              return;
-          }
-
-          aw.ht(player) && (b9.qB.qC(5, player, 513), aw.hp(player))
+        aw.ht(player) && (b9.qB.qC(5, player, 513), aw.hp(player))
 	}, this.hX = function(player, ig, eq, jY) {
 		bA.gQ.hF(1) && bA.gQ.hG(player) && bA.gQ.qE(player, jY) && bA.gQ.qF(player, jY) && bM.il(eq) && am.ef.ey(player, eq) && (ad.jk(player, bO.f0[0]) || ad.k3(player)) && (b9.qB.qC(10, player, (ig << 10) + bO.f0[0], eq), jY = bA.gQ.lb(player,
 			ig), ag.gW[player].push(bO.f5[0]), ad.eb(player, jY, bO.f0[0]), aF.jW(player, !0), bd.qT(player))
