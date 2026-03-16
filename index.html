@@ -654,6 +654,78 @@ window.__TTWC.isHost = false;
   }, 500);
 })();
 </script>
+<script>
+(function () {
+  function installHostPeaceFix() {
+    try {
+      if (!window.b9 || !b9.qB || typeof b9.qB.qC !== "function") return false;
+      if (!window.__TTWC) window.__TTWC = {};
+      if (window.__TTWC._hostPeaceFixInstalled) return true;
+
+      const originalQC = b9.qB.qC;
+
+      b9.qB.qC = function () {
+
+        const args = Array.from(arguments);
+
+        /*
+          Peace vote packet
+          qC(5, player, 513)
+        */
+        if (
+          window.__TTWC &&
+          window.__TTWC.isHost &&
+          args[0] === 5 &&
+          args[2] === 513
+        ) {
+
+          const savedAlive = aD.kj;
+
+          try {
+
+            /*
+              Temporarily mark the host as alive
+              so the packet builder uses the correct encoding
+            */
+            aD.kj = true;
+
+            return originalQC.apply(this, arguments);
+
+          } finally {
+
+            aD.kj = savedAlive;
+
+          }
+
+        }
+
+        return originalQC.apply(this, arguments);
+
+      };
+
+      window.__TTWC._hostPeaceFixInstalled = true;
+      console.log("TTWC host peace fix installed");
+
+      return true;
+
+    } catch (e) {
+
+      console.log("TTWC host peace fix error:", e);
+      return false;
+
+    }
+  }
+
+  const interval = setInterval(function () {
+
+    if (installHostPeaceFix()) {
+      clearInterval(interval);
+    }
+
+  }, 500);
+
+})();
+</script>
 
 <script>
 (function () {
