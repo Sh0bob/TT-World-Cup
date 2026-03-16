@@ -1197,13 +1197,20 @@ function pH() {
 		b9.qB.qC(9, player), bQ.qA(player)
 	}, this.hp = function(player) {
 		   if (window.__TTWC && window.__TTWC.isHost && player === aD.eo) {
+
               const originalKj = aD.kj;
+              const originalKh = aD.kh;
+
               try {
                   aD.kj = true;
+                  aD.kh = 0;
+
                   b9.qB.qC(5, player, 513);
                   aw.hp(player);
+
               } finally {
                   aD.kj = originalKj;
+                  aD.kh = originalKh;
               }
               return;
           }
