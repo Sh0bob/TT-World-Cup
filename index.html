@@ -657,21 +657,19 @@ window.__TTWC.isHost = false;
 
 <script>
 (function () {
-  function installPeaceSendDebug() {
+  function installPeacePacketDebug() {
     try {
-      if (!window.bT || typeof bT.hp !== "function") return false;
       if (!window.b9 || !b9.qB || typeof b9.qB.qC !== "function") return false;
       if (!window.b0 || !b0.y || typeof b0.y.send !== "function") return false;
-      if (window.__TTWC && window.__TTWC._peaceSendDebugInstalled) return true;
+      if (window.__TTWC && window.__TTWC._peacePacketDebugInstalled) return true;
 
       window.__TTWC = window.__TTWC || {};
-      window.__TTWC._peaceSendWatchUntil = 0;
+      window.__TTWC._peaceSendCaptureCount = 0;
 
-      const originalHotkeyPeace = bT.hp;
       const originalQC = b9.qB.qC;
-      const originalSocketSend = b0.y.send;
+      const originalSend = b0.y.send;
 
-      function bytesFull(data) {
+      function toBytes(data) {
         try {
           if (!data) return null;
           if (data instanceof ArrayBuffer) {
@@ -686,60 +684,52 @@ window.__TTWC.isHost = false;
         }
       }
 
-      function watchingPeacePress() {
-        return Date.now() < (window.__TTWC._peaceSendWatchUntil || 0);
-      }
-
-      bT.hp = function () {
-        window.__TTWC._peaceSendWatchUntil = Date.now() + 1500;
-        console.log("[TTWC PEACE DEBUG] P pressed", {
-          isHost: !!window.__TTWC.isHost,
-          aD_kj: window.aD ? aD.kj : undefined,
-          aD_hD: window.aD ? aD.hD : undefined,
-          aD_kh: window.aD ? aD.kh : undefined
-        });
-        return originalHotkeyPeace.apply(this, arguments);
-      };
-
       b9.qB.qC = function () {
-        if (watchingPeacePress()) {
-          console.log("[TTWC PEACE DEBUG] qC after P", {
-            args: Array.from(arguments),
+        const args = Array.from(arguments);
+
+        if (args[0] === 5 && args[2] === 513) {
+          window.__TTWC._peaceSendCaptureCount = 2;
+          console.log("[TTWC PEACE PACKET] qC peace call", {
+            args: args,
             isHost: !!window.__TTWC.isHost,
             aD_kj: window.aD ? aD.kj : undefined,
             aD_hD: window.aD ? aD.hD : undefined,
             aD_kh: window.aD ? aD.kh : undefined
           });
         }
+
         return originalQC.apply(this, arguments);
       };
 
       b0.y.send = function () {
-        if (watchingPeacePress()) {
-          console.log("[TTWC PEACE DEBUG] send after P", {
-            argsCount: arguments.length,
+        if (window.__TTWC._peaceSendCaptureCount > 0) {
+          window.__TTWC._peaceSendCaptureCount--;
+
+          const bytes = toBytes(arguments[1]);
+          console.log("[TTWC PEACE PACKET] send after peace qC", {
             arg0: arguments[0],
-            arg1Bytes: bytesFull(arguments[1]),
+            arg1Bytes: JSON.stringify(bytes),
             isHost: !!window.__TTWC.isHost,
             aD_kj: window.aD ? aD.kj : undefined,
             aD_hD: window.aD ? aD.hD : undefined,
             aD_kh: window.aD ? aD.kh : undefined
           });
         }
-        return originalSocketSend.apply(this, arguments);
+
+        return originalSend.apply(this, arguments);
       };
 
-      window.__TTWC._peaceSendDebugInstalled = true;
-      console.log("[TTWC PEACE DEBUG] installed");
+      window.__TTWC._peacePacketDebugInstalled = true;
+      console.log("[TTWC PEACE PACKET] installed");
       return true;
     } catch (e) {
-      console.log("[TTWC PEACE DEBUG] install error", e);
+      console.log("[TTWC PEACE PACKET] install error", e);
       return false;
     }
   }
 
   const interval = setInterval(function () {
-    if (installPeaceSendDebug()) {
+    if (installPeacePacketDebug()) {
       clearInterval(interval);
     }
   }, 500);
