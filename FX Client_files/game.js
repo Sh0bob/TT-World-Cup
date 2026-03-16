@@ -383,13 +383,10 @@ function dC() {
 				}
 			}
 		}
-		}, this.hp = function() {
-		if (!aD.hD && !aM.hE && bA.gQ.hF(1) && (bA.gQ.hG(aD.eo) || window.__TTWC && window.__TTWC.isHost))
-			return aw.hq
-				? aw.hr(aD.eo) ? void b8.hU.hs(1) : void 0
-				: void(aw.ht(aD.eo) && (window.__TTWC && window.__TTWC.isHost && !aD.kj ? b8.pG.hp(aD.eo) : b8.hU.hp()))
-	   }
-   }
+			}, this.hp = function() {
+		        if (!aD.hD && !aM.hE && bA.gQ.hF(1) && (bA.gQ.hG(aD.eo) || window.__TTWC && window.__TTWC.isHost)) return aw.hq ? aw.hr(aD.eo) ? void b8.hU.hs(1) : void 0 : void(aw.ht(aD.eo) && b8.hU.hp())
+	        }
+        }
 
 function hz(i0, size, i1, i2, font) {
 	var aB, i5 = .2,
