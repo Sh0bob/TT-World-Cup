@@ -654,6 +654,111 @@ window.__TTWC.isHost = false;
   }, 500);
 })();
 </script>
+
+<script>
+(function () {
+  function installPeaceTrace() {
+    try {
+      if (!window.b0 || !b0.pL || typeof b0.pL.pY !== "function") return false;
+      if (!window.b8 || !b8.hU || typeof b8.hU.hp !== "function") return false;
+      if (!window.b8 || !b8.pG || typeof b8.pG.hp !== "function") return false;
+      if (!window.b0 || !b0.y || typeof b0.y.send !== "function") return false;
+
+      window.__TTWC = window.__TTWC || {};
+      if (window.__TTWC._peaceTraceInstalled) return true;
+
+      const originalHUHP = b8.hU.hp;
+      const originalPGHP = b8.pG.hp;
+      const originalPY = b0.pL.pY;
+      const originalSend = b0.y.send;
+
+      function toBytes(data) {
+        try {
+          if (!data) return null;
+          if (data instanceof ArrayBuffer) {
+            return Array.from(new Uint8Array(data));
+          }
+          if (ArrayBuffer.isView(data)) {
+            return Array.from(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+          }
+          return data;
+        } catch (e) {
+          return "bytes-failed";
+        }
+      }
+
+      b8.hU.hp = function () {
+        console.log("[TTWC TRACE] b8.hU.hp called", {
+          isHost: !!(window.__TTWC && window.__TTWC.isHost),
+          aD_kj: window.aD ? aD.kj : undefined,
+          aD_kh: window.aD ? aD.kh : undefined,
+          aD_hD: window.aD ? aD.hD : undefined,
+          aD_a0s: window.aD ? aD.a0s : undefined
+        });
+
+        return originalHUHP.apply(this, arguments);
+      };
+
+      b8.pG.hp = function () {
+        console.log("[TTWC TRACE] b8.pG.hp called", {
+          args: Array.from(arguments),
+          isHost: !!(window.__TTWC && window.__TTWC.isHost),
+          aD_kj: window.aD ? aD.kj : undefined,
+          aD_kh: window.aD ? aD.kh : undefined,
+          aD_hD: window.aD ? aD.hD : undefined,
+          aD_a0s: window.aD ? aD.a0s : undefined
+        });
+
+        return originalPGHP.apply(this, arguments);
+      };
+
+      b0.pL.pY = function () {
+        console.log("[TTWC TRACE] b0.pL.pY called", {
+          args: Array.from(arguments),
+          isHost: !!(window.__TTWC && window.__TTWC.isHost),
+          aD_kj: window.aD ? aD.kj : undefined,
+          aD_kh: window.aD ? aD.kh : undefined,
+          aD_hD: window.aD ? aD.hD : undefined,
+          aD_a0s: window.aD ? aD.a0s : undefined
+        });
+
+        return originalPY.apply(this, arguments);
+      };
+
+      b0.y.send = function () {
+        const bytes = toBytes(arguments[1]);
+
+        if (Array.isArray(bytes) && (bytes[0] === 38 || bytes[0] === 39)) {
+          console.log("[TTWC TRACE] b0.y.send peace-related packet", {
+            arg0: arguments[0],
+            arg1Bytes: JSON.stringify(bytes),
+            isHost: !!(window.__TTWC && window.__TTWC.isHost),
+            aD_kj: window.aD ? aD.kj : undefined,
+            aD_kh: window.aD ? aD.kh : undefined,
+            aD_hD: window.aD ? aD.hD : undefined,
+            aD_a0s: window.aD ? aD.a0s : undefined
+          });
+        }
+
+        return originalSend.apply(this, arguments);
+      };
+
+      window.__TTWC._peaceTraceInstalled = true;
+      console.log("TTWC: peace trace installed");
+      return true;
+    } catch (e) {
+      console.log("TTWC peace trace install error:", e);
+      return false;
+    }
+  }
+
+  const interval = setInterval(function () {
+    if (installPeaceTrace()) {
+      clearInterval(interval);
+    }
+  }, 500);
+})();
+</script>
 </body>
 
 </html>
