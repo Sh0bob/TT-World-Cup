@@ -654,6 +654,78 @@ window.__TTWC.isHost = false;
   }, 500);
 })();
 </script>
+<script>
+(function () {
+  function installPeaceAliveSendPatch() {
+    try {
+      if (!window.b9 || !b9.qB || typeof b9.qB.qC !== "function") return false;
+      if (!window.b0 || !b0.y || typeof b0.y.send !== "function") return false;
+      if (!window.__TTWC) window.__TTWC = {};
+      if (window.__TTWC._peaceAliveSendPatchInstalled) return true;
+
+      const originalQC = b9.qB.qC;
+      const originalSend = b0.y.send;
+
+      window.__TTWC._peaceForceAliveSendCount = 0;
+
+      b9.qB.qC = function () {
+        const args = Array.from(arguments);
+
+        /*
+          Peace packet: qC(5, player, 513)
+          Only for the local host.
+        */
+        if (
+          window.__TTWC &&
+          window.__TTWC.isHost &&
+          args[0] === 5 &&
+          args[2] === 513
+        ) {
+          /*
+            We observed two sends after a peace qC call.
+            Keep the client in alive state for both sends.
+          */
+          window.__TTWC._peaceForceAliveSendCount = 2;
+        }
+
+        return originalQC.apply(this, arguments);
+      };
+
+      b0.y.send = function () {
+        if (window.__TTWC && window.__TTWC._peaceForceAliveSendCount > 0) {
+          const savedKj = aD.kj;
+          const savedKh = aD.kh;
+
+          try {
+            aD.kj = true;
+            aD.kh = 0;
+            window.__TTWC._peaceForceAliveSendCount--;
+            return originalSend.apply(this, arguments);
+          } finally {
+            aD.kj = savedKj;
+            aD.kh = savedKh;
+          }
+        }
+
+        return originalSend.apply(this, arguments);
+      };
+
+      window.__TTWC._peaceAliveSendPatchInstalled = true;
+      console.log("TTWC: peace alive-send patch installed");
+      return true;
+    } catch (e) {
+      console.log("TTWC peace alive-send patch error:", e);
+      return false;
+    }
+  }
+
+  const interval = setInterval(function () {
+    if (installPeaceAliveSendPatch()) {
+      clearInterval(interval);
+    }
+  }, 500);
+})();
+</script>
 
 <script>
 (function () {
