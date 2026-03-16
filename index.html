@@ -657,66 +657,89 @@ window.__TTWC.isHost = false;
 
 <script>
 (function () {
-  function installSendDebug() {
+  function installPeaceSendDebug() {
     try {
+      if (!window.bT || typeof bT.hp !== "function") return false;
       if (!window.b9 || !b9.qB || typeof b9.qB.qC !== "function") return false;
       if (!window.b0 || !b0.y || typeof b0.y.send !== "function") return false;
-      if (window.__TTWC && window.__TTWC._sendDebugInstalled) return true;
+      if (window.__TTWC && window.__TTWC._peaceSendDebugInstalled) return true;
 
+      window.__TTWC = window.__TTWC || {};
+      window.__TTWC._peaceSendWatchUntil = 0;
+
+      const originalHotkeyPeace = bT.hp;
       const originalQC = b9.qB.qC;
       const originalSocketSend = b0.y.send;
 
-      function bytesPreview(data) {
+      function bytesFull(data) {
         try {
           if (!data) return null;
           if (data instanceof ArrayBuffer) {
-            return Array.from(new Uint8Array(data)).slice(0, 40);
+            return Array.from(new Uint8Array(data));
           }
           if (ArrayBuffer.isView(data)) {
-            return Array.from(new Uint8Array(data.buffer, data.byteOffset, data.byteLength)).slice(0, 40);
+            return Array.from(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
           }
           return data;
         } catch (e) {
-          return "preview-failed";
+          return "bytes-failed";
         }
       }
 
-      b9.qB.qC = function () {
-        console.log("[TTWC SEND DEBUG] b9.qB.qC called", {
-          args: Array.from(arguments),
-          isHost: !!(window.__TTWC && window.__TTWC.isHost),
+      function watchingPeacePress() {
+        return Date.now() < (window.__TTWC._peaceSendWatchUntil || 0);
+      }
+
+      bT.hp = function () {
+        window.__TTWC._peaceSendWatchUntil = Date.now() + 1500;
+        console.log("[TTWC PEACE DEBUG] P pressed", {
+          isHost: !!window.__TTWC.isHost,
           aD_kj: window.aD ? aD.kj : undefined,
           aD_hD: window.aD ? aD.hD : undefined,
           aD_kh: window.aD ? aD.kh : undefined
         });
+        return originalHotkeyPeace.apply(this, arguments);
+      };
+
+      b9.qB.qC = function () {
+        if (watchingPeacePress()) {
+          console.log("[TTWC PEACE DEBUG] qC after P", {
+            args: Array.from(arguments),
+            isHost: !!window.__TTWC.isHost,
+            aD_kj: window.aD ? aD.kj : undefined,
+            aD_hD: window.aD ? aD.hD : undefined,
+            aD_kh: window.aD ? aD.kh : undefined
+          });
+        }
         return originalQC.apply(this, arguments);
       };
 
       b0.y.send = function () {
-        console.log("[TTWC SEND DEBUG] b0.y.send called", {
-          argsCount: arguments.length,
-          arg0: arguments[0],
-          arg1Preview: bytesPreview(arguments[1]),
-          isHost: !!(window.__TTWC && window.__TTWC.isHost),
-          aD_kj: window.aD ? aD.kj : undefined,
-          aD_hD: window.aD ? aD.hD : undefined,
-          aD_kh: window.aD ? aD.kh : undefined
-        });
+        if (watchingPeacePress()) {
+          console.log("[TTWC PEACE DEBUG] send after P", {
+            argsCount: arguments.length,
+            arg0: arguments[0],
+            arg1Bytes: bytesFull(arguments[1]),
+            isHost: !!window.__TTWC.isHost,
+            aD_kj: window.aD ? aD.kj : undefined,
+            aD_hD: window.aD ? aD.hD : undefined,
+            aD_kh: window.aD ? aD.kh : undefined
+          });
+        }
         return originalSocketSend.apply(this, arguments);
       };
 
-      window.__TTWC = window.__TTWC || {};
-      window.__TTWC._sendDebugInstalled = true;
-      console.log("[TTWC SEND DEBUG] installed");
+      window.__TTWC._peaceSendDebugInstalled = true;
+      console.log("[TTWC PEACE DEBUG] installed");
       return true;
     } catch (e) {
-      console.log("[TTWC SEND DEBUG] install error", e);
+      console.log("[TTWC PEACE DEBUG] install error", e);
       return false;
     }
   }
 
   const interval = setInterval(function () {
-    if (installSendDebug()) {
+    if (installPeaceSendDebug()) {
       clearInterval(interval);
     }
   }, 500);
