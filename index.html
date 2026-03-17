@@ -608,47 +608,136 @@ window.__TTWC = window.__TTWC || {};
 <script>
 window.__TTWC = window.__TTWC || {};
 window.__TTWC.isHost = false;
+window.__TTWC.peaceEnabled = false;
+window.__TTWC._customLobbySend = null;
 
 (function () {
-  function patchHostTracking() {
+  function patchCustomLobbyHooks() {
     try {
-      if (!window.__fx || !__fx.customLobby || !__fx.customLobby.isCustomMessage) return false;
-      if (window.__TTWC._hostTrackingPatched) return true;
+      if (!window.__fx || !__fx.customLobby) return false;
 
-      const originalIsCustomMessage = __fx.customLobby.isCustomMessage;
+      if (__fx.customLobby.setSendFunction && !window.__TTWC._sendHookPatched) {
+        const originalSetSendFunction = __fx.customLobby.setSendFunction;
 
-      __fx.customLobby.isCustomMessage = function (packet) {
-        const result = originalIsCustomMessage.apply(this, arguments);
+        __fx.customLobby.setSendFunction = function (sendFn) {
+          window.__TTWC._customLobbySend = sendFn;
+          return originalSetSendFunction.apply(this, arguments);
+        };
 
-        try {
-          if (packet && packet[0] === 120 && packet.length > 1) {
-            const bytes = new Uint8Array(packet.buffer, 1);
-            const msg = JSON.parse(new TextDecoder().decode(bytes));
+        window.__TTWC._sendHookPatched = true;
+        console.log("TTWC: custom lobby send hook installed");
+      }
 
-            if (msg && msg.t === "lobby" && msg.d) {
-              window.__TTWC.isHost = !!msg.d.isHost;
-            } else if (msg && msg.t === "host") {
-              window.__TTWC.isHost = true;
+      if (__fx.customLobby.isCustomMessage && !window.__TTWC._hostTrackingPatched) {
+        const originalIsCustomMessage = __fx.customLobby.isCustomMessage;
+
+        __fx.customLobby.isCustomMessage = function (packet) {
+          const result = originalIsCustomMessage.apply(this, arguments);
+
+          try {
+            if (packet && packet[0] === 120 && packet.length > 1) {
+              const bytes = new Uint8Array(packet.buffer, 1);
+              const msg = JSON.parse(new TextDecoder().decode(bytes));
+
+              if (msg && msg.t === "lobby" && msg.d) {
+                window.__TTWC.isHost = !!msg.d.isHost;
+              } else if (msg && msg.t === "host") {
+                window.__TTWC.isHost = true;
+              } else if (msg && msg.t === "peaceToggle") {
+                window.__TTWC.peaceEnabled = !!msg.d;
+                console.log("TTWC peace toggle received:", window.__TTWC.peaceEnabled ? "ON" : "OFF");
+              }
             }
+          } catch (e) {
+            console.log("TTWC host tracking parse error:", e);
           }
-        } catch (e) {
-          console.log("TTWC host tracking parse error:", e);
-        }
 
-        return result;
-      };
+          return result;
+        };
 
-      window.__TTWC._hostTrackingPatched = true;
-      console.log("TTWC: host tracking only installed");
-      return true;
+        window.__TTWC._hostTrackingPatched = true;
+        console.log("TTWC: host tracking + peace toggle receiver installed");
+      }
+
+      if (window.__TTWC._sendHookPatched && window.__TTWC._hostTrackingPatched) {
+        return true;
+      }
+
+      return false;
     } catch (e) {
-      console.log("TTWC host tracking patch error:", e);
+      console.log("TTWC patchCustomLobbyHooks error:", e);
       return false;
     }
   }
 
+  function sendPeaceToggle(enabled) {
+    try {
+      if (!window.__TTWC._customLobbySend) {
+        console.log("TTWC: custom lobby send function not ready");
+        return false;
+      }
+
+      const payload = {
+        t: "peaceToggle",
+        d: !!enabled
+      };
+
+      const encoded = new TextEncoder().encode(JSON.stringify(payload));
+      const buffer = new ArrayBuffer(encoded.length + 1);
+
+      new DataView(buffer).setUint8(0, 120);
+      new Uint8Array(buffer, 1).set(encoded);
+
+      window.__TTWC._customLobbySend(1, buffer);
+      return true;
+    } catch (e) {
+      console.log("TTWC sendPeaceToggle error:", e);
+      return false;
+    }
+  }
+
+  window.__TTWC.togglePeace = function () {
+    try {
+      if (!window.__TTWC.isHost) {
+        console.log("TTWC: only host can toggle peace");
+        return false;
+      }
+
+      window.__TTWC.peaceEnabled = !window.__TTWC.peaceEnabled;
+
+      const sent = sendPeaceToggle(window.__TTWC.peaceEnabled);
+
+      console.log("TTWC peace toggle:", window.__TTWC.peaceEnabled ? "ON" : "OFF", "sent =", sent);
+
+      return true;
+    } catch (e) {
+      console.log("TTWC togglePeace error:", e);
+      return false;
+    }
+  };
+
+  document.addEventListener("keydown", function (e) {
+    try {
+      if (!window.__TTWC || !window.__TTWC.isHost) return;
+      if (e.repeat) return;
+
+      const tag = (document.activeElement && document.activeElement.tagName) ? document.activeElement.tagName.toLowerCase() : "";
+      if (tag === "input" || tag === "textarea") return;
+
+      const key = (e.key || "").toLowerCase();
+
+      if (key === "o") {
+        e.preventDefault();
+        e.stopPropagation();
+        window.__TTWC.togglePeace();
+      }
+    } catch (err) {
+      console.log("TTWC O-key toggle error:", err);
+    }
+  }, true);
+
   const interval = setInterval(function () {
-    if (patchHostTracking()) {
+    if (patchCustomLobbyHooks()) {
       clearInterval(interval);
     }
   }, 500);
