@@ -10058,7 +10058,17 @@ function aTH() {
 		return aTa[aB].aTA && aTZ[aB].eY()
 	}, this.send = function(a22, aC) {
 		0 !== a22 && aTf(a22), aTZ[a22].send(aC)
-	}, __fx.customLobby.setSendFunction(this.send), window.__TTWC = window.__TTWC || {}, window.__TTWC._customLobbySend = this.send.bind(this), console.log("TTWC: game.js captured real custom lobby sender"), this.a2h = function(a22) {
+	}, __fx.customLobby.setSendFunction(this.send), window.__TTWC = window.__TTWC || {}, window.__TTWC._customLobbySend = function(a22, aC) {
+		try {
+			if (1 !== a22) return !1;
+			if (!aTa[1].aTA || !aTZ[1] || !aTZ[1].aTm()) return console.log("TTWC: direct custom lobby socket not open"), !1;
+			aTZ[1].send(aC);
+			return !0;
+		} catch (e) {
+			console.log("TTWC: direct custom lobby send failed", e);
+			return !1;
+		}
+	}, console.log("TTWC: game.js captured direct custom lobby sender"), this.a2h = function(a22) {
 		8 === aa.a27() && (aTa[a22].aTc = !0, b0.mg.aTs = !0)
 	}, this.close = function(a22, aTt) {
 		aTm(a22) && aTZ[a22].close(aTt)
