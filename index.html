@@ -737,31 +737,25 @@ window.__TTWC = window.__TTWC || {};
 
       // Hide/block normal peace availability for non-hosts in custom lobbies
       aw.ht = function(player) {
-  // Allow one forced host peace call while dead, but only for self in custom lobby
-  if (
-    isCustomLobbyActive() &&
-    TTWC.peace.forceHostPeaceOnce &&
-    typeof aD !== "undefined" &&
-    player === aD.eo &&
-    isHost()
-  ) {
-    console.log("[TTWC PEACE] temporary aw.ht host bypass");
-    TTWC.peace.forceHostPeaceOnce = false;
-    return true;
-  }
+        if (
+          isCustomLobbyActive() &&
+          typeof aD !== "undefined" &&
+          player === aD.eo &&
+          !isHost()
+        ) {
+          return false;
+        }
+        return TTWC.peace.originalAwHt.apply(this, arguments);
+      };
 
-  // Block non-hosts from calling peace in custom lobbies
-  if (
-    isCustomLobbyActive() &&
-    typeof aD !== "undefined" &&
-    player === aD.eo &&
-    !isHost()
-  ) {
-    return false;
-  }
-
-  return TTWC.peace.originalAwHt.apply(this, arguments);
-};
+      // Hard-block outbound peace packet for non-hosts in custom lobbies
+      b8.hU.hp = function() {
+        if (isCustomLobbyActive() && !isHost()) {
+          console.log("[TTWC PEACE] blocked peace send from non-host");
+          return;
+        }
+        return TTWC.peace.originalSend.apply(this, arguments);
+      };
 
       TTWC.peace.patched = true;
       console.log("[TTWC PEACE] host-only peace patch active");
@@ -773,50 +767,29 @@ window.__TTWC = window.__TTWC || {};
   }
 
   function sendHostPeaceDirect() {
-  try {
-    if (!isCustomLobbyActive()) return;
-    if (!isHost()) {
-      console.log("[TTWC PEACE] not host, direct peace send denied");
-      return;
+    try {
+      if (!isCustomLobbyActive()) return;
+      if (!isHost()) {
+        console.log("[TTWC PEACE] not host, direct peace send denied");
+        return;
+      }
+      if (!TTWC.peace.originalSend) {
+        console.log("[TTWC PEACE] original sender not ready");
+        return;
+      }
+
+      const now = Date.now();
+      if (now - TTWC.peace.lastSendAt < 700) {
+        return;
+      }
+      TTWC.peace.lastSendAt = now;
+
+      console.log("[TTWC PEACE] host direct peace send");
+      TTWC.peace.originalSend.call(b8.hU);
+    } catch (e) {
+      console.log("[TTWC PEACE] sendHostPeaceDirect error:", e);
     }
-    if (!TTWC.peace.originalSend) {
-      console.log("[TTWC PEACE] original sender not ready");
-      return;
-    }
-
-    const now = Date.now();
-    if (now - TTWC.peace.lastSendAt < 700) {
-      return;
-    }
-    TTWC.peace.lastSendAt = now;
-
-    if (typeof aD === "undefined") {
-      console.log("[TTWC PEACE] aD not ready");
-      return;
-    }
-
-    const normalCheckAllows = !!(
-      TTWC.peace.originalAwHt &&
-      TTWC.peace.originalAwHt.call(aw, aD.eo)
-    );
-
-    console.log("[TTWC PEACE] host direct peace send", {
-      customLobby: true,
-      self: aD.eo,
-      normalCheckAllows
-    });
-
-    // If host is dead, allow exactly one aw.ht(self) pass-through
-    if (!normalCheckAllows) {
-      TTWC.peace.forceHostPeaceOnce = true;
-    }
-
-    // Always use the ORIGINAL send path
-    return TTWC.peace.originalSend.call(b8.hU);
-  } catch (e) {
-    console.log("[TTWC PEACE] sendHostPeaceDirect error:", e);
   }
-}
 
   // Host-only floating button
   const peaceBtn = document.createElement("button");
@@ -914,119 +887,6 @@ window.__TTWC = window.__TTWC || {};
     if (a && b) {
       clearInterval(interval);
     }
-  }, 500);
-})();
-</script>
-
-<script>
-(() => {
-  const TTWC = window.__TTWC = window.__TTWC || {};
-  TTWC.peace = TTWC.peace || {};
-
-  function installPeaceTracing() {
-    try {
-      if (!window.b8 || !window.b9 || !window.aw || !window.__fx) return false;
-      if (!b8.hU || typeof b8.hU.hp !== "function") return false;
-      if (!b8.pG || typeof b8.pG.hp !== "function") return false;
-      if (!b9.qB || typeof b9.qB.qC !== "function") return false;
-      if (!__fx.customLobby || typeof __fx.customLobby.isActive !== "function") return false;
-      if (TTWC.peace.tracingInstalled) return true;
-
-      TTWC.peace._origTrace_hUhp = b8.hU.hp;
-      TTWC.peace._origTrace_pGhp = b8.pG.hp;
-      TTWC.peace._origTrace_qC = b9.qB.qC;
-
-      b8.hU.hp = function() {
-        console.log("[TTWC TRACE] b8.hU.hp called", {
-          customLobby: !!(__fx.customLobby && __fx.customLobby.isActive && __fx.customLobby.isActive()),
-          aD_kj: typeof aD !== "undefined" ? aD.kj : undefined,
-          self: typeof aD !== "undefined" ? aD.eo : undefined
-        });
-        return TTWC.peace._origTrace_hUhp.apply(this, arguments);
-      };
-
-      b8.pG.hp = function(player) {
-  console.log("[TTWC TRACE] b8.pG.hp called", {
-    player,
-    self: typeof aD !== "undefined" ? aD.eo : undefined,
-    forceHostPeaceOnce: !!TTWC.peace.forceHostPeaceOnce
-  });
-
-  return TTWC.peace._origTrace_pGhp.apply(this, arguments);
-};
-      b9.qB.qC = function() {
-        const args = Array.from(arguments);
-        if (args[0] === 5 && args[2] === 513) {
-          console.log("[TTWC TRACE] qC peace action", {
-            args,
-            self: typeof aD !== "undefined" ? aD.eo : undefined
-          });
-        }
-        return TTWC.peace._origTrace_qC.apply(this, arguments);
-      };
-
-      if (__fx.customLobby.send && typeof __fx.customLobby.send === "function") {
-        TTWC.peace._origTrace_customSend = __fx.customLobby.send;
-        __fx.customLobby.send = function() {
-          console.log("[TTWC TRACE] __fx.customLobby.send called", {
-            args: Array.from(arguments)
-          });
-          return TTWC.peace._origTrace_customSend.apply(this, arguments);
-        };
-      }
-
-      TTWC.peace.tracingInstalled = true;
-      console.log("[TTWC TRACE] peace tracing installed");
-      return true;
-    } catch (e) {
-      console.log("[TTWC TRACE] installPeaceTracing error:", e);
-      return false;
-    }
-  }
-
-  const traceInterval = setInterval(() => {
-    if (installPeaceTracing()) clearInterval(traceInterval);
-  }, 500);
-})();
-</script>
-<script>
-(() => {
-  const TTWC = window.__TTWC = window.__TTWC || {};
-  TTWC.peace = TTWC.peace || {};
-
-  function installPacketTracing() {
-    try {
-      if (!window.b0) return false;
-      if (!b0.pL || typeof b0.pL.pY !== "function") return false;
-      if (TTWC.peace.packetTracingInstalled) return true;
-
-      TTWC.peace._origTrace_pY = b0.pL.pY;
-
-      b0.pL.pY = function() {
-        const args = Array.from(arguments);
-        if (args[0] === 513) {
-          console.log("[TTWC TRACE] b0.pL.pY peace packet", {
-            args,
-            self: typeof aD !== "undefined" ? aD.eo : undefined,
-            isDeadCheck: typeof bA !== "undefined" && bA.gQ && typeof bA.gQ.hG === "function"
-              ? !bA.gQ.hG(aD.eo)
-              : undefined
-          });
-        }
-        return TTWC.peace._origTrace_pY.apply(this, arguments);
-      };
-
-      TTWC.peace.packetTracingInstalled = true;
-      console.log("[TTWC TRACE] packet tracing installed");
-      return true;
-    } catch (e) {
-      console.log("[TTWC TRACE] installPacketTracing error:", e);
-      return false;
-    }
-  }
-
-  const packetTraceInterval = setInterval(() => {
-    if (installPacketTracing()) clearInterval(packetTraceInterval);
   }, 500);
 })();
 </script>
