@@ -4296,7 +4296,7 @@ function cq() {
 	}, this.ht = function(player) {
     if (0 !== a8u) return !1;
     if (!bA.gQ.hF(1)) return !1;
-    if (!bA.gQ.hG(player) && !(window.__TTWC && __TTWC.peace && __TTWC.peace.isHost && "undefined" != typeof aD && player === aD.eo)) return !1;
+    if (!bA.gQ.hG(player)) return !1;
     if (10 <= kA[player] && !bA.gQ.a4c(player, 9)) return !1;
     if (!aD.kj) {
         player = bf.kM();
