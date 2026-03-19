@@ -610,18 +610,15 @@ window.__TTWC = window.__TTWC || {};
 
 (() => {
   const TTWC = window.__TTWC;
-  const decoder = new TextDecoder();
 
   TTWC.peace = TTWC.peace || {};
-  TTWC.peace.isHost = false;
-  TTWC.peace.selfLobbyIndex = -1;
-  TTWC.peace.players = [];
-  TTWC.peace.patched = false;
-  TTWC.peace.lastSendAt = 0;
+  TTWC.peace.lockEnabled = true;
 
-  function isMainMenu() {
-    return !!document.querySelector('input[placeholder*="Kingdom"]');
-  }
+  // Change this number to test different times.
+  // 15 = 15 minutes, 5 = 5 minutes, etc.
+  TTWC.peace.unlockAfterMinutes = 2;
+
+  TTWC.peace.patched = false;
 
   function isCustomLobbyActive() {
     try {
@@ -636,256 +633,147 @@ window.__TTWC = window.__TTWC || {};
     }
   }
 
-  function isHost() {
-    return isCustomLobbyActive() && !!TTWC.peace.isHost;
-  }
-
-  function decodeCustomLobbyMessage(raw) {
+  function isInMatch() {
     try {
-      const bytes = raw instanceof Uint8Array ? raw : new Uint8Array(raw);
-      if (!bytes || !bytes.length || bytes[0] !== 120) return null;
-      if (bytes.length === 1) return null;
-      return JSON.parse(decoder.decode(bytes.subarray(1)));
+      return typeof aD !== "undefined" && aD && aD.hD === false;
     } catch (e) {
-      return null;
+      return false;
     }
   }
 
-  function patchCustomLobbyHostTracking() {
+  function isPeaceContextReady() {
     try {
-      if (!window.__fx || !__fx.customLobby) return false;
-      if (TTWC.peace._customLobbyPatched) return true;
-      if (typeof __fx.customLobby.isCustomMessage !== "function") return false;
+      return (
+        typeof aw !== "undefined" &&
+        typeof aw.ht === "function" &&
+        typeof bf !== "undefined" &&
+        typeof bf.kM === "function"
+      );
+    } catch (e) {
+      return false;
+    }
+  }
 
-      const originalIsCustomMessage = __fx.customLobby.isCustomMessage;
+  function getCurrentTick() {
+    try {
+      return bf.kM();
+    } catch (e) {
+      return 0;
+    }
+  }
 
-      __fx.customLobby.isCustomMessage = function(raw) {
-        const msg = decodeCustomLobbyMessage(raw);
+  function getMatchStartTick() {
+    try {
+      // a8w is the peace-system start tick used by the game
+      if (typeof a8w !== "undefined") return a8w;
+    } catch (e) {}
+    return 0;
+  }
 
-        if (msg && msg.t) {
-          const type = msg.t;
-          const data = msg.d;
+  function ticksPerSecond() {
+    // From the game’s own peace timing:
+    // 1607 ticks ~= 90 seconds
+    return 1607 / 90;
+  }
 
-          if (type === "lobby") {
-            TTWC.peace.players = Array.isArray(data.players) ? data.players.slice() : [];
-            TTWC.peace.selfLobbyIndex = typeof data.id === "number" ? data.id : -1;
-            TTWC.peace.isHost = !!data.isHost;
-            console.log("[TTWC PEACE] lobby sync", {
-              isHost: TTWC.peace.isHost,
-              selfLobbyIndex: TTWC.peace.selfLobbyIndex
-            });
-          } else if (type === "host") {
-            TTWC.peace.isHost = true;
-            console.log("[TTWC PEACE] current player became host");
-          } else if (type === "setHost") {
-            const hostIndex = data;
-            if (Array.isArray(TTWC.peace.players) && TTWC.peace.players[hostIndex]) {
-              TTWC.peace.players.forEach(p => { if (p) p.isHost = false; });
-              TTWC.peace.players[hostIndex].isHost = true;
-            }
-            if (hostIndex === TTWC.peace.selfLobbyIndex) {
-              TTWC.peace.isHost = true;
-              console.log("[TTWC PEACE] host transferred to current player");
-            } else if (typeof hostIndex === "number") {
-              TTWC.peace.isHost = false;
-            }
-          } else if (type === "removePlayer") {
-            const removedIndex = data;
-            if (typeof removedIndex === "number") {
-              if (removedIndex < TTWC.peace.selfLobbyIndex) {
-                TTWC.peace.selfLobbyIndex--;
-              } else if (removedIndex === TTWC.peace.selfLobbyIndex) {
-                TTWC.peace.selfLobbyIndex = -1;
-                TTWC.peace.isHost = false;
-              }
-              if (Array.isArray(TTWC.peace.players)) {
-                TTWC.peace.players.splice(removedIndex, 1);
-              }
-            }
-          } else if (type === "addPlayer") {
-            if (Array.isArray(TTWC.peace.players)) {
-              TTWC.peace.players.push({
-                name: data?.name || "",
-                isHost: false,
-                inGame: false
-              });
-            }
+  function unlockAfterTicks() {
+    return Math.round(TTWC.peace.unlockAfterMinutes * 60 * ticksPerSecond());
+  }
+
+  function elapsedTicks() {
+    const start = getMatchStartTick();
+    const now = getCurrentTick();
+    return Math.max(0, now - start);
+  }
+
+  function remainingTicks() {
+    return Math.max(0, unlockAfterTicks() - elapsedTicks());
+  }
+
+  function isUnlocked() {
+    if (!isInMatch()) return false;
+    return elapsedTicks() >= unlockAfterTicks();
+  }
+
+  function formatRemaining() {
+    const secs = Math.ceil(remainingTicks() / ticksPerSecond());
+    const minutes = Math.floor(secs / 60);
+    const seconds = secs % 60;
+    return String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+  }
+
+  function patchPeaceLock() {
+    try {
+      if (!isPeaceContextReady()) return false;
+      if (TTWC.peace.patched) return true;
+
+      TTWC.peace.originalAwHt = aw.ht;
+
+      aw.ht = function(player) {
+        if (TTWC.peace.lockEnabled && isCustomLobbyActive() && isInMatch()) {
+          if (!isUnlocked()) {
+            return false;
           }
         }
 
-        return originalIsCustomMessage.apply(this, arguments);
-      };
-
-      TTWC.peace._customLobbyPatched = true;
-      console.log("[TTWC PEACE] custom lobby host tracking patched");
-      return true;
-    } catch (e) {
-      console.log("[TTWC PEACE] patchCustomLobbyHostTracking error:", e);
-      return false;
-    }
-  }
-
-  function patchPeaceFunctions() {
-    try {
-      if (!window.b8 || !window.aw || !window.aD) return false;
-      if (!b8.hU || typeof b8.hU.hp !== "function") return false;
-      if (typeof aw.ht !== "function") return false;
-      if (TTWC.peace.patched) return true;
-
-      TTWC.peace.originalSend = b8.hU.hp;
-      TTWC.peace.originalAwHt = aw.ht;
-
-      // Hide/block normal peace availability for non-hosts in custom lobbies
-      aw.ht = function(player) {
-        if (
-          isCustomLobbyActive() &&
-          typeof aD !== "undefined" &&
-          player === aD.eo &&
-          !isHost()
-        ) {
-          return false;
-        }
         return TTWC.peace.originalAwHt.apply(this, arguments);
       };
 
-      // Hard-block outbound peace packet for non-hosts in custom lobbies
-      b8.hU.hp = function() {
-        if (isCustomLobbyActive() && !isHost()) {
-          console.log("[TTWC PEACE] blocked peace send from non-host");
-          return;
-        }
-        return TTWC.peace.originalSend.apply(this, arguments);
-      };
-
       TTWC.peace.patched = true;
-      console.log("[TTWC PEACE] host-only peace patch active");
+      console.log("[TTWC PEACE LOCK] synced timer lock active");
       return true;
     } catch (e) {
-      console.log("[TTWC PEACE] patchPeaceFunctions error:", e);
+      console.log("[TTWC PEACE LOCK] patch error:", e);
       return false;
     }
   }
 
-  function sendHostPeaceDirect() {
-    try {
-      if (!isCustomLobbyActive()) return;
-      if (!isHost()) {
-        console.log("[TTWC PEACE] not host, direct peace send denied");
-        return;
-      }
-      if (!TTWC.peace.originalSend) {
-        console.log("[TTWC PEACE] original sender not ready");
-        return;
-      }
-
-      const now = Date.now();
-      if (now - TTWC.peace.lastSendAt < 700) {
-        return;
-      }
-      TTWC.peace.lastSendAt = now;
-
-      console.log("[TTWC PEACE] host direct peace send");
-      TTWC.peace.originalSend.call(b8.hU);
-    } catch (e) {
-      console.log("[TTWC PEACE] sendHostPeaceDirect error:", e);
-    }
-  }
-
-  // Host-only floating button
-  const peaceBtn = document.createElement("button");
-  peaceBtn.id = "ttwc-host-peace-btn";
-  peaceBtn.textContent = "Host Peace";
-  Object.assign(peaceBtn.style, {
+  const badge = document.createElement("div");
+  badge.id = "ttwc-peace-lock-badge";
+  Object.assign(badge.style, {
     position: "fixed",
     top: "14px",
     right: "14px",
     zIndex: "99999",
-    padding: "10px 14px",
-    fontSize: "14px",
+    padding: "8px 12px",
+    fontSize: "13px",
     fontWeight: "700",
     borderRadius: "10px",
     border: "1px solid rgba(255,255,255,0.25)",
     background: "rgba(20,20,20,0.85)",
     color: "#fff",
-    cursor: "pointer",
+    pointerEvents: "none",
     display: "none"
   });
+  document.body.appendChild(badge);
 
-  peaceBtn.addEventListener("click", () => {
-    sendHostPeaceDirect();
-  });
-
-  document.body.appendChild(peaceBtn);
-
-  function updatePeaceButton() {
+  function updateBadge() {
     try {
-      const show =
-        isCustomLobbyActive() &&
-        !isMainMenu() &&
-        isHost() &&
-        window.b8 &&
-        b8.hU &&
-        typeof b8.hU.hp === "function";
+      const active = isCustomLobbyActive() && isInMatch();
 
-      peaceBtn.style.display = show ? "block" : "none";
+      if (!active) {
+        badge.style.display = "none";
+        requestAnimationFrame(updateBadge);
+        return;
+      }
 
-      if (show) {
-        let dead = false;
-        try {
-          dead = !!(
-            typeof aD !== "undefined" &&
-            typeof aw !== "undefined" &&
-            TTWC.peace.originalAwHt &&
-            !TTWC.peace.originalAwHt.call(aw, aD.eo)
-          );
-        } catch (e) {}
+      badge.style.display = "block";
 
-        peaceBtn.textContent = dead ? "Host Peace (dead)" : "Host Peace";
+      if (!isUnlocked()) {
+        badge.textContent = "Peace locked: " + formatRemaining();
+      } else {
+        badge.textContent = "Peace enabled";
       }
     } catch (e) {}
 
-    requestAnimationFrame(updatePeaceButton);
+    requestAnimationFrame(updateBadge);
   }
-  requestAnimationFrame(updatePeaceButton);
 
-  // Dead-host keyboard fallback:
-  // If host is dead, pressing P will still send the real peace packet.
-  document.addEventListener("keydown", function(e) {
-    try {
-      if (e.repeat) return;
-      if (!isCustomLobbyActive()) return;
-      if (!isHost()) return;
+  requestAnimationFrame(updateBadge);
 
-      const tag = e.target && e.target.tagName ? e.target.tagName.toUpperCase() : "";
-      if (tag === "INPUT" || tag === "TEXTAREA" || e.target?.isContentEditable) return;
-
-      if (e.key === "p" || e.key === "P") {
-        let normalGameAllowsIt = false;
-        try {
-          normalGameAllowsIt = !!(
-            TTWC.peace.originalAwHt &&
-            typeof aD !== "undefined" &&
-            TTWC.peace.originalAwHt.call(aw, aD.eo)
-          );
-        } catch (err) {}
-
-        // Only force-send if the normal game would block it (dead host case)
-        if (!normalGameAllowsIt) {
-          e.preventDefault();
-          e.stopPropagation();
-          sendHostPeaceDirect();
-        }
-      }
-    } catch (err) {
-      console.log("[TTWC PEACE] keydown handler error:", err);
-    }
-  }, true);
-
-  const interval = setInterval(() => {
-    const a = patchCustomLobbyHostTracking();
-    const b = patchPeaceFunctions();
-    if (a && b) {
-      clearInterval(interval);
+  const patchInterval = setInterval(() => {
+    if (patchPeaceLock()) {
+      clearInterval(patchInterval);
     }
   }, 500);
 })();
