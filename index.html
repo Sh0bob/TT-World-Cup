@@ -989,6 +989,47 @@ window.__TTWC = window.__TTWC || {};
   }, 500);
 })();
 </script>
+<script>
+(() => {
+  const TTWC = window.__TTWC = window.__TTWC || {};
+  TTWC.peace = TTWC.peace || {};
+
+  function installPacketTracing() {
+    try {
+      if (!window.b0) return false;
+      if (!b0.pL || typeof b0.pL.pY !== "function") return false;
+      if (TTWC.peace.packetTracingInstalled) return true;
+
+      TTWC.peace._origTrace_pY = b0.pL.pY;
+
+      b0.pL.pY = function() {
+        const args = Array.from(arguments);
+        if (args[0] === 513) {
+          console.log("[TTWC TRACE] b0.pL.pY peace packet", {
+            args,
+            self: typeof aD !== "undefined" ? aD.eo : undefined,
+            isDeadCheck: typeof bA !== "undefined" && bA.gQ && typeof bA.gQ.hG === "function"
+              ? !bA.gQ.hG(aD.eo)
+              : undefined
+          });
+        }
+        return TTWC.peace._origTrace_pY.apply(this, arguments);
+      };
+
+      TTWC.peace.packetTracingInstalled = true;
+      console.log("[TTWC TRACE] packet tracing installed");
+      return true;
+    } catch (e) {
+      console.log("[TTWC TRACE] installPacketTracing error:", e);
+      return false;
+    }
+  }
+
+  const packetTraceInterval = setInterval(() => {
+    if (installPacketTracing()) clearInterval(packetTraceInterval);
+  }, 500);
+})();
+</script>
 </body>
 
 </html>
