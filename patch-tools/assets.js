@@ -10,7 +10,6 @@ function pngToBase64(filePath) {
 module.exports = {
   ttwcLogo: pngToBase64("assets/ttwc-logo.png"),
 
-  // for now, use the same file for the small logo too
-  // later we can swap this to a dedicated small PNG if needed
-  ttwcSmallLogo: pngToBase64("assets/ttwc-logo.png"),
+  transparentPixel:
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=",
 };
