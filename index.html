@@ -128,44 +128,7 @@
       <button onclick="document.getElementById('updateNotification').style.display = 'none'">Dismiss</button>
     </div>
   </span>
-  <script>
-(() => {
-  const LOGO_SRC = "./assets/ttwc-logo.png";
-
-  // Create logo element once
-  const logo = document.createElement("img");
-  logo.src = LOGO_SRC;
-  logo.alt = "TTWC Logo";
-  logo.id = "ttwc-logo";
-
-  // Style (adjust size/position later if you want)
-  Object.assign(logo.style, {
-    position: "absolute",
-    left: "50%",
-    top: "165px",            // move up/down
-    transform: "translateX(-50%)",
-    width: "220px",          // make bigger/smaller
-    height: "auto",
-    zIndex: "9999",
-    pointerEvents: "none",
-    display: "none"          // only show on main menu
-  });
-
-  document.body.appendChild(logo);
-
-  function isMainMenu() {
-    // Best-effort: when the name input ("Your Kingdom's Name") exists, we're in the main menu
-    const nameInput = document.querySelector('input[placeholder*="Kingdom"]');
-    return !!nameInput;
-  }
-
-  function tick() {
-    logo.style.display = isMainMenu() ? "block" : "none";
-    requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-})();
-</script>
+  
 <script>
 (() => {
   function findBtn(label) {
