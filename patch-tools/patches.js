@@ -35,7 +35,13 @@ vV.setTransform(textLength, 0, 0, textLength, aQZ.fB - .035 * aQZ.i, aQZ.fD - 50
   `vV.drawImage(text, 0, 0)`,
   "remove main menu logo shadow processing"
 );
-  
+
+  source = replaceOne(
+  source,
+  /this\.aHH\s*=\s*function\(\)\s*\{[\s\S]*?\}/,
+  `this.aHH = function() {}`,
+  "remove background FX title"
+);
   return source;
 }
 
