@@ -29,6 +29,13 @@ vV.setTransform(textLength, 0, 0, textLength, aQZ.fB - .035 * aQZ.i, aQZ.fD - 37
   "resize and move main menu logo"
 );
 
+  source = replaceOne(
+  source,
+  /aRR\s*=\s*aRR\s*\|\|\s*bA\.a3B\.a4i\(text,\s*bA\.a3B\.a4o,\s*\[0,\s*0,\s*0\]\);\s*for\s*\(var fB = -1;\s*fB <= 1;\s*fB \+= 2\)\s*for\s*\(var fD = -1;\s*fD <= 1;\s*fD \+= 2\)\s*vV\.drawImage\(aRR,\s*fB,\s*fD\);\s*vV\.drawImage\(text,\s*0,\s*0\)/,
+  `vV.drawImage(text, 0, 0)`,
+  "remove main menu logo shadow processing"
+);
+  
   return source;
 }
 
