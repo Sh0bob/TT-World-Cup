@@ -17,7 +17,7 @@ function applyPatches(source, assets) {
   source = replaceOne(
   source,
   /aHg\(22,\s*"logo",\s*8,\s*"[^"]+"\s*\)/,
-  `aHg(22, "logo", 8, "${assets.transparentPixel}")`,
+  `aHg(22, "logo", 6, "${assets.transparentPixel}")`,
   "remove small logo"
   );
 
