@@ -120,30 +120,39 @@
       .find(b => (b.innerText || "").trim().includes(label));
   }
 
+  function captureBox(btn) {
+    const rect = btn.getBoundingClientRect();
+    const style = getComputedStyle(btn);
+
+    return {
+      left: rect.left + "px",
+      top: rect.top + "px",
+      width: rect.width + "px",
+      height: rect.height + "px",
+      font: style.font,
+      border: style.border,
+      bg: style.backgroundColor
+    };
+  }
+
+  function applyBox(to, box) {
+    if (!to || !box) return;
+
+    to.style.setProperty("position", "absolute", "important");
+    to.style.setProperty("left", box.left, "important");
+    to.style.setProperty("top", box.top, "important");
+    to.style.setProperty("width", box.width, "important");
+    to.style.setProperty("height", box.height, "important");
+    to.style.setProperty("font", box.font, "important");
+    to.style.setProperty("border", box.border, "important");
+    to.style.setProperty("background-color", box.bg, "important");
+  }
+
   function isMenu() {
     return !!document.querySelector('input[placeholder*="Kingdom"]');
   }
 
-  function px(n) {
-    return `${Math.round(n)}px`;
-  }
-
-  function placeLike(target, reference, topOverride = null) {
-    if (!target || !reference) return;
-
-    const rect = reference.getBoundingClientRect();
-    const style = getComputedStyle(reference);
-
-    target.style.setProperty("position", "absolute", "important");
-    target.style.setProperty("left", px(rect.left), "important");
-    target.style.setProperty("top", px(topOverride ?? rect.top), "important");
-    target.style.setProperty("width", px(rect.width), "important");
-    target.style.setProperty("height", px(rect.height), "important");
-    target.style.setProperty("font", style.font, "important");
-    target.style.setProperty("border", style.border, "important");
-    target.style.setProperty("background-color", style.backgroundColor, "important");
-    target.style.setProperty("z-index", "9999", "important");
-  }
+  const targets = { lobby: null, settings: null };
 
   function tick() {
     if (isMenu()) {
@@ -151,22 +160,15 @@
       const scenario = findBtn("Custom Scenario");
       const lobby = findBtn("Join/Create custom lobby");
       const settings = findBtn("FX Client settings");
-      const account = findBtn("My Account");
-      const menu = findBtn("Game Menu");
+
+      if (!targets.lobby && multiplayer) targets.lobby = captureBox(multiplayer);
+      if (!targets.settings && scenario) targets.settings = captureBox(scenario);
 
       if (multiplayer) multiplayer.remove();
       if (scenario) scenario.remove();
 
-      if (lobby && settings && account && menu) {
-        const accountRect = account.getBoundingClientRect();
-        const menuRect = menu.getBoundingClientRect();
-        const gap = Math.max(10, Math.round(accountRect.height * 0.12));
-
-        const topRowY = accountRect.top - accountRect.height - gap;
-
-        placeLike(lobby, account, topRowY);
-        placeLike(settings, menu, topRowY);
-      }
+      applyBox(lobby, targets.lobby);
+      applyBox(settings, targets.settings);
     }
 
     requestAnimationFrame(tick);
