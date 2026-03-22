@@ -120,31 +120,24 @@
       .find(b => (b.innerText || "").trim().includes(label));
   }
 
-  // Stores target positions once we capture them
-  const targets = {
-    lobby: null,    // Join/Create should go here (Multiplayer slot)
-    settings: null  // FX settings should go here (Custom Scenario slot)
-  };
-
   function captureBox(btn) {
     const rect = btn.getBoundingClientRect();
+    const style = getComputedStyle(btn);
 
-    // Prefer inline style values if present (common in Territorial UI)
-    const left = btn.style.left || (rect.left + "px");
-    const top = btn.style.top || (rect.top + "px");
-    const width = btn.style.width || (rect.width + "px");
-    const height = btn.style.height || (rect.height + "px");
-    const font = btn.style.font || getComputedStyle(btn).font;
-    const border = btn.style.border || getComputedStyle(btn).border;
-    const bg = btn.style.backgroundColor || getComputedStyle(btn).backgroundColor;
-
-    return { left, top, width, height, font, border, bg };
+    return {
+      left: rect.left + "px",
+      top: rect.top + "px",
+      width: rect.width + "px",
+      height: rect.height + "px",
+      font: style.font,
+      border: style.border,
+      bg: style.backgroundColor
+    };
   }
 
   function applyBox(to, box) {
     if (!to || !box) return;
 
-    // Use !important so we always win
     to.style.setProperty("position", "absolute", "important");
     to.style.setProperty("left", box.left, "important");
     to.style.setProperty("top", box.top, "important");
@@ -156,7 +149,6 @@
   }
 
   function isMenu() {
-    // Same best-effort check as logo: menu exists if the kingdom-name input exists
     return !!document.querySelector('input[placeholder*="Kingdom"]');
   }
 
@@ -167,17 +159,15 @@
       const lobby = findBtn("Join/Create custom lobby");
       const settings = findBtn("FX Client settings");
 
-      // Capture big button boxes once
-      if (!targets.lobby && multiplayer) targets.lobby = captureBox(multiplayer);
-      if (!targets.settings && scenario) targets.settings = captureBox(scenario);
+      // Re-capture every frame so fullscreen / resize stays correct
+      const lobbyTarget = multiplayer ? captureBox(multiplayer) : null;
+      const settingsTarget = scenario ? captureBox(scenario) : null;
 
-      // Remove unwanted buttons whenever they exist
       if (multiplayer) multiplayer.remove();
       if (scenario) scenario.remove();
 
-      // Move & lock the two remaining buttons into the captured slots
-      applyBox(lobby, targets.lobby);
-      applyBox(settings, targets.settings);
+      applyBox(lobby, lobbyTarget);
+      applyBox(settings, settingsTarget);
     }
 
     requestAnimationFrame(tick);
@@ -186,7 +176,7 @@
   console.log("[TTWC] menu button swap active");
   requestAnimationFrame(tick);
 })();
-  </script>
+</script>
   <script src="./FX Client_files/variables.js"></script>
   <script src="./FX Client_files/fx.bundle.js"></script>
   <script src="./FX Client_files/game.patched.js?v=2"></script>
