@@ -35,6 +35,7 @@ jobs:
         run: |
           mkdir site
           cp index.html site/index.html
+          cp manifest.json site/manifest.json || true
           cp -r "FX Client_files" site/
           cp -r assets site/ || true
           touch site/.nojekyll
