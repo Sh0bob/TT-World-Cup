@@ -42,6 +42,15 @@ vV.setTransform(textLength, 0, 0, textLength, aQZ.fB - .035 * aQZ.i, aQZ.fD - 53
   `this.aHH = function() {}`,
   "remove background FX title"
 );
+
+  source = replaceOne(
+  source,
+  /this\.a2p\s*=\s*function\(\)\s*\{\s*-1\s*!==\s*aAA\s*&&\s*\(this\.aAH\s*=\s*!1\)\s*\}\s*,\s*this\.vU\s*=\s*function\(\)\s*\{[\s\S]*?\n\t\}/,
+  `this.a2p = function() {
+		-1 !== aAA && (this.aAH = !1)
+	}, this.vU = function() {}`,
+  "remove seconds played chart"
+);
   return source;
 }
 
