@@ -12,4 +12,6 @@ module.exports = {
 
   transparentPixel:
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=",
+
+  crownIcon: pngToBase64("assets/ttwc-crown.png"),
 };
