@@ -101,20 +101,22 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /bS\.xR \? \(aHI = h\.i \/ bS\.fF,[\s\S]*?vV\.fillStyle = bB\.nt\)/,
-  `
-  (function() {
-    if (!window.__ttwcBg) {
-      window.__ttwcBg = new Image();
-      window.__ttwcBg.src = "assets/background.png";
-    }
+  /this\.z0\s*=\s*function\(\)\s*\{[\s\S]*?vV\.fillRect\(0,\s*0,\s*h\.i,\s*h\.j\)\s*\}/,
+  `this.z0 = function() {
+		if (!window.__ttwcBg) {
+			window.__ttwcBg = new Image();
+			window.__ttwcBg.src = "assets/background.png";
+		}
 
-    if (window.__ttwcBg.complete) {
-      vV.drawImage(window.__ttwcBg, 0, 0, h.i, h.j);
-    }
-  })()
-  `,
-  "replace menu background with custom image"
+		if (window.__ttwcBg.complete) {
+			vV.setTransform(1, 0, 0, 1, 0, 0);
+			vV.drawImage(window.__ttwcBg, 0, 0, h.i, h.j);
+		} else {
+			vV.fillStyle = "#000";
+			vV.fillRect(0, 0, h.i, h.j);
+		}
+	}`,
+  "replace main menu background with custom image"
 );
   return source;
 }
