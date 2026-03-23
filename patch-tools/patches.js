@@ -94,23 +94,9 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /this\.aDY\s*=\s*"[^"]*"/,
-  `this.aDY = ""`,
-  "disable Google Play side link"
-);
-
-source = replaceOne(
-  source,
-  /this\.a20\s*=\s*"[^"]*"/,
-  `this.a20 = ""`,
-  "disable App Store side link"
-);
-
-source = replaceOne(
-  source,
-  /this\.aDZ\s*=\s*"[^"]*"/,
-  `this.aDZ = ""`,
-  "disable Discord side link"
+  /return t\.u\(9,\s*t\.t8,\s*new aDb\(L\(126\),\s*bA\.qr\.a4B\(aBp\[aB\]\)\)\),\s*!0;/,
+  `return !1;`,
+  "disable side button leave-site popup"
 );
   return source;
 }
