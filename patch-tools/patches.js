@@ -98,6 +98,24 @@ source = replaceOne(
   `return !1;`,
   "disable side button leave-site popup"
 );
+
+source = replaceOne(
+  source,
+  /bS\.xR \? \(aHI = h\.i \/ bS\.fF,[\s\S]*?vV\.fillStyle = bB\.nt\)/,
+  `
+  (function() {
+    if (!window.__ttwcBg) {
+      window.__ttwcBg = new Image();
+      window.__ttwcBg.src = "${assets.background}";
+    }
+
+    if (window.__ttwcBg.complete) {
+      vV.drawImage(window.__ttwcBg, 0, 0, h.i, h.j);
+    }
+  })()
+  `,
+  "replace menu background with custom image"
+);
   return source;
 }
 
