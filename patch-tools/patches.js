@@ -87,8 +87,8 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /bZ\.vU\(\)/,
-  ``,
+  /,\s*bZ\.vU\(\),\s*t\.vU\(\)/,
+  `, t.vU()`,
   "remove side menu buttons"
 );
   return source;
