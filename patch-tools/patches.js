@@ -84,6 +84,13 @@ source = replaceOne(
 		bA.qr.tY(aRS[6].button, -9999, -9999, 1, 1);`,
   "hide duplicate custom buttons"
 );
+
+source = replaceOne(
+  source,
+  /bZ\.vU\(\)/,
+  ``,
+  "remove side menu buttons"
+);
   return source;
 }
 
