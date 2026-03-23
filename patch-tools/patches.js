@@ -94,9 +94,9 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /function dh\(\)\s*\{/,
-  `function dh() { this.hH = function(iL, iM) { return !1; };`,
-  "disable side button hitboxes safely"
+  /this\.hq\s*=\s*function\(\)\s*\{[\s\S]*?return [^}]+\}/,
+  `this.hq = function() { return !1 }`,
+  "disable side button widget"
 );
   return source;
 }
