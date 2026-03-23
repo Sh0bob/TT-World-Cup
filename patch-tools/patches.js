@@ -91,27 +91,6 @@ source = replaceOne(
   `this.vU = function() {}`,
   "remove side buttons"
 );
-
-source = replaceOne(
-  source,
-  /this\.show\s*=\s*function\(\)\s*\{\s*this\.sK\(t\.y\.tU\),\s*document\.body\.appendChild\(tI\)\s*\}/,
-  `this.show = function() {}`,
-  "remove leaderboard widget show"
-);
-
-source = replaceOne(
-  source,
-  /this\.s8\s*=\s*function\(\)\s*\{\s*t\.removeChild\(document\.body,\s*tI\)\s*\}/,
-  `this.s8 = function() {}`,
-  "remove leaderboard widget hide"
-);
-
-source = replaceOne(
-  source,
-  /this\.resize\s*=\s*function\(\)\s*\{[\s\S]*?tM\.style\.left = bA\.qr\.r0\(0\), tM\.style\.top = "7%", tK\.tb && \(tK\.scrollLeft = tK\.tb\)\s*\}/,
-  `this.resize = function() {}`,
-  "remove leaderboard widget resize"
-);
   return source;
 }
 
