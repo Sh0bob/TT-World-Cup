@@ -118,6 +118,13 @@ source = replaceOne(
 	}`,
   "replace main menu background with custom image"
 );
+
+source = replaceOne(
+  source,
+  /aHg\(4,\s*"crown",\s*4,\s*"[^"]+"\s*\)/,
+  `aHg(4, "crown", 4, "${assets.crownIcon}")`,
+  "replace crown icon"
+);
   return source;
 }
 
