@@ -58,6 +58,32 @@ vV.setTransform(textLength, 0, 0, textLength, aQZ.fB - .035 * aQZ.i, aQZ.fD - 53
   `this.vU = function(fD) {}`,
   "remove next contest bar"
 );
+
+source = replaceOne(
+  source,
+  /new w\("⚔️<br>" \+ L\(324\), function\(\) \{\s*__fx\.isCustomLobbyVersion \? alert\("This version is for use with custom lobbies only\. For normal multiplayer, use the version at https:\/\/fxclient\.github\.io\/FXclient\/"\) : aRU\(0\)\s*\}, __fx\.isCustomLobbyVersion \? "rgba\(50, 50, 50, 0\.6\)" : bB\.oR\)/,
+  `new w("Join/Create custom lobby", function() {
+			__fx.customLobby.showJoinPrompt();
+		}, "rgba(20, 9, 77, 0.5)")`,
+  "replace multiplayer button with custom lobby"
+);
+
+source = replaceOne(
+  source,
+  /new w\("🗡️<br>" \+ L\(307\), function\(\) \{\s*aRU\(1\)\s*\}, bB\.ok\)/,
+  `new w("FX Client settings", function() {
+			__fx.WindowManager.openWindow("settings");
+		}, "rgba(0, 0, 20, 0.5)")`,
+  "replace custom scenario button with FX settings"
+);
+
+source = replaceOne(
+  source,
+  /bA\.qr\.tY\(aRS\[5\]\.button,\s*fB,\s*u6 \+ a9y \* 2 \+ gap \* 2,\s*i \* 2 \+ gap,\s*a9y \/ 3\);\s*bA\.qr\.tY\(aRS\[6\]\.button,\s*fB,\s*u6 \+ a9y \* 2\.33 \+ gap \* 3,\s*i \* 2 \+ gap,\s*a9y \/ 3\);/,
+  `bA.qr.tY(aRS[5].button, -9999, -9999, 1, 1);
+		bA.qr.tY(aRS[6].button, -9999, -9999, 1, 1);`,
+  "hide duplicate custom buttons"
+);
   return source;
 }
 
