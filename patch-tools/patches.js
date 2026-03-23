@@ -94,9 +94,23 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /this\.hq\s*=\s*function\(\)\s*\{[\s\S]*?return [^}]+\}/,
-  `this.hq = function() { return !1 }`,
-  "disable side button widget"
+  /this\.aDY\s*=\s*"[^"]*"/,
+  `this.aDY = ""`,
+  "disable Google Play side link"
+);
+
+source = replaceOne(
+  source,
+  /this\.a20\s*=\s*"[^"]*"/,
+  `this.a20 = ""`,
+  "disable App Store side link"
+);
+
+source = replaceOne(
+  source,
+  /this\.aDZ\s*=\s*"[^"]*"/,
+  `this.aDZ = ""`,
+  "disable Discord side link"
 );
   return source;
 }
