@@ -94,11 +94,9 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /this\.hH\s*=\s*function\(iL,\s*iM\)\s*\{[\s\S]*?return !1\s*\}/,
-  `this.hH = function(iL, iM) {
-		return !1
-	}`,
-  "disable side button hitboxes"
+  /function dh\(\)\s*\{/,
+  `function dh() { this.hH = function(iL, iM) { return !1; };`,
+  "disable side button hitboxes safely"
 );
   return source;
 }
