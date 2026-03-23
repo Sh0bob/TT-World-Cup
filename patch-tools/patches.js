@@ -106,7 +106,7 @@ source = replaceOne(
   (function() {
     if (!window.__ttwcBg) {
       window.__ttwcBg = new Image();
-      window.__ttwcBg.src = "${assets.background}";
+      window.__ttwcBg.src = "assets/background.png";
     }
 
     if (window.__ttwcBg.complete) {
