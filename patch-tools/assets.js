@@ -7,6 +7,7 @@ function pngToBase64(filePath) {
   return data.toString("base64");
 }
 
+
 module.exports = {
   ttwcLogo: pngToBase64("assets/ttwc-logo.png"),
 
