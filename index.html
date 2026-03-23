@@ -1069,6 +1069,73 @@ window.__TTWC = window.__TTWC || {};
   }, 500);
 })();
 </script>
+
+<style>
+button {
+  border-radius: 12px !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  backdrop-filter: blur(6px);
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: all 0.2s ease;
+}
+
+/* Hover effect */
+button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 18px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+  button:nth-child(1) {
+  box-shadow: 0 0 20px rgba(0,255,100,0.4);
+}
+</style>
+
+<script>
+(() => {
+  function findBtn(text) {
+    return Array.from(document.querySelectorAll("button"))
+      .find(b => (b.innerText || "").includes(text));
+  }
+
+  function styleButtons() {
+    const join = findBtn("Join/Create");
+    const fx = findBtn("FX Client");
+    const acc = findBtn("My Account");
+    const menu = findBtn("Game Menu");
+
+    if (join) {
+      join.style.background = "linear-gradient(135deg, #00c853, #00e676)";
+      join.style.color = "#fff";
+    }
+
+    if (fx) {
+      fx.style.background = "linear-gradient(135deg, #d4a017, #fbc02d)";
+      fx.style.color = "#000";
+    }
+
+    if (acc) {
+      acc.style.background = "linear-gradient(135deg, #6d4c41, #8d6e63)";
+      acc.style.color = "#fff";
+    }
+
+    if (menu) {
+      menu.style.background = "linear-gradient(135deg, #455a64, #607d8b)";
+      menu.style.color = "#fff";
+    }
+  }
+
+  function tick() {
+    styleButtons();
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+})();
+</script>
 </body>
 
 </html>
