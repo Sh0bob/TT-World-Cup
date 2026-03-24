@@ -103,47 +103,38 @@ source = replaceOne(
   source,
   /this\.z0\s*=\s*function\(\)\s*\{[\s\S]*?\}/,
   `this.z0 = function() {
-		if (!window.__ttwcVideo) {
-			const vid = document.createElement("video");
-			vid.src = "assets/tt-background.mp4";
-			vid.loop = true;
-			vid.muted = true;
-			vid.autoplay = true;
-			vid.playsInline = true;
-			vid.preload = "auto";
-			vid.style.display = "none";
-			document.body.appendChild(vid);
+    // 1. Setup the video element once
+    if (!window.__ttwcVideo) {
+      const vid = document.createElement("video");
+      vid.id = "ttwc-bg-video";
+      vid.src = "assets/tt-background.mp4";
+      vid.loop = true;
+      vid.muted = true;
+      vid.autoplay = true;
+      vid.playsInline = true;
+      vid.style.position = "fixed";
+      vid.style.top = "0";
+      vid.style.left = "0";
+      vid.style.width = "100vw";
+      vid.style.height = "100vh";
+      vid.style.objectFit = "cover";
+      vid.style.zIndex = "-1"; // Place behind the game canvas
+      vid.style.pointerEvents = "none";
+      document.body.appendChild(vid);
+      window.__ttwcVideo = vid;
 
-			// Force play
-			const playPromise = vid.play();
-			if (playPromise !== undefined) {
-				playPromise.catch(() => {});
-			}
+      // 2. Make the game canvas transparent so we can see the video
+      const gameCanvas = document.getElementById("canvasA");
+      if (gameCanvas) {
+        gameCanvas.style.background = "transparent";
+      }
+    }
 
-			window.__ttwcVideo = vid;
-		}
-
-		const v = window.__ttwcVideo;
-
-		// Force continuous playback
-		if (v.paused) {
-			v.play().catch(() => {});
-		}
-
-		// Smooth draw
-		if (v.readyState >= 2) {
-			vV.setTransform(1, 0, 0, 1, 0, 0);
-
-			// Slight smoothing tweak
-			vV.imageSmoothingEnabled = true;
-
-			vV.drawImage(v, 0, 0, h.i, h.j);
-		} else {
-			vV.fillStyle = "#000";
-			vV.fillRect(0, 0, h.i, h.j);
-		}
-	}`,
-  "smooth video background"
+    // 3. Instead of drawImage, we just clear the canvas frame 
+    // to keep it transparent and let the CSS video show through.
+    vV.clearRect(0, 0, h.i, h.j);
+  }`,
+  "hardware accelerated video background"
 );
 
 source = replaceOne(
