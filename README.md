@@ -7,3 +7,5 @@ The differences are as follows:
 3. Anonymous names in-game - Player's names are anonymised until they become spectators, or until they win the match.
 4. Remove emoji toggle - in the create-lobby tab, hosts can disable emojis to reduce chances of collaboration between players in matches.
 5. Host-initiated peace - Only the host can call a vote for peace. 
+
+Fork/clone at your own risk. I do not own the rights to Territorial.io, and the Creator (David Tschacher) does not tolerate scripts that provide an unfair competitive advantage. Keep this in mind when forking/cloning this repo.
