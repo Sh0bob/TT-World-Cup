@@ -101,86 +101,12 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /this\.z0\s*=\s*function\(\)\s*\{[\s\S]*?\}/,
-  `this.z0 = function() {
-    if (!window.__ttwcVideo) {
-      const vid = document.createElement("video");
-      vid.id = "ttwc-bg-video";
-      vid.src = "assets/tt-background.mp4";
-      vid.loop = true;
-      vid.muted = true;
-      vid.autoplay = true;
-      vid.playsInline = true;
-      
-      // Styling to ensure it sits behind everything
-      Object.assign(vid.style, {
-        position: "fixed",
-        top: "0",
-        left: "0",
-        width: "100vw",
-        height: "100vh",
-        objectFit: "cover",
-        zIndex: "-1",
-        pointerEvents: "none"
-      });
-
-      document.body.appendChild(vid);
-      window.__ttwcVideo = vid;
-
-      // Force the game canvas to be transparent
-      const gameCanvas = document.getElementById("canvasA");
-      if (gameCanvas) {
-        gameCanvas.style.backgroundColor = "transparent";
-      }
-    }
-
-    // Clear the canvas every frame to reveal the video behind it
-    vV.clearRect(0, 0, h.i, h.j);
-  }`,
-  "hardware accelerated video background"
-);
-
-// Patching the Main Menu Render Background function (cR.z0)
-source = replaceOne(
-  source,
   /this\.z0\s*=\s*function\(\)\s*\{[\s\S]*?vV\.fillRect\(0,\s*0,\s*h\.i,\s*h\.j\)\s*\}/,
   `this.z0 = function() {
-    // 1. Create the video element if it doesn't exist
-    if (!window.__ttwcVideo) {
-      const vid = document.createElement("video");
-      vid.id = "ttwc-bg-video";
-      vid.src = "assets/tt-background.mp4";
-      vid.loop = true;
-      vid.muted = true;
-      vid.autoplay = true;
-      vid.playsInline = true;
-      
-      // Styling to put it behind the game
-      Object.assign(vid.style, {
-        position: "fixed",
-        top: "0",
-        left: "0",
-        width: "100vw",
-        height: "100vh",
-        objectFit: "cover",
-        zIndex: "-1",
-        pointerEvents: "none"
-      });
-
-      document.body.appendChild(vid);
-      window.__ttwcVideo = vid;
-
-      // Force canvas and body transparency
-      document.body.style.background = "transparent";
-      const canvas = document.getElementById("canvasA");
-      if (canvas) canvas.style.background = "transparent";
-    }
-
-    // 2. CLEAR the canvas instead of filling it with black/images
-    // This makes the canvas "see-through" to the video behind it.
+    vV.setTransform(1, 0, 0, 1, 0, 0);
     vV.clearRect(0, 0, h.i, h.j);
   }`,
-  "Main Menu Video Background Patch"
+  "make main menu background transparent"
 );
 
 source = replaceOne(
