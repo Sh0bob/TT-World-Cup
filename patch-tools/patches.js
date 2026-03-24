@@ -105,7 +105,7 @@ source = replaceOne(
   `this.z0 = function() {
 		if (!window.__ttwcVideo) {
 			const vid = document.createElement("video");
-			vid.src = "assets/background.mp4";
+			vid.src = "assets/tt-background.mp4";
 			vid.loop = true;
 			vid.muted = true;
 			vid.autoplay = true;
