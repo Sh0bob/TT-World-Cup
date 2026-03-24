@@ -35,6 +35,10 @@
   <meta itemprop="description" content="Modified Version of Territorial.io - FX Client">
   <meta itemprop="image" content="https://fxclient.github.io/FXclient/assets/logo.png">
 
+  <video id="ttwc-bg-video" autoplay muted loop playsinline preload="auto">
+    <source src="assets/tt-background.mp4" type="video/mp4">
+  </video>
+
   <!-- FX Client CSS -->
   <link rel="stylesheet" href="./FX Client_files/main.css">
   <!-- Game CSS -->
@@ -48,7 +52,20 @@
       color: rgb(255, 255, 255);
     }
 
+    #ttwc-bg-video {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    z-index: -1;
+    pointer-events: none;
+    display: none;
+    background: #000;
+  }
+
     #canvasA {
+      background: transparent !important;
       background-color: transparent !important;
     }
     
@@ -1163,6 +1180,29 @@ button:active {
     styleButtons();
     requestAnimationFrame(tick);
   }
+  requestAnimationFrame(tick);
+})();
+</script>
+
+<script>
+(() => {
+  const video = document.getElementById("ttwc-bg-video");
+
+  function isMainMenu() {
+    return !!document.querySelector('input[placeholder*="Kingdom"]');
+  }
+
+  function tick() {
+    const show = isMainMenu();
+    video.style.display = show ? "block" : "none";
+
+    if (show && video.paused) {
+      video.play().catch(() => {});
+    }
+
+    requestAnimationFrame(tick);
+  }
+
   requestAnimationFrame(tick);
 })();
 </script>
