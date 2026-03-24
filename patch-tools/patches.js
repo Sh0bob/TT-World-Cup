@@ -101,22 +101,33 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /this\.z0\s*=\s*function\(\)\s*\{[\s\S]*?vV\.fillRect\(0,\s*0,\s*h\.i,\s*h\.j\)\s*\}/,
+  /this\.z0\s*=\s*function\(\)\s*\{[\s\S]*?\}/,
   `this.z0 = function() {
-		if (!window.__ttwcBg) {
-			window.__ttwcBg = new Image();
-			window.__ttwcBg.src = "assets/background.png";
+		if (!window.__ttwcVideo) {
+			const vid = document.createElement("video");
+			vid.src = "assets/tt-background.mp4";
+			vid.loop = true;
+			vid.muted = true;
+			vid.autoplay = true;
+			vid.playsInline = true;
+			vid.style.display = "none";
+			document.body.appendChild(vid);
+
+			vid.play().catch(() => {});
+			window.__ttwcVideo = vid;
 		}
 
-		if (window.__ttwcBg.complete) {
+		const v = window.__ttwcVideo;
+
+		if (v.readyState >= 2) {
 			vV.setTransform(1, 0, 0, 1, 0, 0);
-			vV.drawImage(window.__ttwcBg, 0, 0, h.i, h.j);
+			vV.drawImage(v, 0, 0, h.i, h.j);
 		} else {
 			vV.fillStyle = "#000";
 			vV.fillRect(0, 0, h.i, h.j);
 		}
 	}`,
-  "replace main menu background with custom image"
+  "replace background with video"
 );
 
 source = replaceOne(
