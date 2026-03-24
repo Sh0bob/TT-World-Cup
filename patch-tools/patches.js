@@ -105,29 +105,45 @@ source = replaceOne(
   `this.z0 = function() {
 		if (!window.__ttwcVideo) {
 			const vid = document.createElement("video");
-			vid.src = "assets/tt-background.mp4";
+			vid.src = "assets/background.mp4";
 			vid.loop = true;
 			vid.muted = true;
 			vid.autoplay = true;
 			vid.playsInline = true;
+			vid.preload = "auto";
 			vid.style.display = "none";
 			document.body.appendChild(vid);
 
-			vid.play().catch(() => {});
+			// Force play
+			const playPromise = vid.play();
+			if (playPromise !== undefined) {
+				playPromise.catch(() => {});
+			}
+
 			window.__ttwcVideo = vid;
 		}
 
 		const v = window.__ttwcVideo;
 
+		// Force continuous playback
+		if (v.paused) {
+			v.play().catch(() => {});
+		}
+
+		// Smooth draw
 		if (v.readyState >= 2) {
 			vV.setTransform(1, 0, 0, 1, 0, 0);
+
+			// Slight smoothing tweak
+			vV.imageSmoothingEnabled = true;
+
 			vV.drawImage(v, 0, 0, h.i, h.j);
 		} else {
 			vV.fillStyle = "#000";
 			vV.fillRect(0, 0, h.i, h.j);
 		}
 	}`,
-  "replace background with video"
+  "smooth video background"
 );
 
 source = replaceOne(
