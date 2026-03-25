@@ -1191,12 +1191,16 @@ button:active {
 (() => {
   const video = document.getElementById("ttwc-bg-video");
 
-  function isMainMenu() {
-    return !!document.querySelector('input[placeholder*="Kingdom"]');
+  function shouldShowVideo() {
+    // Keep video visible on menu and FX windows like custom lobby/settings.
+    // Hide only once an actual game canvas state is underway and menu UI is gone.
+    const kingdomInput = document.querySelector('input[placeholder*="Kingdom"]');
+    const fxWindow = document.querySelector('.window:not(.d-none)');
+    return !!kingdomInput || !!fxWindow;
   }
 
   function tick() {
-    const show = isMainMenu();
+    const show = shouldShowVideo();
     video.style.display = show ? "block" : "none";
 
     if (show && video.paused) {
