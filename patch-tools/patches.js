@@ -124,27 +124,49 @@ window.__TTWC = window.__TTWC || {};
 window.__TTWC.getLeaderboardSnapshot = function() {
   try {
     const rows = [];
-    for (let i = 0; i < aAw; i++) {
-      const player = m0[i];
+    const totalPlayers = Math.max(
+      Array.isArray(kA) ? kA.length : 0,
+      Array.isArray(ag?.a1a) ? ag.a1a.length : 0,
+      Array.isArray(ag?.a1V) ? ag.a1V.length : 0,
+      Array.isArray(ag?.gs) ? ag.gs.length : 0
+    );
+
+    for (let player = 0; player < totalPlayers; player++) {
+      const rawName = String(ag?.a1a?.[player] ?? ag?.a1V?.[player] ?? "").trim();
+      if (!rawName) continue;
+
+      const order = Number.isFinite(kA?.[player]) ? Number(kA[player]) : 999999;
+      const territory = Number(ag?.gs?.[player] ?? 0);
+
       rows.push({
-        place: i + 1,
+        place: order + 1,
         id: player,
         playerId: player,
-        name: String(ag.a1a[player] ?? ag.a1V[player] ?? ""),
-        displayName: String(ag.a1V[player] ?? ag.a1a[player] ?? ""),
-        territory: Number(ag.gs[player] ?? 0),
-        score: Number(ag.gs[player] ?? 0),
+        name: rawName,
+        displayName: String(ag?.a1V?.[player] ?? rawName),
+        territory,
+        score: territory,
         troops: 0,
-        alive: ag.my[player] !== 0
+        alive: ag?.my?.[player] !== 0
       });
     }
-    return rows.filter(r => r.name);
+
+    rows.sort((a, b) =>
+      a.place - b.place ||
+      b.territory - a.territory ||
+      a.id - b.id
+    );
+
+    return rows.map((row, index) => ({
+      ...row,
+      place: index + 1
+    }));
   } catch (err) {
     console.error("[TTWC] getLeaderboardSnapshot failed:", err);
     return [];
   }
 };`,
-  "expose leaderboard snapshot"
+  "expose full leaderboard snapshot"
 );
 
 source = replaceOne(
