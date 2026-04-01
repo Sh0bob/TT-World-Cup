@@ -1353,7 +1353,12 @@ button:active {
 
   async function tick() {
     try {
-      if (TTWC.endScreenShown && !TTWC.matchReport.sentForRound) {
+      const hasFinished =
+        TTWC.endScreenShown ||
+        TTWC.resultType === "victory" ||
+        TTWC.resultType === "stalemate";
+
+      if (hasFinished && !TTWC.matchReport.sentForRound) {
         const now = Date.now();
 
         if (now - (TTWC.matchReport.lastSentAt || 0) > 2000) {
