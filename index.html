@@ -1363,6 +1363,24 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
     }
   }
 
+  function shouldSendFromThisTab() {
+  try {
+    if (window.__fx?.customLobby?.isHost === true) return true;
+    if (window.__fx?.customLobby?.isHost === false) return false;
+
+    if (TTWC.isHost === true) return true;
+    if (TTWC.isHost === false) return false;
+
+    if (typeof TTWC.selfLobbyIndex === "number") {
+      return TTWC.selfLobbyIndex === 0;
+    }
+  } catch (e) {
+    console.log("[TTWC] shouldSendFromThisTab error", e);
+  }
+
+  return true;
+}
+
   async function tick() {
     try {
       const hasFinished =
@@ -1370,7 +1388,7 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
         TTWC.resultType === "victory" ||
         TTWC.resultType === "stalemate";
 
-      if (hasFinished && !TTWC.matchReport.sentForRound) {
+      if (hasFinished && shouldSendFromThisTab() && !TTWC.matchReport.sentForRound) {
         const now = Date.now();
 
         if (now - (TTWC.matchReport.lastSentAt || 0) > 2000) {
