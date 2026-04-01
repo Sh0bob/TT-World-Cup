@@ -161,6 +161,27 @@ source = replaceOne(
     }`,
   "hook match end result"
 );
+
+source = replaceOne(
+  source,
+  /function a70\(eT, qY, id, gc, a73, a74, l2, a75, a76, a77, a7H\) \{/,
+  `function a70(eT, qY, id, gc, a73, a74, l2, a75, a76, a77, a7H) {
+    try {
+      window.__TTWC = window.__TTWC || {};
+      if (id === 40) {
+        window.__TTWC.endScreenShown = true;
+        window.__TTWC.resultType = "victory";
+        window.__TTWC.endTriggeredAt = Date.now();
+      } else if (id === 41) {
+        window.__TTWC.endScreenShown = true;
+        window.__TTWC.resultType = "stalemate";
+        window.__TTWC.endTriggeredAt = Date.now();
+      }
+    } catch (err) {
+      console.error("[TTWC] a70 result hook failed:", err);
+    }`,
+  "hook end result toast ids"
+);
   return source;
 }
 
