@@ -1365,20 +1365,28 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
 
   function shouldSendFromThisTab() {
   try {
+    const hostInfo = {
+      fxIsHost: window.__fx?.customLobby?.isHost,
+      ttwcIsHost: window.__TTWC?.isHost,
+      selfLobbyIndex: window.__TTWC?.selfLobbyIndex
+    };
+
+    console.log("[TTWC] host check:", hostInfo);
+
     if (window.__fx?.customLobby?.isHost === true) return true;
     if (window.__fx?.customLobby?.isHost === false) return false;
 
-    if (TTWC.isHost === true) return true;
-    if (TTWC.isHost === false) return false;
+    if (window.__TTWC?.isHost === true) return true;
+    if (window.__TTWC?.isHost === false) return false;
 
-    if (typeof TTWC.selfLobbyIndex === "number") {
-      return TTWC.selfLobbyIndex === 0;
+    if (typeof window.__TTWC?.selfLobbyIndex === "number") {
+      return window.__TTWC.selfLobbyIndex === 0;
     }
   } catch (e) {
     console.log("[TTWC] shouldSendFromThisTab error", e);
   }
 
-  return true;
+  return false;
 }
 
   async function tick() {
