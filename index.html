@@ -1260,18 +1260,27 @@ button:active {
         return null;
       }
 
-      const leaderboard = snapshot
-        .map((p, index) => ({
-          id: Number(p.id ?? p.playerId ?? index),
-          name: String(p.name ?? p.displayName ?? `Player ${index + 1}`),
-          territory: Number(p.territory ?? p.score ?? 0),
-          troops: Number(p.troops ?? 0)
-        }))
-        .filter(row => row.name && !Number.isNaN(row.territory));
+      const humanNameSet = new Set(
+  Array.isArray(TTWC.humanNames)
+    ? TTWC.humanNames.map(n => String(n).trim()).filter(Boolean)
+    : []
+);
 
+const leaderboard = snapshot
+  .map((p, index) => ({
+    id: Number(p.id ?? p.playerId ?? index),
+    name: String(p.name ?? p.displayName ?? `Player ${index + 1}`).trim(),
+    territory: Number(p.territory ?? p.score ?? 0),
+    troops: Number(p.troops ?? 0)
+  }))
+  .filter(row => row.name && !Number.isNaN(row.territory))
+  .filter(row => humanNameSet.size === 0 || humanNameSet.has(row.name));
+      
       if (leaderboard.length === 0) {
         console.log("[TTWC] no usable leaderboard rows");
         return null;
+console.log("[TTWC] human names:", [...humanNameSet]);
+console.log("[TTWC] filtered leaderboard:", leaderboard);
       }
 
       const meta = {
