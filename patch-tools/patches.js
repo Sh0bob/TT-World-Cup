@@ -115,6 +115,52 @@ source = replaceOne(
   `aHg(4, "crown", 4, "${assets.crownIcon}")`,
   "replace crown icon"
 );
+
+source = replaceOne(
+  source,
+  /aBA\[aAw\] = kA\[aD\.eo\], aBB\[aAw\] = ag\.gs\[aD\.eo\];/,
+  `aBA[aAw] = kA[aD.eo], aBB[aAw] = ag.gs[aD.eo];
+window.__TTWC = window.__TTWC || {};
+window.__TTWC.getLeaderboardSnapshot = function() {
+  try {
+    const rows = [];
+    for (let i = 0; i < aAw; i++) {
+      const player = m0[i];
+      rows.push({
+        place: i + 1,
+        id: player,
+        playerId: player,
+        name: String(ag.a1a[player] ?? ag.a1V[player] ?? ""),
+        displayName: String(ag.a1V[player] ?? ag.a1a[player] ?? ""),
+        territory: Number(ag.gs[player] ?? 0),
+        score: Number(ag.gs[player] ?? 0),
+        troops: 0,
+        alive: ag.my[player] !== 0
+      });
+    }
+    return rows.filter(r => r.name);
+  } catch (err) {
+    console.error("[TTWC] getLeaderboardSnapshot failed:", err);
+    return [];
+  }
+};`,
+  "expose leaderboard snapshot"
+);
+
+source = replaceOne(
+  source,
+  /this\.a1H = function\(\) \{/,
+  `this.a1H = function() {
+    try {
+      window.__TTWC = window.__TTWC || {};
+      window.__TTWC.endScreenShown = true;
+      window.__TTWC.resultType = aD.a0x ? "stalemate" : "victory";
+      window.__TTWC.endTriggeredAt = Date.now();
+    } catch (err) {
+      console.error("[TTWC] end result hook failed:", err);
+    }`,
+  "hook match end result"
+);
   return source;
 }
 
