@@ -1339,9 +1339,12 @@ button:active {
   }
 
   function resetForNextRound() {
-    TTWC.matchReport.sentForRound = false;
-    TTWC.matchReport.lastPayloadHash = null;
-  }
+  TTWC.matchReport.sentForRound = false;
+  TTWC.matchReport.lastPayloadHash = null;
+  TTWC.matchReport.lastSentAt = 0;
+  TTWC.resultType = null;
+  TTWC.endScreenShown = false;
+}
 
   function isMainMenu() {
     try {
