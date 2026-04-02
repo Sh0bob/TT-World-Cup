@@ -76,52 +76,58 @@
       color: rgb(225, 225, 255);
     }
 
-/* ===== TTWC MENU RESKIN V2 ===== */
+/* ===== TTWC MAIN MENU SKIN (PATCH-BASED) ===== */
 
 body.ttwc-ui-reskin button,
 body.ttwc-ui-reskin input {
   transition: all 0.18s ease;
 }
 
-#ttwcMenuPanel {
-  position: absolute;
-  z-index: 4;
-  pointer-events: none;
-  border-radius: 20px;
-  border: 1px solid rgba(230, 240, 248, 0.58);
+/* We are using the patched in-game logo now, so no DOM logo styles here. */
+
+button.ttwc-panel-btn {
+  position: absolute !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(225, 235, 243, 0.42) !important;
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05) 28%, rgba(255,255,255,0.02) 29%, rgba(12,20,28,0.16) 100%),
-    linear-gradient(180deg, rgba(35,52,63,0.70), rgba(20,29,36,0.72));
+    radial-gradient(130% 95% at 10% 0%, rgba(255,255,255,0.12), transparent 42%),
+    linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.04) 26%, rgba(255,255,255,0.015) 27%, rgba(0,0,0,0.07) 100%),
+    linear-gradient(180deg, rgba(70,88,100,0.42), rgba(25,39,49,0.56)) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.20),
-    inset 0 -1px 0 rgba(0,0,0,0.22),
-    0 12px 26px rgba(0,0,0,0.30),
-    0 0 22px rgba(255,255,255,0.06);
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.20),
+    0 10px 30px rgba(0,0,0,0.22),
+    0 0 20px rgba(255,255,255,0.04) !important;
   backdrop-filter: blur(8px) saturate(120%);
   -webkit-backdrop-filter: blur(8px) saturate(120%);
+  color: transparent !important;
+  text-shadow: none !important;
+  overflow: hidden;
 }
 
-#ttwcMenuPanel::before {
+button.ttwc-panel-btn::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
   background:
-    radial-gradient(120% 90% at 12% 0%, rgba(255,255,255,0.12), transparent 45%),
     linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.00) 34%, rgba(0,0,0,0.08));
 }
 
-.ttwc-menu-btn {
+/* Shared button look */
+button.ttwc-menu-btn {
   position: absolute !important;
   z-index: 6 !important;
   display: flex !important;
   align-items: center;
   justify-content: flex-start;
   text-align: left !important;
-  padding: 0 18px 0 58px !important;
+  padding: 0 18px 0 60px !important;
   border-radius: 12px !important;
-  border: 1px solid rgba(236, 243, 248, 0.42) !important;
+  border: 1px solid rgba(236, 243, 248, 0.40) !important;
   color: #f7fbff !important;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06) 34%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.10) 100%),
@@ -129,11 +135,11 @@ body.ttwc-ui-reskin input {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.18),
     inset 0 -1px 0 rgba(0,0,0,0.22),
-    0 6px 16px rgba(0,0,0,0.26);
+    0 6px 16px rgba(0,0,0,0.26) !important;
   overflow: hidden;
 }
 
-.ttwc-menu-btn::after {
+button.ttwc-menu-btn::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -144,7 +150,7 @@ body.ttwc-ui-reskin input {
     linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.00) 38%, rgba(0,0,0,0.08));
 }
 
-.ttwc-menu-btn::before {
+button.ttwc-menu-btn::before {
   content: "";
   position: absolute;
   left: 16px;
@@ -159,7 +165,12 @@ body.ttwc-ui-reskin input {
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
 }
 
-.ttwc-menu-btn .ttwc-btn-copy {
+button.ttwc-menu-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+button.ttwc-menu-btn .ttwc-btn-copy {
   position: relative;
   z-index: 1;
   display: flex;
@@ -169,7 +180,7 @@ body.ttwc-ui-reskin input {
   transform: translateY(-1px);
 }
 
-.ttwc-menu-btn .ttwc-btn-title {
+button.ttwc-menu-btn .ttwc-btn-title {
   font-family: Arial, Helvetica, sans-serif;
   font-weight: 900;
   letter-spacing: 0.4px;
@@ -179,7 +190,7 @@ body.ttwc-ui-reskin input {
   text-shadow: 0 1px 1px rgba(0,0,0,0.32);
 }
 
-.ttwc-menu-btn .ttwc-btn-subtitle {
+button.ttwc-menu-btn .ttwc-btn-subtitle {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 0.40em;
   color: rgba(236, 242, 247, 0.92);
@@ -189,47 +200,39 @@ body.ttwc-ui-reskin input {
   text-shadow: 0 1px 1px rgba(0,0,0,0.30);
 }
 
-.ttwc-menu-btn:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.05);
-}
-
-.ttwc-menu-btn.ttwc-lobby {
+/* Individual colours */
+button.ttwc-menu-btn.ttwc-lobby {
   background:
     linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 34%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.10) 100%),
     linear-gradient(180deg, rgba(46,115,92,0.58), rgba(19,73,59,0.68)) !important;
 }
 
-.ttwc-menu-btn.ttwc-account {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 34%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.10) 100%),
-    linear-gradient(180deg, rgba(138,101,40,0.58), rgba(89,58,18,0.70)) !important;
-}
-
-.ttwc-menu-btn.ttwc-settings,
-.ttwc-menu-btn.ttwc-menu {
+button.ttwc-menu-btn.ttwc-settings {
   background:
     linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 34%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.10) 100%),
     linear-gradient(180deg, rgba(87,104,116,0.50), rgba(34,46,55,0.68)) !important;
 }
 
-/* Icons closer to reference */
-.ttwc-menu-btn.ttwc-lobby::before {
+button.ttwc-menu-btn.ttwc-menu {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 34%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.10) 100%),
+    linear-gradient(180deg, rgba(87,104,116,0.50), rgba(34,46,55,0.68)) !important;
+}
+
+/* Button icons */
+button.ttwc-menu-btn.ttwc-lobby::before {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e7f8f1' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><circle cx='18' cy='32' r='9'/><circle cx='46' cy='32' r='9'/><path d='M27 32h10'/></g></svg>");
 }
 
-.ttwc-menu-btn.ttwc-account::before {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23f6e2b6' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='23' cy='24' r='8'/><path d='M18 34c5-4 10-4 15 0'/><path d='M31 31l16 16'/><path d='M43 47l5 5'/></g></svg>");
+button.ttwc-menu-btn.ttwc-settings::before {
+  background-image: url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e6edf3' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'><circle cx='32' cy='32' r='8'/><path d='M32 14v6'/><path d='M32 44v6'/><path d='M14 32h6'/><path d='M44 32h6'/><path d='M19.3 19.3l4.2 4.2'/><path d='M40.5 40.5l4.2 4.2'/><path d='M44.7 19.3l-4.2 4.2'/><path d='M23.5 40.5l-4.2 4.2'/></g></svg>\");
 }
 
-.ttwc-menu-btn.ttwc-settings::before {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e6edf3' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'><circle cx='32' cy='32' r='8'/><path d='M32 14v6'/><path d='M32 44v6'/><path d='M14 32h6'/><path d='M44 32h6'/><path d='M19.3 19.3l4.2 4.2'/><path d='M40.5 40.5l4.2 4.2'/><path d='M44.7 19.3l-4.2 4.2'/><path d='M23.5 40.5l-4.2 4.2'/></g></svg>");
+button.ttwc-menu-btn.ttwc-menu::before {
+  background-image: url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e6edf3' stroke-width='3.6' stroke-linecap='round'><path d='M20 18h28'/><path d='M20 32h28'/><path d='M20 46h28'/><circle cx='12.5' cy='18' r='2.5' fill='%23e6edf3' stroke='none'/><circle cx='12.5' cy='32' r='2.5' fill='%23e6edf3' stroke='none'/><circle cx='12.5' cy='46' r='2.5' fill='%23e6edf3' stroke='none'/></g></svg>\");
 }
 
-.ttwc-menu-btn.ttwc-menu::before {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e6edf3' stroke-width='3.6' stroke-linecap='round'><path d='M20 18h28'/><path d='M20 32h28'/><path d='M20 46h28'/><circle cx='12.5' cy='18' r='2.5' fill='%23e6edf3' stroke='none'/><circle cx='12.5' cy='32' r='2.5' fill='%23e6edf3' stroke='none'/><circle cx='12.5' cy='46' r='2.5' fill='%23e6edf3' stroke='none'/></g></svg>");
-}
-
+/* Name field */
 input.ttwc-name-input {
   position: absolute !important;
   z-index: 6 !important;
@@ -243,7 +246,7 @@ input.ttwc-name-input {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.16),
     inset 0 -1px 0 rgba(0,0,0,0.20),
-    0 6px 14px rgba(0,0,0,0.22);
+    0 6px 14px rgba(0,0,0,0.22) !important;
   text-align: left !important;
   font-family: Arial, Helvetica, sans-serif !important;
   font-weight: 400 !important;
@@ -254,6 +257,7 @@ input.ttwc-name-input::placeholder {
   color: rgba(228, 238, 245, 0.76);
 }
 
+/* Small icon box next to the name field */
 #ttwcNameIcon {
   position: absolute;
   z-index: 7;
@@ -272,9 +276,10 @@ input.ttwc-name-input::placeholder {
   content: "";
   position: absolute;
   inset: 5px;
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e4eef8' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='32' cy='22' r='9'/><path d='M16 50c4-9 12-13 16-13s12 4 16 13'/></g></svg>") center/contain no-repeat;
+  background: url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e4eef8' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='32' cy='22' r='9'/><path d='M16 50c4-9 12-13 16-13s12 4 16 13'/></g></svg>\") center/contain no-repeat;
 }
 
+/* Colour button */
 button.ttwc-color-btn {
   position: absolute !important;
   z-index: 6 !important;
@@ -296,15 +301,9 @@ button.ttwc-color-btn::after {
   background:
     linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 35%, rgba(0,0,0,0.08));
 }
-
 #ttwcMenuPanel,
 #ttwcNameIcon {
   display: none;
-}
-
-body.ttwc-ready #ttwcMenuPanel,
-body.ttwc-ready #ttwcNameIcon {
-  display: block;
 }
   </style>
   <script>
@@ -563,35 +562,14 @@ body.ttwc-ready #ttwcNameIcon {
   
 <script>
 (() => {
-  let panelRefreshTimer = null;
-
-  function ensureLogo() {
-    if (document.getElementById("ttwcLogo")) return;
-    const img = document.createElement("img");
-    img.id = "ttwcLogo";
-    img.src = "./assets/ttwc-logo.png";
-    img.alt = "TTWC";
-    document.body.appendChild(img);
-  }
-
-  function ensurePanel() {
-    let panel = document.getElementById("ttwcMenuPanel");
-    if (!panel) {
-      panel = document.createElement("div");
-      panel.id = "ttwcMenuPanel";
-      document.body.appendChild(panel);
-    }
-
+  function ensureNameIcon() {
     let icon = document.getElementById("ttwcNameIcon");
     if (!icon) {
       icon = document.createElement("div");
       icon.id = "ttwcNameIcon";
       document.body.appendChild(icon);
     }
-  }
-
-  function buttons() {
-    return Array.from(document.querySelectorAll("button"));
+    return icon;
   }
 
   function isVisible(el) {
@@ -601,16 +579,8 @@ body.ttwc-ready #ttwcNameIcon {
     return r.width > 0 && r.height > 0 && s.display !== "none" && s.visibility !== "hidden";
   }
 
-  function getKingdomInput() {
-    return document.querySelector('input[placeholder*="Kingdom"]');
-  }
-
-  function getOpenFxWindow() {
-    return document.querySelector('#windowContainer .window[style*="display: block"], #windowContainer .window:not([style*="display: none"])');
-  }
-
-  function shouldShowOverlay() {
-    return isVisible(getKingdomInput()) || !!getOpenFxWindow();
+  function buttons() {
+    return Array.from(document.querySelectorAll("button"));
   }
 
   function distanceToRectCenter(el, rect) {
@@ -648,17 +618,30 @@ body.ttwc-ready #ttwcNameIcon {
       .sort((a, b) => distanceToRectCenter(a, anchorRect) - distanceToRectCenter(b, anchorRect))[0];
   }
 
+  function findPanelButton(anchorRect, exclude = []) {
+    return nearbyButtons(anchorRect, 520)
+      .filter(b => !exclude.includes(b))
+      .filter(b => {
+        const r = b.getBoundingClientRect();
+        return r.width > 250 && r.height > 180;
+      })
+      .sort((a, b) => {
+        const ar = a.getBoundingClientRect();
+        const br = b.getBoundingClientRect();
+        return (br.width * br.height) - (ar.width * ar.height);
+      })[0];
+  }
+
   function setButtonCopy(btn, title, subtitle, extraClass) {
     if (!btn) return;
+    btn.classList.add("ttwc-menu-btn", extraClass);
 
-    btn.classList.add("ttwc-menu-btn");
-    if (extraClass) btn.classList.add(extraClass);
-
-    const html =
-      `<span class="ttwc-btn-copy">
+    const html = `
+      <span class="ttwc-btn-copy">
         <span class="ttwc-btn-title">${title}</span>
         <span class="ttwc-btn-subtitle">${subtitle}</span>
-      </span>`;
+      </span>
+    `;
 
     if (btn.dataset.ttwcHtml !== html) {
       btn.innerHTML = html;
@@ -666,134 +649,81 @@ body.ttwc-ready #ttwcNameIcon {
     }
   }
 
-  function apply() {
-    ensureLogo();
-    ensurePanel();
-
-    const logo = document.getElementById("ttwcLogo");
-    const panel = document.getElementById("ttwcMenuPanel");
-    const nameIcon = document.getElementById("ttwcNameIcon");
-    const kingdomInput = getKingdomInput();
-
-    document.body.classList.add("ttwc-ui-reskin");
-    document.body.classList.add("ttwc-ready");
-
-    if (logo) logo.style.display = "";
-
-    if (!shouldShowOverlay() || !isVisible(kingdomInput)) {
-      panel.style.display = "none";
-      nameIcon.style.display = "none";
+  function applyMenuSkin() {
+    const kingdomInput = document.querySelector('input[placeholder*="Kingdom"]');
+    if (!isVisible(kingdomInput)) {
+      const icon = document.getElementById("ttwcNameIcon");
+      if (icon) icon.style.display = "none";
       return;
     }
+
+    document.body.classList.add("ttwc-ui-reskin");
 
     const inputRect = kingdomInput.getBoundingClientRect();
 
     const lobbyBtn = findNearbyButton(inputRect, "join/create custom lobby");
     const settingsBtn = findNearbyButton(inputRect, "fx client settings");
-    const accountBtn =
-      findNearbyButton(inputRect, "my account") ||
-      findNearbyButton(inputRect, "account");
     const menuBtn = findNearbyButton(inputRect, "game menu");
-    const colorButton = findNearbyColorButton(inputRect, [lobbyBtn, settingsBtn, accountBtn, menuBtn]);
+    const colorBtn = findNearbyColorButton(inputRect, [lobbyBtn, settingsBtn, menuBtn]);
+    const panelBtn = findPanelButton(inputRect, [lobbyBtn, settingsBtn, menuBtn, colorBtn]);
 
-    if (!lobbyBtn || !settingsBtn || !accountBtn || !menuBtn) {
-      panel.style.display = "none";
-      nameIcon.style.display = "none";
-      return;
+    if (panelBtn) {
+      panelBtn.classList.add("ttwc-panel-btn");
+      panelBtn.innerHTML = "";
+      panelBtn.textContent = "";
+    }
+
+    if (lobbyBtn) {
+      setButtonCopy(
+        lobbyBtn,
+        "JOIN / CREATE LOBBY",
+        "Access existing lobbies or create a new session",
+        "ttwc-lobby"
+      );
+    }
+
+    if (settingsBtn) {
+      setButtonCopy(
+        settingsBtn,
+        "FX CLIENT SETTINGS",
+        "Adjust visuals, effects, and performance",
+        "ttwc-settings"
+      );
+    }
+
+    if (menuBtn) {
+      setButtonCopy(
+        menuBtn,
+        "GAME MENU",
+        "General settings, credits, and exit game",
+        "ttwc-menu"
+      );
     }
 
     kingdomInput.classList.add("ttwc-name-input");
-    if (colorButton) colorButton.classList.add("ttwc-color-btn");
+    if (colorBtn) colorBtn.classList.add("ttwc-color-btn");
 
-    setButtonCopy(
-      lobbyBtn,
-      "JOIN / CREATE LOBBY",
-      "Access existing lobbies or create a new session",
-      "ttwc-lobby"
-    );
-
-    setButtonCopy(
-      accountBtn,
-      "ACCOUNT DASHBOARD",
-      "View stats, leaderboards, & manage profile",
-      "ttwc-account"
-    );
-
-    setButtonCopy(
-      settingsBtn,
-      "FX CLIENT SETTINGS",
-      "Adjust visuals, effects, and performance",
-      "ttwc-settings"
-    );
-
-    setButtonCopy(
-      menuBtn,
-      "GAME MENU",
-      "General settings, credits, and exit game",
-      "ttwc-menu"
-    );
-
-    const buttonRects = [
-      lobbyBtn.getBoundingClientRect(),
-      accountBtn.getBoundingClientRect(),
-      settingsBtn.getBoundingClientRect(),
-      menuBtn.getBoundingClientRect()
-    ];
-
-    const buttonsTop = Math.min(...buttonRects.map(r => r.top));
-    const buttonsBottom = Math.max(...buttonRects.map(r => r.bottom));
-    const buttonsRight = Math.max(...buttonRects.map(r => r.right));
-    const colorRect = colorButton ? colorButton.getBoundingClientRect() : null;
-
-    const left = Math.round(inputRect.left - 18);
-    const top = Math.round(inputRect.top - 18);
-    const right = Math.round(Math.max(buttonsRight, colorRect ? colorRect.right : inputRect.right) + 18);
-    const bottom = Math.round(buttonsBottom + 16);
-
-    panel.style.left = left + "px";
-    panel.style.top = top + "px";
-    panel.style.width = (right - left) + "px";
-    panel.style.height = (bottom - top) + "px";
-    panel.style.display = "block";
-
-    nameIcon.style.left = Math.round(inputRect.left + 12) + "px";
-    nameIcon.style.top = Math.round(inputRect.top + (inputRect.height - 30) / 2) + "px";
-    nameIcon.style.width = "30px";
-    nameIcon.style.height = "30px";
-    nameIcon.style.display = "block";
+    const icon = ensureNameIcon();
+    icon.style.left = Math.round(inputRect.left + 12) + "px";
+    icon.style.top = Math.round(inputRect.top + (inputRect.height - 30) / 2) + "px";
+    icon.style.width = "30px";
+    icon.style.height = "30px";
+    icon.style.display = "block";
   }
 
-  function scheduleRefresh() {
-    clearTimeout(panelRefreshTimer);
-
-    apply();
-    requestAnimationFrame(apply);
-
-    setTimeout(apply, 80);
-    setTimeout(apply, 180);
-    setTimeout(apply, 320);
-
-    panelRefreshTimer = setTimeout(apply, 500);
+  function refreshMenuSkin() {
+    requestAnimationFrame(applyMenuSkin);
+    setTimeout(applyMenuSkin, 80);
+    setTimeout(applyMenuSkin, 180);
   }
 
-  apply();
+  refreshMenuSkin();
 
-  new MutationObserver(() => {
-    const input = getKingdomInput();
-    if (input || shouldShowOverlay()) {
-      scheduleRefresh();
-    }
-  }).observe(document.body, { childList: true, subtree: true });
+  new MutationObserver(() => refreshMenuSkin())
+    .observe(document.body, { childList: true, subtree: true });
 
-  window.addEventListener("resize", scheduleRefresh);
-  window.addEventListener("fullscreenchange", () => {
-    setTimeout(scheduleRefresh, 30);
-    setTimeout(scheduleRefresh, 160);
-    setTimeout(scheduleRefresh, 320);
-  });
-  window.addEventListener("focus", scheduleRefresh);
-
-  console.log("[TTWC] menu reskin fixed mode active");
+  window.addEventListener("resize", refreshMenuSkin);
+  window.addEventListener("fullscreenchange", refreshMenuSkin);
 })();
 </script>  
   
