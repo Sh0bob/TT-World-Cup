@@ -90,24 +90,47 @@ source = replaceOne(
 			left = aQZ.fB + .5 * (aQZ.i - panelW),
 			top = aQZ.fD + .19 * aQZ.j,
 			inputW = panelW - colorSize - controlGap,
-			buttonTop = top + inputH + controlGap;
+			buttonTop = top + inputH + controlGap,
+			panelPadX = 18,
+			panelPadTop = 18,
+			panelPadBottom = 16,
+			panelH = (buttonTop + (buttonH + buttonGap) * 2 + buttonH + panelPadBottom) - (top - panelPadTop);
 
 		sd = top;
 
+		/* input + colour square */
 		bA.qr.tY(re.e, left, top, inputW, inputH);
-		bA.qr.tY(aRS[4].button, left + inputW + controlGap, top, colorSize, colorSize);
+		bA.qr.tY(aRS[4].button, left + inputW + controlGap, top + .01 * aQZ.j, colorSize * .92, colorSize * .92);
 
+		/* fake backplate using former Account button */
+		bA.qr.tY(aRS[2].button, left - panelPadX, top - panelPadTop, panelW + panelPadX * 2, panelH);
+		aRS[2].button.innerHTML = "";
+		aRS[2].button.textContent = "";
+		aRS[2].button.onclick = null;
+		aRS[2].button.style.pointerEvents = "none";
+		aRS[2].button.style.zIndex = "1";
+		aRS[2].button.classList.add("ttwc-panel-btn");
+
+		/* real clickable buttons */
 		bA.qr.tY(aRS[0].button, left, buttonTop + (buttonH + buttonGap) * 0, panelW, buttonH);
-		bA.qr.tY(aRS[2].button, left, buttonTop + (buttonH + buttonGap) * 1, panelW, buttonH);
-		bA.qr.tY(aRS[1].button, left, buttonTop + (buttonH + buttonGap) * 2, panelW, buttonH);
-		bA.qr.tY(aRS[3].button, left, buttonTop + (buttonH + buttonGap) * 3, panelW, buttonH);
+		bA.qr.tY(aRS[1].button, left, buttonTop + (buttonH + buttonGap) * 1, panelW, buttonH);
+		bA.qr.tY(aRS[3].button, left, buttonTop + (buttonH + buttonGap) * 2, panelW, buttonH);
 
+		aRS[0].button.style.zIndex = "5";
+		aRS[1].button.style.zIndex = "5";
+		aRS[3].button.style.zIndex = "5";
+		re.e.style.zIndex = "5";
+		aRS[4].button.style.zIndex = "5";
+
+		/* hide the duplicate lower custom buttons */
 		bA.qr.tY(aRS[5].button, -9999, -9999, 1, 1);
 		bA.qr.tY(aRS[6].button, -9999, -9999, 1, 1);
 
 		for (var aB = 0; aB < aRS.length; aB++) {
-			aRS[aB].button.style.font = bA.qr.si(0, bA.qr.uu(.045 * aQZ.j));
-			bA.qr.r1(aRS[aB].button, 10);
+			if (aB !== 2) {
+				aRS[aB].button.style.font = bA.qr.si(0, bA.qr.uu(.045 * aQZ.j));
+				bA.qr.r1(aRS[aB].button, 10);
+			}
 		}
 
 		re.e.style.font = bA.qr.si(0, bA.qr.uu(.062 * aQZ.j));
