@@ -79,10 +79,40 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /bA\.qr\.tY\(aRS\[5\]\.button,\s*fB,\s*u6 \+ a9y \* 2 \+ gap \* 2,\s*i \* 2 \+ gap,\s*a9y \/ 3\);\s*bA\.qr\.tY\(aRS\[6\]\.button,\s*fB,\s*u6 \+ a9y \* 2\.33 \+ gap \* 3,\s*i \* 2 \+ gap,\s*a9y \/ 3\);/,
-  `bA.qr.tY(aRS[5].button, -9999, -9999, 1, 1);
-		bA.qr.tY(aRS[6].button, -9999, -9999, 1, 1);`,
-  "hide duplicate custom buttons"
+  /var gap = \.5 \* bc\.gap,[\s\S]*?re\.e\.style\.font = bA\.qr\.si\(0, bA\.qr\.uu\(\.08 \* aQZ\.j\)\), bA\.qr\.r1\(re\.e, 5\)/,
+  `var edgeGap = Math.max(8, .5 * bc.gap),
+			panelW = .46 * aQZ.i,
+			inputH = .16 * aQZ.j,
+			colorSize = inputH,
+			controlGap = Math.max(8, .02 * aQZ.j),
+			buttonH = .115 * aQZ.j,
+			buttonGap = Math.max(8, .018 * aQZ.j),
+			left = aQZ.fB + .5 * (aQZ.i - panelW),
+			top = aQZ.fD + .19 * aQZ.j,
+			inputW = panelW - colorSize - controlGap,
+			buttonTop = top + inputH + controlGap;
+
+		sd = top;
+
+		bA.qr.tY(re.e, left, top, inputW, inputH);
+		bA.qr.tY(aRS[4].button, left + inputW + controlGap, top, colorSize, colorSize);
+
+		bA.qr.tY(aRS[0].button, left, buttonTop + (buttonH + buttonGap) * 0, panelW, buttonH);
+		bA.qr.tY(aRS[2].button, left, buttonTop + (buttonH + buttonGap) * 1, panelW, buttonH);
+		bA.qr.tY(aRS[1].button, left, buttonTop + (buttonH + buttonGap) * 2, panelW, buttonH);
+		bA.qr.tY(aRS[3].button, left, buttonTop + (buttonH + buttonGap) * 3, panelW, buttonH);
+
+		bA.qr.tY(aRS[5].button, -9999, -9999, 1, 1);
+		bA.qr.tY(aRS[6].button, -9999, -9999, 1, 1);
+
+		for (var aB = 0; aB < aRS.length; aB++) {
+			aRS[aB].button.style.font = bA.qr.si(0, bA.qr.uu(.045 * aQZ.j));
+			bA.qr.r1(aRS[aB].button, 10);
+		}
+
+		re.e.style.font = bA.qr.si(0, bA.qr.uu(.062 * aQZ.j));
+		bA.qr.r1(re.e, 10)`,
+  "replace main menu layout"
 );
 
 source = replaceOne(
