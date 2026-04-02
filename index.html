@@ -1397,54 +1397,6 @@ button:active {
 
 <script>
 (() => {
-  function findBtn(text) {
-    return Array.from(document.querySelectorAll("button"))
-      .find(b => (b.innerText || "").toLowerCase().includes(text.toLowerCase()));
-  }
-
-  function styleButtons() {
-    const join = findBtn("Join/Create");
-    const fx = findBtn("FX Client");
-    const acc = findBtn("My Account");
-    const menu = findBtn("Game Menu");
-
-    if (join) {
-      // Deep Forest Green with inner glow
-      join.style.background = "#1a5d1a"; 
-      join.style.color = "#ffffff";
-      join.style.boxShadow = "0 0 15px rgba(26, 93, 26, 0.5), inset 0 0 10px rgba(255,255,255,0.1)";
-    }
-
-    if (fx) {
-      // Aged Gold/Brass texture
-      fx.style.background = "#9c7a36";
-      fx.style.color = "#ffffff";
-      fx.style.boxShadow = "0 0 10px rgba(156, 122, 54, 0.3), inset 0 0 10px rgba(255,255,255,0.1)";
-    }
-
-    if (acc) {
-      // Leather Brown
-      acc.style.background = "#5d4334";
-      acc.style.color = "#ffffff";
-    }
-
-    if (menu) {
-      // Dark Slate Blue
-      menu.style.background = "#3c4a52";
-      menu.style.color = "#ffffff";
-    }
-  }
-
-  function tick() {
-    styleButtons();
-    requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-})();
-</script>
-
-<script>
-(() => {
   const video = document.getElementById("ttwc-bg-video");
 
   function shouldShowVideo() {
