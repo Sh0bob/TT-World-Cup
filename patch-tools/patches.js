@@ -71,10 +71,10 @@ source = replaceOne(
 source = replaceOne(
   source,
   /new w\("🗡️<br>" \+ L\(307\), function\(\) \{\s*aRU\(1\)\s*\}, bB\.ok\)/,
-  `new w("FX Client settings", function() {
+  `new w("TTWC Client settings", function() {
 			__fx.WindowManager.openWindow("settings");
 		}, "rgba(0, 0, 20, 0.5)")`,
-  "replace custom scenario button with FX settings"
+  "replace custom scenario button with TTWC settings"
 );
 
 source = replaceOne(
