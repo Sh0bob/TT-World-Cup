@@ -272,6 +272,237 @@ body.ttwc-ready #ttwcMenuPanel,
 body.ttwc-ready #ttwcNameIcon {
   display: block;
 }
+
+/* ===== TTWC MENU RESKIN V2 ===== */
+
+body.ttwc-ui-reskin button,
+body.ttwc-ui-reskin input {
+  transition: all 0.18s ease;
+}
+
+#ttwcMenuPanel {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  border-radius: 20px;
+  border: 1px solid rgba(230, 240, 248, 0.58);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05) 28%, rgba(255,255,255,0.02) 29%, rgba(12,20,28,0.16) 100%),
+    linear-gradient(180deg, rgba(35,52,63,0.70), rgba(20,29,36,0.72));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.20),
+    inset 0 -1px 0 rgba(0,0,0,0.22),
+    0 12px 26px rgba(0,0,0,0.30),
+    0 0 22px rgba(255,255,255,0.06);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+}
+
+#ttwcMenuPanel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 12% 0%, rgba(255,255,255,0.12), transparent 45%),
+    linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.00) 34%, rgba(0,0,0,0.08));
+}
+
+.ttwc-menu-btn {
+  position: absolute !important;
+  z-index: 6 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left !important;
+  padding: 0 18px 0 58px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(236, 243, 248, 0.42) !important;
+  color: #f7fbff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06) 34%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.10) 100%),
+    linear-gradient(180deg, rgba(70,88,98,0.54), rgba(26,38,47,0.66)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.22),
+    0 6px 16px rgba(0,0,0,0.26);
+  overflow: hidden;
+}
+
+.ttwc-menu-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    radial-gradient(120% 100% at 8% 0%, rgba(255,255,255,0.10), transparent 40%),
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.00) 38%, rgba(0,0,0,0.08));
+}
+
+.ttwc-menu-btn::before {
+  content: "";
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translateY(-50%);
+  opacity: 0.96;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+}
+
+.ttwc-menu-btn .ttwc-btn-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.02;
+  transform: translateY(-1px);
+}
+
+.ttwc-menu-btn .ttwc-btn-title {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #ffffff;
+  font-size: 0.95em;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.32);
+}
+
+.ttwc-menu-btn .ttwc-btn-subtitle {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.40em;
+  color: rgba(236, 242, 247, 0.92);
+  font-weight: 700;
+  letter-spacing: 0.15px;
+  text-transform: none;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.30);
+}
+
+.ttwc-menu-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.ttwc-menu-btn.ttwc-lobby {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 34%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.10) 100%),
+    linear-gradient(180deg, rgba(46,115,92,0.58), rgba(19,73,59,0.68)) !important;
+}
+
+.ttwc-menu-btn.ttwc-account {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 34%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.10) 100%),
+    linear-gradient(180deg, rgba(138,101,40,0.58), rgba(89,58,18,0.70)) !important;
+}
+
+.ttwc-menu-btn.ttwc-settings,
+.ttwc-menu-btn.ttwc-menu {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 34%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.10) 100%),
+    linear-gradient(180deg, rgba(87,104,116,0.50), rgba(34,46,55,0.68)) !important;
+}
+
+/* Icons closer to reference */
+.ttwc-menu-btn.ttwc-lobby::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e7f8f1' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><circle cx='18' cy='32' r='9'/><circle cx='46' cy='32' r='9'/><path d='M27 32h10'/></g></svg>");
+}
+
+.ttwc-menu-btn.ttwc-account::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23f6e2b6' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='23' cy='24' r='8'/><path d='M18 34c5-4 10-4 15 0'/><path d='M31 31l16 16'/><path d='M43 47l5 5'/></g></svg>");
+}
+
+.ttwc-menu-btn.ttwc-settings::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e6edf3' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'><circle cx='32' cy='32' r='8'/><path d='M32 14v6'/><path d='M32 44v6'/><path d='M14 32h6'/><path d='M44 32h6'/><path d='M19.3 19.3l4.2 4.2'/><path d='M40.5 40.5l4.2 4.2'/><path d='M44.7 19.3l-4.2 4.2'/><path d='M23.5 40.5l-4.2 4.2'/></g></svg>");
+}
+
+.ttwc-menu-btn.ttwc-menu::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e6edf3' stroke-width='3.6' stroke-linecap='round'><path d='M20 18h28'/><path d='M20 32h28'/><path d='M20 46h28'/><circle cx='12.5' cy='18' r='2.5' fill='%23e6edf3' stroke='none'/><circle cx='12.5' cy='32' r='2.5' fill='%23e6edf3' stroke='none'/><circle cx='12.5' cy='46' r='2.5' fill='%23e6edf3' stroke='none'/></g></svg>");
+}
+
+input.ttwc-name-input {
+  position: absolute !important;
+  z-index: 6 !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(233, 241, 246, 0.48) !important;
+  color: #ffffff !important;
+  padding: 0 16px 0 52px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06) 34%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.10) 100%),
+    linear-gradient(180deg, rgba(69,88,100,0.44), rgba(25,39,49,0.66)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    inset 0 -1px 0 rgba(0,0,0,0.20),
+    0 6px 14px rgba(0,0,0,0.22);
+  text-align: left !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-weight: 400 !important;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.30);
+}
+
+input.ttwc-name-input::placeholder {
+  color: rgba(228, 238, 245, 0.76);
+}
+
+#ttwcNameIcon {
+  position: absolute;
+  z-index: 7;
+  pointer-events: none;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 36%, rgba(255,255,255,0.01) 37%, rgba(0,0,0,0.10) 100%),
+    linear-gradient(180deg, rgba(88,105,118,0.46), rgba(40,55,65,0.72));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    0 4px 10px rgba(0,0,0,0.22);
+}
+
+#ttwcNameIcon::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e4eef8' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='32' cy='22' r='9'/><path d='M16 50c4-9 12-13 16-13s12 4 16 13'/></g></svg>") center/contain no-repeat;
+}
+
+button.ttwc-color-btn {
+  position: absolute !important;
+  z-index: 6 !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(233, 241, 246, 0.46) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    inset 0 -1px 0 rgba(0,0,0,0.20),
+    0 6px 14px rgba(0,0,0,0.22);
+  overflow: hidden;
+}
+
+button.ttwc-color-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 35%, rgba(0,0,0,0.08));
+}
+
+#ttwcMenuPanel,
+#ttwcNameIcon {
+  display: none;
+}
+
+body.ttwc-ready #ttwcMenuPanel,
+body.ttwc-ready #ttwcNameIcon {
+  display: block;
+}
   </style>
   <script>
 // Service worker disabled for this fork (prevents sw2.js 404 + caching headaches during development)
@@ -581,6 +812,7 @@ body.ttwc-ready #ttwcNameIcon {
 
   function setButtonCopy(btn, title, subtitle, extraClass) {
     if (!btn) return;
+
     btn.classList.add("ttwc-menu-btn");
     if (extraClass) btn.classList.add(extraClass);
 
@@ -618,60 +850,25 @@ body.ttwc-ready #ttwcNameIcon {
     if (logo) logo.style.display = "";
 
     const kingdomInput = document.querySelector('input[placeholder*="Kingdom"]');
-    const colorButton = buttons().find(b => !b.textContent.trim() && b.offsetWidth > 20 && b.offsetHeight > 20);
-
     const lobbyBtn = firstButtonContaining("join/create custom lobby");
     const settingsBtn = firstButtonContaining("fx client settings");
-    const accountBtn = firstButtonContaining("account");
+    const accountBtn = firstButtonContaining("my account") || firstButtonContaining("account");
     const menuBtn = firstButtonContaining("game menu");
+
+    const colorButton = buttons().find(b =>
+      !b.textContent.trim() &&
+      b.offsetWidth > 20 &&
+      b.offsetHeight > 20 &&
+      b !== lobbyBtn &&
+      b !== settingsBtn &&
+      b !== accountBtn &&
+      b !== menuBtn
+    );
 
     if (!kingdomInput || !lobbyBtn || !settingsBtn || !accountBtn || !menuBtn) return;
 
-    const r = kingdomInput.getBoundingClientRect();
-
-    const panelLeft = Math.round(r.left - 20);
-    const panelTop = Math.round(r.top - 18);
-    const panelWidth = 430;
-    const panelHeight = 360;
-
-    panel.style.left = panelLeft + "px";
-    panel.style.top = panelTop + "px";
-    panel.style.width = panelWidth + "px";
-    panel.style.height = panelHeight + "px";
-    panel.style.display = "block";
-
-    const inputLeft = panelLeft + 18;
-    const inputTop = panelTop + 16;
-    const inputHeight = 48;
-    const iconSize = 36;
-    const colorSize = 44;
-    const gap = 10;
-
-    const inputWidth = panelWidth - 36 - colorSize - gap;
-    setRect(kingdomInput, inputLeft + 42, inputTop, inputWidth - 42, inputHeight);
     kingdomInput.classList.add("ttwc-name-input");
-
-    nameIcon.style.left = (inputLeft + 4) + "px";
-    nameIcon.style.top = (inputTop + 6) + "px";
-    nameIcon.style.width = iconSize + "px";
-    nameIcon.style.height = iconSize + "px";
-    nameIcon.style.display = "block";
-
-    if (colorButton) {
-      colorButton.classList.add("ttwc-color-btn");
-      setRect(colorButton, panelLeft + panelWidth - 18 - colorSize, inputTop, colorSize, colorSize);
-    }
-
-    const btnLeft = panelLeft + 18;
-    const btnWidth = panelWidth - 36;
-    const btnHeight = 58;
-    const btnGap = 10;
-    const startY = inputTop + inputHeight + 14;
-
-    setRect(lobbyBtn, btnLeft, startY, btnWidth, btnHeight);
-    setRect(accountBtn, btnLeft, startY + (btnHeight + btnGap) * 1, btnWidth, btnHeight);
-    setRect(settingsBtn, btnLeft, startY + (btnHeight + btnGap) * 2, btnWidth, btnHeight);
-    setRect(menuBtn, btnLeft, startY + (btnHeight + btnGap) * 3, btnWidth, btnHeight);
+    if (colorButton) colorButton.classList.add("ttwc-color-btn");
 
     setButtonCopy(
       lobbyBtn,
@@ -700,6 +897,34 @@ body.ttwc-ready #ttwcNameIcon {
       "General settings, credits, and exit game",
       "ttwc-menu"
     );
+
+    const rInput = kingdomInput.getBoundingClientRect();
+    const rLobby = lobbyBtn.getBoundingClientRect();
+    const rAccount = accountBtn.getBoundingClientRect();
+    const rSettings = settingsBtn.getBoundingClientRect();
+    const rMenu = menuBtn.getBoundingClientRect();
+    const rColor = colorButton ? colorButton.getBoundingClientRect() : null;
+
+    const stackLeft = Math.min(rInput.left, rLobby.left, rAccount.left, rSettings.left, rMenu.left, rColor ? rColor.left : rInput.left);
+    const stackTop = Math.min(rInput.top, rLobby.top, rAccount.top, rSettings.top, rMenu.top);
+    const stackRight = Math.max(rInput.right, rLobby.right, rAccount.right, rSettings.right, rMenu.right, rColor ? rColor.right : rInput.right);
+    const stackBottom = Math.max(rInput.bottom, rLobby.bottom, rAccount.bottom, rSettings.bottom, rMenu.bottom);
+
+    const padX = 18;
+    const padTop = 18;
+    const padBottom = 16;
+
+    panel.style.left = (stackLeft - padX) + "px";
+    panel.style.top = (stackTop - padTop) + "px";
+    panel.style.width = (stackRight - stackLeft + padX * 2) + "px";
+    panel.style.height = (stackBottom - stackTop + padTop + padBottom) + "px";
+    panel.style.display = "block";
+
+    nameIcon.style.left = (rInput.left + 10) + "px";
+    nameIcon.style.top = (rInput.top + (rInput.height - 28) / 2) + "px";
+    nameIcon.style.width = "28px";
+    nameIcon.style.height = "28px";
+    nameIcon.style.display = "block";
   }
 
   apply();
@@ -715,7 +940,7 @@ body.ttwc-ready #ttwcNameIcon {
 
   window.addEventListener("resize", () => requestAnimationFrame(apply));
 
-  console.log("[TTWC] menu reskin active");
+  console.log("[TTWC] menu reskin v2 active");
 })();
 </script>
 <script>
@@ -1350,50 +1575,6 @@ window.__TTWC = window.__TTWC || {};
 })();
 </script>
 
-<style>
-button {
-  position: relative;
-  overflow: hidden;
-  border-radius: 10px !important;
-  /* Multi-layered shadow: outer glow + inner bevel + inner dark edge */
-  box-shadow: 
-    0 4px 8px rgba(0,0,0,0.5), 
-    inset 0 1px 0 rgba(255,255,255,0.3),
-    inset 0 -2px 5px rgba(0,0,0,0.3) !important;
-  border: 1px solid rgba(0,0,0,0.4) !important;
-  font-family: sans-serif;
-  font-weight: bold;
-  transition: transform 0.1s, filter 0.2s;
-  cursor: pointer;
-  z-index: 1;
-}
-
-/* The "Texture/Shine" Overlay */
-button::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  /* This creates the semi-transparent glossy "top half" look */
-  background: linear-gradient(
-    180deg, 
-    rgba(255,255,255,0.15) 0%, 
-    rgba(255,255,255,0.05) 50%, 
-    rgba(0,0,0,0) 50%, 
-    rgba(0,0,0,0.1) 100%
-  );
-  pointer-events: none;
-  z-index: 2;
-}
-
-button:hover {
-  filter: brightness(1.2);
-  transform: scale(1.02);
-}
-
-button:active {
-  transform: scale(0.98);
-}
-</style>
 
 <script>
 (() => {
