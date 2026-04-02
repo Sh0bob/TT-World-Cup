@@ -786,12 +786,49 @@ body.ttwc-ready #ttwcNameIcon {
   }
 
   function buttons() {
-    return Array.from(document.querySelectorAll("button"));
-  }
+  return Array.from(document.querySelectorAll("button"));
+}
 
-  function firstButtonContaining(text) {
-    return buttons().find(b => (b.textContent || "").toLowerCase().includes(text.toLowerCase()));
-  }
+function isVisibleButton(b) {
+  if (!b) return false;
+  const r = b.getBoundingClientRect();
+  return r.width > 20 && r.height > 20 && r.bottom > 0 && r.right > 0;
+}
+
+function distanceToRectCenter(el, rect) {
+  const r = el.getBoundingClientRect();
+  const cx1 = r.left + r.width / 2;
+  const cy1 = r.top + r.height / 2;
+  const cx2 = rect.left + rect.width / 2;
+  const cy2 = rect.top + rect.height / 2;
+  const dx = cx1 - cx2;
+  const dy = cy1 - cy2;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function nearbyButtons(anchorRect, maxDistance = 420) {
+  return buttons().filter(b => isVisibleButton(b) && distanceToRectCenter(b, anchorRect) < maxDistance);
+}
+
+function findNearbyButton(anchorRect, text) {
+  const t = text.toLowerCase();
+  return nearbyButtons(anchorRect)
+    .filter(b => (b.textContent || "").toLowerCase().includes(t))
+    .sort((a, b) => distanceToRectCenter(a, anchorRect) - distanceToRectCenter(b, anchorRect))[0];
+}
+
+function findNearbyColorButton(anchorRect, exclude = []) {
+  return nearbyButtons(anchorRect)
+    .filter(b =>
+      !exclude.includes(b) &&
+      !(b.textContent || "").trim() &&
+      b.getBoundingClientRect().width >= 30 &&
+      b.getBoundingClientRect().height >= 30 &&
+      b.getBoundingClientRect().width <= 90 &&
+      b.getBoundingClientRect().height <= 90
+    )
+    .sort((a, b) => distanceToRectCenter(a, anchorRect) - distanceToRectCenter(b, anchorRect))[0];
+}
 
   function isMenu() {
     try {
@@ -850,20 +887,18 @@ body.ttwc-ready #ttwcNameIcon {
     if (logo) logo.style.display = "";
 
     const kingdomInput = document.querySelector('input[placeholder*="Kingdom"]');
-    const lobbyBtn = firstButtonContaining("join/create custom lobby");
-    const settingsBtn = firstButtonContaining("fx client settings");
-    const accountBtn = firstButtonContaining("my account") || firstButtonContaining("account");
-    const menuBtn = firstButtonContaining("game menu");
+if (!kingdomInput) return;
 
-    const colorButton = buttons().find(b =>
-      !b.textContent.trim() &&
-      b.offsetWidth > 20 &&
-      b.offsetHeight > 20 &&
-      b !== lobbyBtn &&
-      b !== settingsBtn &&
-      b !== accountBtn &&
-      b !== menuBtn
-    );
+const inputRect = kingdomInput.getBoundingClientRect();
+
+const lobbyBtn = findNearbyButton(inputRect, "join/create custom lobby");
+const settingsBtn = findNearbyButton(inputRect, "fx client settings");
+const accountBtn =
+  findNearbyButton(inputRect, "my account") ||
+  findNearbyButton(inputRect, "account");
+const menuBtn = findNearbyButton(inputRect, "game menu");
+
+const colorButton = findNearbyColorButton(inputRect, [lobbyBtn, settingsBtn, accountBtn, menuBtn]);
 
     if (!kingdomInput || !lobbyBtn || !settingsBtn || !accountBtn || !menuBtn) return;
 
@@ -898,32 +933,48 @@ body.ttwc-ready #ttwcNameIcon {
       "ttwc-menu"
     );
 
+    const rects = [
+  kingdomInput.getBoundingClientRect(),
+  lobbyBtn.getBoundingClientRect(),
+  accountBtn.getBoundingClientRect(),
+  settingsBtn.getBoundingClientRect(),
+  menuBtn.getBoundingClientRect()
+];
+
+if (colorButton) rects.push(colorButton.getBoundingClientRect());
+
+const validRects = rects.filter(r =>
+  r.width > 20 &&
+  r.height > 20 &&
+  r.left > 0 &&
+  r.top > 0 &&
+  r.right < window.innerWidth + 5 &&
+  r.bottom < window.innerHeight + 5
+);
+
+if (validRects.length < 5) return;
+
+const stackLeft = Math.min(...validRects.map(r => r.left));
+const stackTop = Math.min(...validRects.map(r => r.top));
+const stackRight = Math.max(...validRects.map(r => r.right));
+const stackBottom = Math.max(...validRects.map(r => r.bottom));
+
+const padX = 18;
+const padTop = 18;
+const padBottom = 16;
+
+panel.style.left = Math.max(8, stackLeft - padX) + "px";
+panel.style.top = Math.max(8, stackTop - padTop) + "px";
+panel.style.width = Math.min(window.innerWidth - 16, stackRight - stackLeft + padX * 2) + "px";
+panel.style.height = Math.min(window.innerHeight - 16, stackBottom - stackTop + padTop + padBottom) + "px";
+panel.style.display = "block";
+
     const rInput = kingdomInput.getBoundingClientRect();
-    const rLobby = lobbyBtn.getBoundingClientRect();
-    const rAccount = accountBtn.getBoundingClientRect();
-    const rSettings = settingsBtn.getBoundingClientRect();
-    const rMenu = menuBtn.getBoundingClientRect();
-    const rColor = colorButton ? colorButton.getBoundingClientRect() : null;
 
-    const stackLeft = Math.min(rInput.left, rLobby.left, rAccount.left, rSettings.left, rMenu.left, rColor ? rColor.left : rInput.left);
-    const stackTop = Math.min(rInput.top, rLobby.top, rAccount.top, rSettings.top, rMenu.top);
-    const stackRight = Math.max(rInput.right, rLobby.right, rAccount.right, rSettings.right, rMenu.right, rColor ? rColor.right : rInput.right);
-    const stackBottom = Math.max(rInput.bottom, rLobby.bottom, rAccount.bottom, rSettings.bottom, rMenu.bottom);
-
-    const padX = 18;
-    const padTop = 18;
-    const padBottom = 16;
-
-    panel.style.left = (stackLeft - padX) + "px";
-    panel.style.top = (stackTop - padTop) + "px";
-    panel.style.width = (stackRight - stackLeft + padX * 2) + "px";
-    panel.style.height = (stackBottom - stackTop + padTop + padBottom) + "px";
-    panel.style.display = "block";
-
-    nameIcon.style.left = (rInput.left + 10) + "px";
-    nameIcon.style.top = (rInput.top + (rInput.height - 28) / 2) + "px";
-    nameIcon.style.width = "28px";
-    nameIcon.style.height = "28px";
+nameIcon.style.left = (rInput.left + 12) + "px";
+nameIcon.style.top = (rInput.top + Math.round((rInput.height - 30) / 2)) + "px";
+nameIcon.style.width = "30px";
+nameIcon.style.height = "30px";
     nameIcon.style.display = "block";
   }
 
