@@ -52,17 +52,43 @@
     }
 
     #ttwc-bg-video {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    object-fit: cover;
-    z-index: -1;
-    pointer-events: none;
-    display: none;
-    background: #000;
-  }
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  z-index: -3;
+  pointer-events: none;
+  display: none;
+  background: #000;
+  filter: brightness(0.42) contrast(1.18) saturate(0.78) blur(1.2px);
+  transform: scale(1.045);
+  transform-origin: center center;
+}
 
+ body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(8,18,22,0.30), rgba(4,10,14,0.46)),
+    radial-gradient(circle at center, rgba(0, 180, 190, 0.10), transparent 45%),
+    radial-gradient(circle at 50% 35%, rgba(90, 255, 255, 0.08), transparent 30%);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at center, transparent 34%, rgba(0,0,0,0.18) 62%, rgba(0,0,0,0.54) 100%),
+    linear-gradient(90deg, rgba(0,0,0,0.34), transparent 18%, transparent 82%, rgba(0,0,0,0.34));
+}
+    
     #canvasA {
       background: transparent !important;
       background-color: transparent !important;
