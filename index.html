@@ -561,8 +561,10 @@ body.ttwc-ready #ttwcNameIcon {
 })();
   </script>
   
-  <script>
+<script>
 (() => {
+  let panelRefreshTimer = null;
+
   function ensureLogo() {
     if (document.getElementById("ttwcLogo")) return;
     const img = document.createElement("img");
@@ -596,21 +598,19 @@ body.ttwc-ready #ttwcNameIcon {
     if (!el) return false;
     const r = el.getBoundingClientRect();
     const s = getComputedStyle(el);
-    return r.width > 0 && r.height > 0 && s.display !== "none" && s.visibility !== "hidden" && s.opacity !== "0";
+    return r.width > 0 && r.height > 0 && s.display !== "none" && s.visibility !== "hidden";
   }
 
-  function isMenuVisible() {
-    const input = document.querySelector('input[placeholder*="Kingdom"]');
-    return isVisible(input);
+  function getKingdomInput() {
+    return document.querySelector('input[placeholder*="Kingdom"]');
   }
 
-  function setRect(el, left, top, width, height) {
-    if (!el) return;
-    el.style.setProperty("left", left + "px", "important");
-    el.style.setProperty("top", top + "px", "important");
-    el.style.setProperty("width", width + "px", "important");
-    el.style.setProperty("height", height + "px", "important");
-    el.style.setProperty("margin", "0", "important");
+  function getOpenFxWindow() {
+    return document.querySelector('#windowContainer .window[style*="display: block"], #windowContainer .window:not([style*="display: none"])');
+  }
+
+  function shouldShowOverlay() {
+    return isVisible(getKingdomInput()) || !!getOpenFxWindow();
   }
 
   function distanceToRectCenter(el, rect) {
@@ -673,21 +673,18 @@ body.ttwc-ready #ttwcNameIcon {
     const logo = document.getElementById("ttwcLogo");
     const panel = document.getElementById("ttwcMenuPanel");
     const nameIcon = document.getElementById("ttwcNameIcon");
-
-    const kingdomInput = document.querySelector('input[placeholder*="Kingdom"]');
-
-    // Do NOT aggressively hide everything unless the actual menu input is gone.
-    if (!isVisible(kingdomInput)) {
-      if (panel) panel.style.display = "none";
-      if (nameIcon) nameIcon.style.display = "none";
-      if (logo) logo.style.display = "";
-      return;
-    }
+    const kingdomInput = getKingdomInput();
 
     document.body.classList.add("ttwc-ui-reskin");
     document.body.classList.add("ttwc-ready");
 
     if (logo) logo.style.display = "";
+
+    if (!shouldShowOverlay() || !isVisible(kingdomInput)) {
+      panel.style.display = "none";
+      nameIcon.style.display = "none";
+      return;
+    }
 
     const inputRect = kingdomInput.getBoundingClientRect();
 
@@ -699,7 +696,11 @@ body.ttwc-ready #ttwcNameIcon {
     const menuBtn = findNearbyButton(inputRect, "game menu");
     const colorButton = findNearbyColorButton(inputRect, [lobbyBtn, settingsBtn, accountBtn, menuBtn]);
 
-    if (!lobbyBtn || !settingsBtn || !accountBtn || !menuBtn) return;
+    if (!lobbyBtn || !settingsBtn || !accountBtn || !menuBtn) {
+      panel.style.display = "none";
+      nameIcon.style.display = "none";
+      return;
+    }
 
     kingdomInput.classList.add("ttwc-name-input");
     if (colorButton) colorButton.classList.add("ttwc-color-btn");
@@ -732,64 +733,69 @@ body.ttwc-ready #ttwcNameIcon {
       "ttwc-menu"
     );
 
-    const rects = [
-      kingdomInput.getBoundingClientRect(),
+    const buttonRects = [
       lobbyBtn.getBoundingClientRect(),
       accountBtn.getBoundingClientRect(),
       settingsBtn.getBoundingClientRect(),
       menuBtn.getBoundingClientRect()
     ];
 
-    if (colorButton) rects.push(colorButton.getBoundingClientRect());
+    const buttonsTop = Math.min(...buttonRects.map(r => r.top));
+    const buttonsBottom = Math.max(...buttonRects.map(r => r.bottom));
+    const buttonsRight = Math.max(...buttonRects.map(r => r.right));
+    const colorRect = colorButton ? colorButton.getBoundingClientRect() : null;
 
-    const left = Math.min(...rects.map(r => r.left));
-    const top = Math.min(...rects.map(r => r.top));
-    const right = Math.max(...rects.map(r => r.right));
-    const bottom = Math.max(...rects.map(r => r.bottom));
+    const left = Math.round(inputRect.left - 18);
+    const top = Math.round(inputRect.top - 18);
+    const right = Math.round(Math.max(buttonsRight, colorRect ? colorRect.right : inputRect.right) + 18);
+    const bottom = Math.round(buttonsBottom + 16);
 
-    const padX = 18;
-    const padTop = 18;
-    const padBottom = 16;
-
-    panel.style.left = Math.round(left - padX) + "px";
-    panel.style.top = Math.round(top - padTop) + "px";
-    panel.style.width = Math.round((right - left) + padX * 2) + "px";
-    panel.style.height = Math.round((bottom - top) + padTop + padBottom) + "px";
+    panel.style.left = left + "px";
+    panel.style.top = top + "px";
+    panel.style.width = (right - left) + "px";
+    panel.style.height = (bottom - top) + "px";
     panel.style.display = "block";
 
-    const rInput = kingdomInput.getBoundingClientRect();
-    nameIcon.style.left = Math.round(rInput.left + 12) + "px";
-    nameIcon.style.top = Math.round(rInput.top + (rInput.height - 30) / 2) + "px";
+    nameIcon.style.left = Math.round(inputRect.left + 12) + "px";
+    nameIcon.style.top = Math.round(inputRect.top + (inputRect.height - 30) / 2) + "px";
     nameIcon.style.width = "30px";
     nameIcon.style.height = "30px";
     nameIcon.style.display = "block";
   }
 
-  function applyStable() {
-    requestAnimationFrame(() => {
-      apply();
-      requestAnimationFrame(() => {
-        apply();
-        setTimeout(apply, 60);
-        setTimeout(apply, 180);
-      });
-    });
+  function scheduleRefresh() {
+    clearTimeout(panelRefreshTimer);
+
+    apply();
+    requestAnimationFrame(apply);
+
+    setTimeout(apply, 80);
+    setTimeout(apply, 180);
+    setTimeout(apply, 320);
+
+    panelRefreshTimer = setTimeout(apply, 500);
   }
 
-  applyStable();
+  apply();
 
-  new MutationObserver(() => applyStable())
-  .observe(document.body, { childList: true, subtree: true });
+  new MutationObserver(() => {
+    const input = getKingdomInput();
+    if (input || shouldShowOverlay()) {
+      scheduleRefresh();
+    }
+  }).observe(document.body, { childList: true, subtree: true });
 
-  window.addEventListener("resize", applyStable);
-  window.addEventListener("fullscreenchange", applyStable);
-  window.addEventListener("visibilitychange", applyStable);
-  window.addEventListener("focus", applyStable);
+  window.addEventListener("resize", scheduleRefresh);
+  window.addEventListener("fullscreenchange", () => {
+    setTimeout(scheduleRefresh, 30);
+    setTimeout(scheduleRefresh, 160);
+    setTimeout(scheduleRefresh, 320);
+  });
+  window.addEventListener("focus", scheduleRefresh);
 
-
-  console.log("[TTWC] menu reskin stable mode active");
+  console.log("[TTWC] menu reskin fixed mode active");
 })();
-</script>
+</script>  
   
 <script>
 window.__TTWC = window.__TTWC || {};
