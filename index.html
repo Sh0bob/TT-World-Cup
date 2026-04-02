@@ -83,6 +83,28 @@ body.ttwc-ui-reskin input {
   transition: all 0.18s ease;
 }
 
+#ttwcLogo {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 7%;
+  transform: translateX(-50%);
+  width: min(420px, 34vw);
+  height: auto !important;
+  aspect-ratio: auto;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.35));
+}
+
+#ttwcMenuPanel {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  transform: translateZ(0);
+  will-change: left, top, width, height;
+}
+
 #ttwcMenuPanel {
   position: absolute;
   z-index: 4;
@@ -786,56 +808,19 @@ body.ttwc-ready #ttwcNameIcon {
   }
 
   function buttons() {
-  return Array.from(document.querySelectorAll("button"));
-}
+    return Array.from(document.querySelectorAll("button"));
+  }
 
-function isVisibleButton(b) {
-  if (!b) return false;
-  const r = b.getBoundingClientRect();
-  return r.width > 20 && r.height > 20 && r.bottom > 0 && r.right > 0;
-}
+  function isVisible(el) {
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    const s = getComputedStyle(el);
+    return r.width > 0 && r.height > 0 && s.display !== "none" && s.visibility !== "hidden" && s.opacity !== "0";
+  }
 
-function distanceToRectCenter(el, rect) {
-  const r = el.getBoundingClientRect();
-  const cx1 = r.left + r.width / 2;
-  const cy1 = r.top + r.height / 2;
-  const cx2 = rect.left + rect.width / 2;
-  const cy2 = rect.top + rect.height / 2;
-  const dx = cx1 - cx2;
-  const dy = cy1 - cy2;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-function nearbyButtons(anchorRect, maxDistance = 420) {
-  return buttons().filter(b => isVisibleButton(b) && distanceToRectCenter(b, anchorRect) < maxDistance);
-}
-
-function findNearbyButton(anchorRect, text) {
-  const t = text.toLowerCase();
-  return nearbyButtons(anchorRect)
-    .filter(b => (b.textContent || "").toLowerCase().includes(t))
-    .sort((a, b) => distanceToRectCenter(a, anchorRect) - distanceToRectCenter(b, anchorRect))[0];
-}
-
-function findNearbyColorButton(anchorRect, exclude = []) {
-  return nearbyButtons(anchorRect)
-    .filter(b =>
-      !exclude.includes(b) &&
-      !(b.textContent || "").trim() &&
-      b.getBoundingClientRect().width >= 30 &&
-      b.getBoundingClientRect().height >= 30 &&
-      b.getBoundingClientRect().width <= 90 &&
-      b.getBoundingClientRect().height <= 90
-    )
-    .sort((a, b) => distanceToRectCenter(a, anchorRect) - distanceToRectCenter(b, anchorRect))[0];
-}
-
-  function isMenu() {
-    try {
-      return !!document.querySelector('input[placeholder*="Kingdom"]');
-    } catch {
-      return false;
-    }
+  function isMenuVisible() {
+    const input = document.querySelector('input[placeholder*="Kingdom"]');
+    return isVisible(input);
   }
 
   function setRect(el, left, top, width, height) {
@@ -845,6 +830,41 @@ function findNearbyColorButton(anchorRect, exclude = []) {
     el.style.setProperty("width", width + "px", "important");
     el.style.setProperty("height", height + "px", "important");
     el.style.setProperty("margin", "0", "important");
+  }
+
+  function distanceToRectCenter(el, rect) {
+    const r = el.getBoundingClientRect();
+    const cx1 = r.left + r.width / 2;
+    const cy1 = r.top + r.height / 2;
+    const cx2 = rect.left + rect.width / 2;
+    const cy2 = rect.top + rect.height / 2;
+    const dx = cx1 - cx2;
+    const dy = cy1 - cy2;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function nearbyButtons(anchorRect, maxDistance = 420) {
+    return buttons().filter(b => {
+      const r = b.getBoundingClientRect();
+      return r.width > 20 && r.height > 20 && distanceToRectCenter(b, anchorRect) < maxDistance;
+    });
+  }
+
+  function findNearbyButton(anchorRect, text) {
+    const t = text.toLowerCase();
+    return nearbyButtons(anchorRect)
+      .filter(b => (b.textContent || "").toLowerCase().includes(t))
+      .sort((a, b) => distanceToRectCenter(a, anchorRect) - distanceToRectCenter(b, anchorRect))[0];
+  }
+
+  function findNearbyColorButton(anchorRect, exclude = []) {
+    return nearbyButtons(anchorRect)
+      .filter(b => {
+        if (exclude.includes(b)) return false;
+        const r = b.getBoundingClientRect();
+        return !(b.textContent || "").trim() && r.width >= 28 && r.height >= 28 && r.width <= 90 && r.height <= 90;
+      })
+      .sort((a, b) => distanceToRectCenter(a, anchorRect) - distanceToRectCenter(b, anchorRect))[0];
   }
 
   function setButtonCopy(btn, title, subtitle, extraClass) {
@@ -873,11 +893,13 @@ function findNearbyColorButton(anchorRect, exclude = []) {
     const panel = document.getElementById("ttwcMenuPanel");
     const nameIcon = document.getElementById("ttwcNameIcon");
 
-    if (!isMenu()) {
-      if (logo) logo.style.display = "none";
+    const kingdomInput = document.querySelector('input[placeholder*="Kingdom"]');
+
+    // Do NOT aggressively hide everything unless the actual menu input is gone.
+    if (!isVisible(kingdomInput)) {
       if (panel) panel.style.display = "none";
       if (nameIcon) nameIcon.style.display = "none";
-      document.body.classList.remove("ttwc-ui-reskin");
+      if (logo) logo.style.display = "";
       return;
     }
 
@@ -886,21 +908,17 @@ function findNearbyColorButton(anchorRect, exclude = []) {
 
     if (logo) logo.style.display = "";
 
-    const kingdomInput = document.querySelector('input[placeholder*="Kingdom"]');
-if (!kingdomInput) return;
+    const inputRect = kingdomInput.getBoundingClientRect();
 
-const inputRect = kingdomInput.getBoundingClientRect();
+    const lobbyBtn = findNearbyButton(inputRect, "join/create custom lobby");
+    const settingsBtn = findNearbyButton(inputRect, "fx client settings");
+    const accountBtn =
+      findNearbyButton(inputRect, "my account") ||
+      findNearbyButton(inputRect, "account");
+    const menuBtn = findNearbyButton(inputRect, "game menu");
+    const colorButton = findNearbyColorButton(inputRect, [lobbyBtn, settingsBtn, accountBtn, menuBtn]);
 
-const lobbyBtn = findNearbyButton(inputRect, "join/create custom lobby");
-const settingsBtn = findNearbyButton(inputRect, "fx client settings");
-const accountBtn =
-  findNearbyButton(inputRect, "my account") ||
-  findNearbyButton(inputRect, "account");
-const menuBtn = findNearbyButton(inputRect, "game menu");
-
-const colorButton = findNearbyColorButton(inputRect, [lobbyBtn, settingsBtn, accountBtn, menuBtn]);
-
-    if (!kingdomInput || !lobbyBtn || !settingsBtn || !accountBtn || !menuBtn) return;
+    if (!lobbyBtn || !settingsBtn || !accountBtn || !menuBtn) return;
 
     kingdomInput.classList.add("ttwc-name-input");
     if (colorButton) colorButton.classList.add("ttwc-color-btn");
@@ -934,64 +952,67 @@ const colorButton = findNearbyColorButton(inputRect, [lobbyBtn, settingsBtn, acc
     );
 
     const rects = [
-  kingdomInput.getBoundingClientRect(),
-  lobbyBtn.getBoundingClientRect(),
-  accountBtn.getBoundingClientRect(),
-  settingsBtn.getBoundingClientRect(),
-  menuBtn.getBoundingClientRect()
-];
+      kingdomInput.getBoundingClientRect(),
+      lobbyBtn.getBoundingClientRect(),
+      accountBtn.getBoundingClientRect(),
+      settingsBtn.getBoundingClientRect(),
+      menuBtn.getBoundingClientRect()
+    ];
 
-if (colorButton) rects.push(colorButton.getBoundingClientRect());
+    if (colorButton) rects.push(colorButton.getBoundingClientRect());
 
-const validRects = rects.filter(r =>
-  r.width > 20 &&
-  r.height > 20 &&
-  r.left > 0 &&
-  r.top > 0 &&
-  r.right < window.innerWidth + 5 &&
-  r.bottom < window.innerHeight + 5
-);
+    const left = Math.min(...rects.map(r => r.left));
+    const top = Math.min(...rects.map(r => r.top));
+    const right = Math.max(...rects.map(r => r.right));
+    const bottom = Math.max(...rects.map(r => r.bottom));
 
-if (validRects.length < 5) return;
+    const padX = 18;
+    const padTop = 18;
+    const padBottom = 16;
 
-const stackLeft = Math.min(...validRects.map(r => r.left));
-const stackTop = Math.min(...validRects.map(r => r.top));
-const stackRight = Math.max(...validRects.map(r => r.right));
-const stackBottom = Math.max(...validRects.map(r => r.bottom));
-
-const padX = 18;
-const padTop = 18;
-const padBottom = 16;
-
-panel.style.left = Math.max(8, stackLeft - padX) + "px";
-panel.style.top = Math.max(8, stackTop - padTop) + "px";
-panel.style.width = Math.min(window.innerWidth - 16, stackRight - stackLeft + padX * 2) + "px";
-panel.style.height = Math.min(window.innerHeight - 16, stackBottom - stackTop + padTop + padBottom) + "px";
-panel.style.display = "block";
+    panel.style.left = Math.round(left - padX) + "px";
+    panel.style.top = Math.round(top - padTop) + "px";
+    panel.style.width = Math.round((right - left) + padX * 2) + "px";
+    panel.style.height = Math.round((bottom - top) + padTop + padBottom) + "px";
+    panel.style.display = "block";
 
     const rInput = kingdomInput.getBoundingClientRect();
-
-nameIcon.style.left = (rInput.left + 12) + "px";
-nameIcon.style.top = (rInput.top + Math.round((rInput.height - 30) / 2)) + "px";
-nameIcon.style.width = "30px";
-nameIcon.style.height = "30px";
+    nameIcon.style.left = Math.round(rInput.left + 12) + "px";
+    nameIcon.style.top = Math.round(rInput.top + (rInput.height - 30) / 2) + "px";
+    nameIcon.style.width = "30px";
+    nameIcon.style.height = "30px";
     nameIcon.style.display = "block";
   }
 
-  apply();
-  new MutationObserver(() => requestAnimationFrame(apply))
-    .observe(document.body, { childList: true, subtree: true });
+  function applyStable() {
+    requestAnimationFrame(() => {
+      apply();
+      requestAnimationFrame(() => {
+        apply();
+        setTimeout(apply, 60);
+        setTimeout(apply, 180);
+      });
+    });
+  }
+
+  applyStable();
+
+  new MutationObserver(() => applyStable())
+    .observe(document.body, { childList: true, subtree: true, attributes: true });
+
+  window.addEventListener("resize", applyStable);
+  window.addEventListener("fullscreenchange", applyStable);
+  window.addEventListener("visibilitychange", applyStable);
+  window.addEventListener("focus", applyStable);
 
   let tries = 0;
   const interval = setInterval(() => {
-    apply();
+    applyStable();
     tries++;
-    if (tries > 80) clearInterval(interval);
-  }, 120);
+    if (tries > 120) clearInterval(interval);
+  }, 250);
 
-  window.addEventListener("resize", () => requestAnimationFrame(apply));
-
-  console.log("[TTWC] menu reskin v2 active");
+  console.log("[TTWC] menu reskin stable mode active");
 })();
 </script>
 <script>
