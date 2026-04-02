@@ -82,7 +82,7 @@ source = replaceOne(
   /var gap = \.5 \* bc\.gap,[\s\S]*?re\.e\.style\.font = bA\.qr\.si\(0, bA\.qr\.uu\(\.08 \* aQZ\.j\)\), bA\.qr\.r1\(re\.e, 5\)/,
   `var edgeGap = Math.max(8, .5 * bc.gap),
 			panelW = .50 * aQZ.i,
-			inputH = .16 * aQZ.j,
+			inputH = .20 * aQZ.j,
 			colorSize = inputH,
 			controlGap = Math.max(8, .02 * aQZ.j),
 			buttonH = .115 * aQZ.j,
