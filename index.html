@@ -240,9 +240,14 @@ input.ttwc-name-input {
   border: 1px solid rgba(233, 241, 246, 0.48) !important;
   color: #ffffff !important;
   padding: 0 16px 0 52px !important;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06) 34%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.10) 100%),
-    linear-gradient(180deg, rgba(69,88,100,0.44), rgba(25,39,49,0.66)) !important;
+  background-image:
+  url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e4eef8' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='32' cy='22' r='9'/><path d='M16 50c4-9 12-13 16-13s12 4 16 13'/></g></svg>"),
+  linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06) 34%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.10) 100%),
+  linear-gradient(180deg, rgba(69,88,100,0.44), rgba(25,39,49,0.66)) !important;
+
+background-repeat: no-repeat, no-repeat, no-repeat !important;
+background-size: 22px 22px, auto, auto !important;
+background-position: 14px center, 0 0, 0 0 !important;
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.16),
     inset 0 -1px 0 rgba(0,0,0,0.20),
@@ -255,28 +260,6 @@ input.ttwc-name-input {
 
 input.ttwc-name-input::placeholder {
   color: rgba(228, 238, 245, 0.76);
-}
-
-/* Small icon box next to the name field */
-#ttwcNameIcon {
-  position: absolute;
-  z-index: 7;
-  pointer-events: none;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.22);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 36%, rgba(255,255,255,0.01) 37%, rgba(0,0,0,0.10) 100%),
-    linear-gradient(180deg, rgba(88,105,118,0.46), rgba(40,55,65,0.72));
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.16),
-    0 4px 10px rgba(0,0,0,0.22);
-}
-
-#ttwcNameIcon::before {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  background: url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23e4eef8' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='32' cy='22' r='9'/><path d='M16 50c4-9 12-13 16-13s12 4 16 13'/></g></svg>\") center/contain no-repeat;
 }
 
 /* Colour button */
@@ -562,16 +545,6 @@ button.ttwc-color-btn::after {
   
 <script>
 (() => {
-  function ensureNameIcon() {
-    let icon = document.getElementById("ttwcNameIcon");
-    if (!icon) {
-      icon = document.createElement("div");
-      icon.id = "ttwcNameIcon";
-      document.body.appendChild(icon);
-    }
-    return icon;
-  }
-
   function isVisible(el) {
     if (!el) return false;
     const r = el.getBoundingClientRect();
@@ -652,10 +625,8 @@ button.ttwc-color-btn::after {
   function applyMenuSkin() {
     const kingdomInput = document.querySelector('input[placeholder*="Kingdom"]');
     if (!isVisible(kingdomInput)) {
-      const icon = document.getElementById("ttwcNameIcon");
-      if (icon) icon.style.display = "none";
-      return;
-    }
+  return;
+}
 
     document.body.classList.add("ttwc-ui-reskin");
 
@@ -703,12 +674,6 @@ button.ttwc-color-btn::after {
     kingdomInput.classList.add("ttwc-name-input");
     if (colorBtn) colorBtn.classList.add("ttwc-color-btn");
 
-    const icon = ensureNameIcon();
-    icon.style.left = Math.round(inputRect.left + 12) + "px";
-    icon.style.top = Math.round(inputRect.top + (inputRect.height - 30) / 2) + "px";
-    icon.style.width = "30px";
-    icon.style.height = "30px";
-    icon.style.display = "block";
   }
 
   function refreshMenuSkin() {
