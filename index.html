@@ -75,6 +75,203 @@
     a {
       color: rgb(225, 225, 255);
     }
+
+    /* ===== TTWC MENU RESKIN ===== */
+
+body.ttwc-ui-reskin button,
+body.ttwc-ui-reskin input {
+  transition: all 0.18s ease;
+}
+
+#ttwcMenuPanel {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  border-radius: 18px;
+  border: 1px solid rgba(210, 245, 255, 0.7);
+  background:
+    linear-gradient(180deg, rgba(170, 240, 255, 0.14), rgba(255,255,255,0.05)),
+    linear-gradient(180deg, rgba(10, 28, 40, 0.82), rgba(9, 19, 28, 0.88));
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.08) inset,
+    0 10px 28px rgba(0,0,0,0.42),
+    0 0 24px rgba(120, 220, 255, 0.14);
+  backdrop-filter: blur(6px);
+}
+
+.ttwc-menu-btn {
+  position: absolute !important;
+  z-index: 6 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left !important;
+  padding: 0 18px 0 58px !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(220, 245, 255, 0.45) !important;
+  color: #f5fbff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.02)),
+    linear-gradient(180deg, rgba(35,58,70,0.92), rgba(20,35,45,0.96)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.28),
+    0 6px 14px rgba(0,0,0,0.24);
+  overflow: hidden;
+}
+
+.ttwc-menu-btn::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  transform: translateY(-50%);
+  opacity: 0.95;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: drop-shadow(0 0 4px rgba(255,255,255,0.16));
+}
+
+.ttwc-menu-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.01) 45%, rgba(0,0,0,0.08));
+}
+
+.ttwc-menu-btn .ttwc-btn-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.05;
+}
+
+.ttwc-menu-btn .ttwc-btn-title {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #ffffff;
+  font-size: 1em;
+}
+
+.ttwc-menu-btn .ttwc-btn-subtitle {
+  font-size: 0.53em;
+  color: rgba(226, 240, 247, 0.88);
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  text-transform: none;
+}
+
+.ttwc-menu-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 0 -1px 0 rgba(0,0,0,0.26),
+    0 10px 22px rgba(0,0,0,0.32);
+}
+
+.ttwc-menu-btn.ttwc-lobby {
+  background:
+    linear-gradient(180deg, rgba(180,255,214,0.09), rgba(255,255,255,0.02)),
+    linear-gradient(180deg, rgba(34,115,92,0.95), rgba(22,85,66,0.98)) !important;
+}
+
+.ttwc-menu-btn.ttwc-account {
+  background:
+    linear-gradient(180deg, rgba(255,215,132,0.08), rgba(255,255,255,0.02)),
+    linear-gradient(180deg, rgba(121,90,40,0.95), rgba(91,65,27,0.98)) !important;
+}
+
+.ttwc-menu-btn.ttwc-settings,
+.ttwc-menu-btn.ttwc-menu {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+    linear-gradient(180deg, rgba(54,77,89,0.95), rgba(34,49,58,0.98)) !important;
+}
+
+.ttwc-menu-btn.ttwc-lobby::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23d8fff1' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><circle cx='18' cy='32' r='10'/><circle cx='46' cy='32' r='10'/><path d='M28 32h8'/></g></svg>");
+}
+
+.ttwc-menu-btn.ttwc-account::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23ffe4a8' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><circle cx='23' cy='25' r='9'/><path d='M30 31l15 15'/><path d='M41 42l8 8'/><path d='M14 50l8-8'/></g></svg>");
+}
+
+.ttwc-menu-btn.ttwc-settings::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23d9e8ef' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><circle cx='32' cy='32' r='9'/><path d='M32 11v8'/><path d='M32 45v8'/><path d='M11 32h8'/><path d='M45 32h8'/><path d='M17 17l6 6'/><path d='M41 41l6 6'/><path d='M47 17l-6 6'/><path d='M23 41l-6 6'/></g></svg>");
+}
+
+.ttwc-menu-btn.ttwc-menu::before {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23d9e8ef' stroke-width='4' stroke-linecap='round'><path d='M18 18h30'/><path d='M18 32h30'/><path d='M18 46h30'/><circle cx='12' cy='18' r='2.5' fill='%23d9e8ef' stroke='none'/><circle cx='12' cy='32' r='2.5' fill='%23d9e8ef' stroke='none'/><circle cx='12' cy='46' r='2.5' fill='%23d9e8ef' stroke='none'/></g></svg>");
+}
+
+input.ttwc-name-input {
+  position: absolute !important;
+  z-index: 6 !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(230,245,255,0.55) !important;
+  color: #fff !important;
+  padding: 0 16px 0 48px !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+    linear-gradient(180deg, rgba(36,60,71,0.93), rgba(22,36,46,0.97)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    0 4px 10px rgba(0,0,0,0.22);
+  text-align: left !important;
+}
+
+input.ttwc-name-input::placeholder {
+  color: rgba(228, 240, 246, 0.7);
+}
+
+#ttwcNameIcon {
+  position: absolute;
+  z-index: 7;
+  pointer-events: none;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background:
+    linear-gradient(180deg, rgba(74,101,119,0.9), rgba(35,52,63,0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    0 4px 10px rgba(0,0,0,0.24);
+}
+
+#ttwcNameIcon::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><g fill='none' stroke='%23d8ecff' stroke-width='3'><circle cx='32' cy='22' r='10'/><path d='M14 52c3-10 13-16 18-16s15 6 18 16'/></g></svg>") center/contain no-repeat;
+}
+
+button.ttwc-color-btn {
+  position: absolute !important;
+  z-index: 6 !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(214,180,255,0.7) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    0 4px 10px rgba(0,0,0,0.22),
+    0 0 12px rgba(160, 80, 255, 0.20);
+}
+
+#ttwcMenuPanel,
+#ttwcNameIcon {
+  display: none;
+}
+
+body.ttwc-ready #ttwcMenuPanel,
+body.ttwc-ready #ttwcNameIcon {
+  display: block;
+}
   </style>
   <script>
 // Service worker disabled for this fork (prevents sw2.js 404 + caching headaches during development)
@@ -332,7 +529,6 @@
   
   <script>
 (() => {
-  // 1) Add logo once
   function ensureLogo() {
     if (document.getElementById("ttwcLogo")) return;
     const img = document.createElement("img");
@@ -342,124 +538,184 @@
     document.body.appendChild(img);
   }
 
-  const TEXT = {
-    multiplayer: "Multiplayer",
-    scenario: "Custom Scenario",
-    settings: "FX Client settings",
-    lobby: "Join/Create custom lobby"
-  };
+  function ensurePanel() {
+    let panel = document.getElementById("ttwcMenuPanel");
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "ttwcMenuPanel";
+      document.body.appendChild(panel);
+    }
 
-  const targets = { lobbyBox: null, settingsBox: null };
+    let icon = document.getElementById("ttwcNameIcon");
+    if (!icon) {
+      icon = document.createElement("div");
+      icon.id = "ttwcNameIcon";
+      document.body.appendChild(icon);
+    }
+  }
 
   function buttons() {
     return Array.from(document.querySelectorAll("button"));
   }
 
-  function findBtn(label) {
-    return buttons().find(b => (b.textContent || "").includes(label));
+  function firstButtonContaining(text) {
+    return buttons().find(b => (b.textContent || "").toLowerCase().includes(text.toLowerCase()));
   }
 
-  function allMatching(label) {
-    return buttons().filter(b => (b.textContent || "").includes(label));
-  }
-
-  function captureBox(btn) {
-    const r = btn.getBoundingClientRect();
-    return {
-      left: r.left + "px",
-      top: r.top + "px",
-      width: r.width + "px",
-      height: r.height + "px",
-      font: getComputedStyle(btn).font,
-      border: getComputedStyle(btn).border,
-      bg: getComputedStyle(btn).backgroundColor
-    };
-  }
-
-  function applyBox(btn, box) {
-    if (!btn || !box) return;
-    btn.style.setProperty("position", "absolute", "important");
-    btn.style.setProperty("left", box.left, "important");
-    btn.style.setProperty("top", box.top, "important");
-    btn.style.setProperty("width", box.width, "important");
-    btn.style.setProperty("height", box.height, "important");
-    btn.style.setProperty("font", box.font, "important");
-    btn.style.setProperty("border", box.border, "important");
-    btn.style.setProperty("background-color", box.bg, "important");
-    btn.style.setProperty("margin", "0", "important");
-  }
-
-  function hide(btn) {
-    if (!btn) return;
-    btn.style.setProperty("display", "none", "important");
-    btn.style.setProperty("pointer-events", "none", "important");
-  }
-
-  // Best effort “are we on main menu”
   function isMenu() {
-    // Many builds still expose MenuManager; if not, we still run safely.
-    try { return window.MenuManager?.getState?.() === 6; } catch { return true; }
+    try {
+      return !!document.querySelector('input[placeholder*="Kingdom"]');
+    } catch {
+      return false;
+    }
+  }
+
+  function setRect(el, left, top, width, height) {
+    if (!el) return;
+    el.style.setProperty("left", left + "px", "important");
+    el.style.setProperty("top", top + "px", "important");
+    el.style.setProperty("width", width + "px", "important");
+    el.style.setProperty("height", height + "px", "important");
+    el.style.setProperty("margin", "0", "important");
+  }
+
+  function setButtonCopy(btn, title, subtitle, extraClass) {
+    if (!btn) return;
+    btn.classList.add("ttwc-menu-btn");
+    if (extraClass) btn.classList.add(extraClass);
+
+    const html =
+      `<span class="ttwc-btn-copy">
+        <span class="ttwc-btn-title">${title}</span>
+        <span class="ttwc-btn-subtitle">${subtitle}</span>
+      </span>`;
+
+    if (btn.dataset.ttwcHtml !== html) {
+      btn.innerHTML = html;
+      btn.dataset.ttwcHtml = html;
+    }
   }
 
   function apply() {
     ensureLogo();
+    ensurePanel();
+
+    const logo = document.getElementById("ttwcLogo");
+    const panel = document.getElementById("ttwcMenuPanel");
+    const nameIcon = document.getElementById("ttwcNameIcon");
 
     if (!isMenu()) {
-      // Hide logo outside menu (stops it lingering in other screens)
-      const logo = document.getElementById("ttwcLogo");
       if (logo) logo.style.display = "none";
-      document.body.classList.add("ttwc-ready");
+      if (panel) panel.style.display = "none";
+      if (nameIcon) nameIcon.style.display = "none";
+      document.body.classList.remove("ttwc-ui-reskin");
       return;
-    } else {
-      const logo = document.getElementById("ttwcLogo");
-      if (logo) logo.style.display = "";
     }
 
-    const mp = findBtn(TEXT.multiplayer);
-    const sc = findBtn(TEXT.scenario);
-    const lobby = findBtn(TEXT.lobby);
-    const settings = findBtn(TEXT.settings);
-
-    if (!targets.lobbyBox && mp) targets.lobbyBox = captureBox(mp);
-    if (!targets.settingsBox && sc) targets.settingsBox = captureBox(sc);
-
-    // Hide unwanted buttons (don’t remove)
-    allMatching(TEXT.multiplayer).forEach(hide);
-    allMatching(TEXT.scenario).forEach(hide);
-
-    // Move these into the big slots
-    applyBox(lobby, targets.lobbyBox);
-    applyBox(settings, targets.settingsBox);
-
-    const yOffset = 14;
-
-if (lobby) {
-  const currentTop = parseFloat(lobby.style.top || "0");
-  lobby.style.setProperty("top", `${currentTop + yOffset}px`, "important");
-}
-
-if (settings) {
-  const currentTop = parseFloat(settings.style.top || "0");
-  settings.style.setProperty("top", `${currentTop + yOffset}px`, "important");
-}
-
-    // Done — reveal buttons now that layout is correct
+    document.body.classList.add("ttwc-ui-reskin");
     document.body.classList.add("ttwc-ready");
+
+    if (logo) logo.style.display = "";
+
+    const kingdomInput = document.querySelector('input[placeholder*="Kingdom"]');
+    const colorButton = buttons().find(b => !b.textContent.trim() && b.offsetWidth > 20 && b.offsetHeight > 20);
+
+    const lobbyBtn = firstButtonContaining("join/create custom lobby");
+    const settingsBtn = firstButtonContaining("fx client settings");
+    const accountBtn = firstButtonContaining("account");
+    const menuBtn = firstButtonContaining("game menu");
+
+    if (!kingdomInput || !lobbyBtn || !settingsBtn || !accountBtn || !menuBtn) return;
+
+    const r = kingdomInput.getBoundingClientRect();
+
+    const panelLeft = Math.round(r.left - 20);
+    const panelTop = Math.round(r.top - 18);
+    const panelWidth = 430;
+    const panelHeight = 360;
+
+    panel.style.left = panelLeft + "px";
+    panel.style.top = panelTop + "px";
+    panel.style.width = panelWidth + "px";
+    panel.style.height = panelHeight + "px";
+    panel.style.display = "block";
+
+    const inputLeft = panelLeft + 18;
+    const inputTop = panelTop + 16;
+    const inputHeight = 48;
+    const iconSize = 36;
+    const colorSize = 44;
+    const gap = 10;
+
+    const inputWidth = panelWidth - 36 - colorSize - gap;
+    setRect(kingdomInput, inputLeft + 42, inputTop, inputWidth - 42, inputHeight);
+    kingdomInput.classList.add("ttwc-name-input");
+
+    nameIcon.style.left = (inputLeft + 4) + "px";
+    nameIcon.style.top = (inputTop + 6) + "px";
+    nameIcon.style.width = iconSize + "px";
+    nameIcon.style.height = iconSize + "px";
+    nameIcon.style.display = "block";
+
+    if (colorButton) {
+      colorButton.classList.add("ttwc-color-btn");
+      setRect(colorButton, panelLeft + panelWidth - 18 - colorSize, inputTop, colorSize, colorSize);
+    }
+
+    const btnLeft = panelLeft + 18;
+    const btnWidth = panelWidth - 36;
+    const btnHeight = 58;
+    const btnGap = 10;
+    const startY = inputTop + inputHeight + 14;
+
+    setRect(lobbyBtn, btnLeft, startY, btnWidth, btnHeight);
+    setRect(accountBtn, btnLeft, startY + (btnHeight + btnGap) * 1, btnWidth, btnHeight);
+    setRect(settingsBtn, btnLeft, startY + (btnHeight + btnGap) * 2, btnWidth, btnHeight);
+    setRect(menuBtn, btnLeft, startY + (btnHeight + btnGap) * 3, btnWidth, btnHeight);
+
+    setButtonCopy(
+      lobbyBtn,
+      "JOIN / CREATE LOBBY",
+      "Access existing lobbies or create a new session",
+      "ttwc-lobby"
+    );
+
+    setButtonCopy(
+      accountBtn,
+      "ACCOUNT DASHBOARD",
+      "View stats, leaderboards, & manage profile",
+      "ttwc-account"
+    );
+
+    setButtonCopy(
+      settingsBtn,
+      "FX CLIENT SETTINGS",
+      "Adjust visuals, effects, and performance",
+      "ttwc-settings"
+    );
+
+    setButtonCopy(
+      menuBtn,
+      "GAME MENU",
+      "General settings, credits, and exit game",
+      "ttwc-menu"
+    );
   }
 
-  // Run now + keep winning when UI rebuilds
   apply();
   new MutationObserver(() => requestAnimationFrame(apply))
     .observe(document.body, { childList: true, subtree: true });
 
-  // Extra retries in case buttons appear slightly later
-  let n = 0;
-  const t = setInterval(() => {
+  let tries = 0;
+  const interval = setInterval(() => {
     apply();
-    if (++n > 40) clearInterval(t);
-  }, 100);
+    tries++;
+    if (tries > 80) clearInterval(interval);
+  }, 120);
 
-  console.log("[TTWC] menu + logo script active");
+  window.addEventListener("resize", () => requestAnimationFrame(apply));
+
+  console.log("[TTWC] menu reskin active");
 })();
 </script>
 <script>
