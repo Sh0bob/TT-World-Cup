@@ -1364,60 +1364,59 @@ window.__TTWC = window.__TTWC || {};
   }
 
   function buildPayload() {
-    try {
-      const getter = window.__TTWC?.getLeaderboardSnapshot;
+  try {
+    const getter = window.__TTWC?.getLeaderboardSnapshot;
 
-      if (typeof getter !== "function") {
-        console.log("[TTWC] getLeaderboardSnapshot() is not available yet");
-        return null;
-      }
-
-      const snapshot = getter();
-      if (!Array.isArray(snapshot) || snapshot.length === 0) {
-        console.log("[TTWC] leaderboard snapshot empty");
-        return null;
-      }
-
-      const humanNameSet = new Set(
-  Array.isArray(TTWC.humanNames)
-    ? TTWC.humanNames.map(n => String(n).trim()).filter(Boolean)
-    : []
-);
-
-const leaderboard = snapshot
-  .map((p, index) => ({
-    id: Number(p.id ?? p.playerId ?? index),
-    name: String(p.name ?? p.displayName ?? `Player ${index + 1}`).trim(),
-    territory: Number(p.territory ?? p.score ?? 0),
-    troops: Number(p.troops ?? 0)
-  }))
-  .filter(row => row.name && !Number.isNaN(row.territory))
-  .filter(row => humanNameSet.size === 0 || humanNameSet.has(row.name));
-      
-      if (leaderboard.length === 0) {
-        console.log("[TTWC] no usable leaderboard rows");
-        return null;
-console.log("[TTWC] human names:", [...humanNameSet]);
-console.log("[TTWC] filtered leaderboard:", leaderboard);
-      }
-
-      const meta = {
-        title: "TTWC Custom Lobby Match Finished",
-        endedAt: Date.now(),
-        lobbyCode: getLobbyCode(),
-        resultType: TTWC.resultType || undefined,
-        mode: window.__fx?.customLobby?.gameInfo?.mode,
-        map: window.__fx?.customLobby?.gameInfo?.map,
-        botCount: window.__fx?.customLobby?.gameInfo?.botCount,
-        matchId: `${Date.now()}-${getLobbyCode() || "nolobby"}`
-      };
-
-      return { meta, leaderboard };
-    } catch (e) {
-      console.log("[TTWC] buildPayload failed", e);
+    if (typeof getter !== "function") {
+      console.log("[TTWC] getLeaderboardSnapshot() is not available yet");
       return null;
     }
+
+    const snapshot = getter();
+    if (!Array.isArray(snapshot) || snapshot.length === 0) {
+      console.log("[TTWC] leaderboard snapshot empty");
+      return null;
+    }
+
+    const humanNameSet = new Set(
+      Array.isArray(TTWC.humanNames)
+        ? TTWC.humanNames.map(n => String(n).trim()).filter(Boolean)
+        : []
+    );
+
+    const leaderboard = snapshot
+      .map((p, index) => ({
+        id: Number(p.id ?? p.playerId ?? index),
+        name: String(p.name ?? p.displayName ?? `Player ${index + 1}`).trim()
+      }))
+      .filter(row => row.name)
+      .filter(row => humanNameSet.size === 0 || humanNameSet.has(row.name));
+
+    console.log("[TTWC] human names:", [...humanNameSet]);
+    console.log("[TTWC] filtered leaderboard:", leaderboard);
+
+    if (leaderboard.length === 0) {
+      console.log("[TTWC] no usable leaderboard rows");
+      return null;
+    }
+
+    const meta = {
+      title: "TTWC Custom Lobby Match Finished",
+      endedAt: Date.now(),
+      lobbyCode: getLobbyCode(),
+      resultType: TTWC.resultType || undefined,
+      mode: window.__fx?.customLobby?.gameInfo?.mode,
+      map: window.__fx?.customLobby?.gameInfo?.map,
+      botCount: window.__fx?.customLobby?.gameInfo?.botCount,
+      matchId: `${Date.now()}-${getLobbyCode() || "nolobby"}`
+    };
+
+    return { meta, leaderboard };
+  } catch (e) {
+    console.log("[TTWC] buildPayload failed", e);
+    return null;
   }
+}
 
   function makePayloadHash(payload) {
     try {
@@ -1479,10 +1478,12 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
 
   function shouldSendFromThisTab() {
   try {
+    const peace = window.__TTWC?.peace || {};
+
     const hostInfo = {
       fxIsHost: window.__fx?.customLobby?.isHost,
-      ttwcIsHost: window.__TTWC?.isHost,
-      selfLobbyIndex: window.__TTWC?.selfLobbyIndex
+      peaceIsHost: peace.isHost,
+      peaceSelfLobbyIndex: peace.selfLobbyIndex
     };
 
     console.log("[TTWC] host check:", hostInfo);
@@ -1490,11 +1491,11 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
     if (window.__fx?.customLobby?.isHost === true) return true;
     if (window.__fx?.customLobby?.isHost === false) return false;
 
-    if (window.__TTWC?.isHost === true) return true;
-    if (window.__TTWC?.isHost === false) return false;
+    if (peace.isHost === true) return true;
+    if (peace.isHost === false) return false;
 
-    if (typeof window.__TTWC?.selfLobbyIndex === "number") {
-      return window.__TTWC.selfLobbyIndex === 0;
+    if (typeof peace.selfLobbyIndex === "number") {
+      return peace.selfLobbyIndex === 0;
     }
   } catch (e) {
     console.log("[TTWC] shouldSendFromThisTab error", e);
