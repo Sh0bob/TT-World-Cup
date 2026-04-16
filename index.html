@@ -910,11 +910,19 @@ window.__TTWC.sendCustomLobbyMessage = function(obj) {
       });
 
       if (sent) {
-        TTWC.clientInfo.sentHello = true;
-        console.log("[TTWC CLIENT] hello sent", {
-          id: TTWC.peace.selfLobbyIndex
-        });
-      }
+  TTWC.clientInfo.sentHello = true;
+
+  // Mark self immediately, because the server may not echo our own custom message back.
+  TTWC.clientInfo.byIndex[TTWC.peace.selfLobbyIndex] = {
+    client: "TTWC",
+    version: "1.0",
+    seenAt: Date.now()
+  };
+
+  console.log("[TTWC CLIENT] hello sent", {
+    id: TTWC.peace.selfLobbyIndex
+  });
+}
     } catch (e) {
       console.log("[TTWC CLIENT] trySendClientHello error:", e);
     }
@@ -1023,6 +1031,10 @@ window.__TTWC = window.__TTWC || {};
 
       __fx.customLobby.isCustomMessage = function(raw) {
         const msg = decodeCustomLobbyMessage(raw);
+
+        if (msg) {
+          console.log("[TTWC CLIENT] incoming custom msg", msg);
+        }
 
         if (msg && msg.t) {
           const type = msg.t;
