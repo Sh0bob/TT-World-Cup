@@ -250,7 +250,7 @@ source = replaceOne(
   /this\.vU = function\(\) \{\s*if \(aa\.aHH\(\), aT\.vU\(\), f4 = Math\.floor\(\(a0\.a1\.iD\(\) \? \.018 : \.0137\) \* h\.iE\), vV\.font = bA\.qr\.si\(0, Math\.max\(5, f4\)\), bA\.qr\.textBaseline\(vV, 0\), bA\.qr\.textAlign\(vV, 2\), vV\.fillStyle = bB\.ny, vV\.fillText\(l\.dw, h\.i, 0\), text = "Win count: " \+\s*__fx\.wins\.count, textLength = vV\.measureText\(text\)\.width, f4 = Math\.max\(5, f4\), vV\.textAlign = "left", vV\.textBaseline = "middle", vV\.fillText\(text, vV\.canvas\.width - textLength - f4 \/ 2, 2 \* f4\),/,
   `this.vU = function() {
 		if (aa.aHH(), aT.vU(),`,
-  "remove top-right date and win count"
+  "remove top-right date and win count" 
 );
   return source;
 }
