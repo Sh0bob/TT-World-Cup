@@ -806,6 +806,58 @@ window.__TTWC = window.__TTWC || {};
 
 (() => {
   const TTWC = window.__TTWC;
+
+  TTWC.peace = TTWC.peace || {};
+  TTWC.clientInfo = TTWC.clientInfo || {
+    byIndex: {},     // lobbyIndex -> { client, version, seenAt }
+    sentHello: false
+  };
+})();
+</script>
+
+<script>
+(() => {
+  const TTWC = window.__TTWC;
+
+  function trySendClientHello() {
+    try {
+      if (!isCustomLobbyActive()) {
+        TTWC.clientInfo.sentHello = false;
+        return;
+      }
+
+      if (TTWC.clientInfo.sentHello) return;
+      if (typeof TTWC.peace.selfLobbyIndex !== "number" || TTWC.peace.selfLobbyIndex < 0) return;
+
+      const sent = sendCustomLobbyMessage({
+        t: "clientHello",
+        d: {
+          id: TTWC.peace.selfLobbyIndex,
+          client: "TTWC",
+          version: "1.0"
+        }
+      });
+
+      if (sent) {
+        TTWC.clientInfo.sentHello = true;
+        console.log("[TTWC CLIENT] hello sent", {
+          id: TTWC.peace.selfLobbyIndex
+        });
+      }
+    } catch (e) {
+      console.log("[TTWC CLIENT] trySendClientHello error:", e);
+    }
+  }
+
+  setInterval(trySendClientHello, 1000);
+})();
+</script>
+
+<script>
+window.__TTWC = window.__TTWC || {};
+
+(() => {
+  const TTWC = window.__TTWC;
   const decoder = new TextDecoder();
 
   TTWC.peace = TTWC.peace || {};
@@ -905,8 +957,23 @@ window.__TTWC = window.__TTWC || {};
           const type = msg.t;
           const data = msg.d;
 
+          else if (type === "clientHello") {
+  const idx = typeof data?.id === "number" ? data.id : -1;
+  if (idx >= 0) {
+    TTWC.clientInfo.byIndex[idx] = {
+      client: data?.client || "unknown",
+      version: data?.version || "",
+      seenAt: Date.now()
+    };
+
+    console.log("[TTWC CLIENT] tracked", idx, TTWC.clientInfo.byIndex[idx]);
+  }
+}
+
           if (type === "lobby") {
             TTWC.peace.players = Array.isArray(data.players) ? data.players.slice() : [];
+            TTWC.clientInfo.byIndex = {};
+            TTWC.clientInfo.sentHello = false;
             TTWC.peace.selfLobbyIndex = typeof data.id === "number" ? data.id : -1;
             TTWC.peace.isHost = !!data.isHost;
             console.log("[TTWC PEACE] lobby sync", {
@@ -940,6 +1007,13 @@ window.__TTWC = window.__TTWC || {};
               if (Array.isArray(TTWC.peace.players)) {
                 TTWC.peace.players.splice(removedIndex, 1);
               }
+              const nextMap = {};
+Object.keys(TTWC.clientInfo.byIndex).forEach(k => {
+  const n = Number(k);
+  if (n < removedIndex) nextMap[n] = TTWC.clientInfo.byIndex[n];
+  else if (n > removedIndex) nextMap[n - 1] = TTWC.clientInfo.byIndex[n];
+});
+TTWC.clientInfo.byIndex = nextMap;
             }
           } else if (type === "addPlayer") {
             if (Array.isArray(TTWC.peace.players)) {
@@ -1545,6 +1619,55 @@ window.__TTWC = window.__TTWC || {};
   }
 
   requestAnimationFrame(tick);
+})();
+</script>
+
+<script>
+(() => {
+  const TTWC = window.__TTWC;
+
+  function decorateLobbyPlayers() {
+    try {
+      if (!isCustomLobbyActive()) return;
+      if (!Array.isArray(TTWC.peace?.players)) return;
+
+      const all = Array.from(document.querySelectorAll("div, span, p"));
+
+      TTWC.peace.players.forEach((player, idx) => {
+        if (!player?.name) return;
+
+        const row = all.find(el => {
+          const txt = (el.innerText || "").trim();
+          return txt === player.name || txt.startsWith(player.name + "\n") || txt.startsWith(player.name + " ");
+        });
+
+        if (!row) return;
+
+        const existing = row.querySelector?.(".ttwc-client-badge");
+        if (existing) {
+          const info = TTWC.clientInfo.byIndex[idx];
+          existing.textContent = info?.client === "TTWC" ? "TTWC" : "OTHER";
+          existing.style.color = info?.client === "TTWC" ? "#7CFC00" : "#bdbdbd";
+          return;
+        }
+
+        const badge = document.createElement("span");
+        badge.className = "ttwc-client-badge";
+        const info = TTWC.clientInfo.byIndex[idx];
+        badge.textContent = info?.client === "TTWC" ? "TTWC" : "OTHER";
+        badge.style.marginLeft = "6px";
+        badge.style.padding = "1px 5px";
+        badge.style.borderRadius = "6px";
+        badge.style.fontSize = "10px";
+        badge.style.fontWeight = "700";
+        badge.style.background = "rgba(0,0,0,0.35)";
+        badge.style.color = info?.client === "TTWC" ? "#7CFC00" : "#bdbdbd";
+        row.appendChild(badge);
+      });
+    } catch (e) {}
+  }
+
+  setInterval(decorateLobbyPlayers, 500);
 })();
 </script>
 </body>
