@@ -957,14 +957,14 @@ window.__TTWC = window.__TTWC || {};
           const type = msg.t;
           const data = msg.d;
 
-          else if (type === "clientHello") {
-  const idx = typeof data?.id === "number" ? data.id : -1;
-  if (idx >= 0) {
-    TTWC.clientInfo.byIndex[idx] = {
-      client: data?.client || "unknown",
-      version: data?.version || "",
-      seenAt: Date.now()
-    };
+          if (type === "clientHello") {
+           const idx = typeof data?.id === "number" ? data.id : -1;
+           if (idx >= 0) {
+             TTWC.clientInfo.byIndex[idx] = {
+             client: data?.client || "unknown",
+             version: data?.version || "",
+             seenAt: Date.now()
+          };
 
     console.log("[TTWC CLIENT] tracked", idx, TTWC.clientInfo.byIndex[idx]);
   }
