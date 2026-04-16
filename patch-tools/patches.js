@@ -26,7 +26,7 @@ function applyPatches(source, assets) {
   /textLength\s*=\s*\.84\s*\*\s*aQZ\.i\s*\/\s*text\.width;\s*vV\.setTransform\(textLength,\s*0,\s*0,\s*textLength,\s*aQZ\.fB\s*\+\s*\.08\s*\*\s*aQZ\.i,\s*aQZ\.fD\)/,
   `textLength = 1.05 * aQZ.i / text.width;
 vV.setTransform(textLength, 0, 0, textLength, aQZ.fB - .035 * aQZ.i, aQZ.fD - 530)`,
-  "resize and move main menu logo"
+  "resize and move main menu logo" 
 );
 
   source = replaceOne(
