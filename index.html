@@ -817,6 +817,7 @@ window.__TTWC = window.__TTWC || {};
   // Client-identification state
   TTWC.client = TTWC.client || {};
   TTWC.client.byIndex = TTWC.client.byIndex || {};
+  TTWC.client.byName = TTWC.client.byName || {};
   TTWC.client.lastAnnounceAt = TTWC.client.lastAnnounceAt || 0;
   TTWC.client.announcedThisLobby = TTWC.client.announcedThisLobby || false;
   TTWC.client.selfName = TTWC.client.selfName || "";
@@ -842,8 +843,30 @@ window.__TTWC = window.__TTWC || {};
     return isCustomLobbyActive() && !!TTWC.peace.isHost;
   }
 
+  function normalizePlayerName(name) {
+    return String(name || "").trim();
+  }
+
+  function rebuildClientIndexMap() {
+    TTWC.client.byIndex = {};
+    const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
+
+    for (let i = 0; i < players.length; i++) {
+      const player = players[i];
+      const name = normalizePlayerName(player?.name);
+      const label = name ? TTWC.client.byName[name] : undefined;
+      if (label) {
+        TTWC.client.byIndex[i] = label;
+        if (player) player.client = label;
+      } else if (player && player.client) {
+        delete player.client;
+      }
+    }
+  }
+
   function resetClientFlags() {
     TTWC.client.byIndex = {};
+    TTWC.client.byName = {};
     TTWC.client.lastAnnounceAt = 0;
     TTWC.client.announcedThisLobby = false;
     TTWC.client.selfName = "";
@@ -918,8 +941,15 @@ window.__TTWC = window.__TTWC || {};
 
       const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
       const selfPlayer = players[TTWC.peace.selfLobbyIndex] || {};
-      const selfName = (selfPlayer && selfPlayer.name) ? String(selfPlayer.name) : "";
+      const selfName = normalizePlayerName(selfPlayer && selfPlayer.name);
       TTWC.client.selfName = selfName;
+      if (selfName) {
+        TTWC.client.byName[selfName] = "TTWC";
+        TTWC.client.byIndex[TTWC.peace.selfLobbyIndex] = "TTWC";
+        if (players[TTWC.peace.selfLobbyIndex]) {
+          players[TTWC.peace.selfLobbyIndex].client = "TTWC";
+        }
+      }
 
       sendCustomLobbyMessage({
         t: "clientInfo",
@@ -954,7 +984,9 @@ window.__TTWC = window.__TTWC || {};
             TTWC.peace.players = Array.isArray(data.players) ? data.players.slice() : [];
             TTWC.peace.selfLobbyIndex = typeof data.id === "number" ? data.id : -1;
             TTWC.peace.isHost = !!data.isHost;
-            resetClientFlags();
+            TTWC.client.byIndex = {};
+            TTWC.client.announcedThisLobby = false;
+            rebuildClientIndexMap();
             console.log("[TTWC PEACE] lobby sync", {
               isHost: TTWC.peace.isHost,
               selfLobbyIndex: TTWC.peace.selfLobbyIndex
@@ -979,14 +1011,15 @@ window.__TTWC = window.__TTWC || {};
           } else if (type === "clientInfo") {
             try {
               const label = (data && data.client) ? String(data.client) : "TTWC";
-              const name = (data && data.name) ? String(data.name) : "";
+              const name = normalizePlayerName(data && data.name);
               const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
 
               let matchedIndex = -1;
 
               if (name) {
+                TTWC.client.byName[name] = label;
                 for (let i = 0; i < players.length; i++) {
-                  if (players[i] && String(players[i].name) === name) {
+                  if (players[i] && normalizePlayerName(players[i].name) === name) {
                     matchedIndex = i;
                     break;
                   }
@@ -1010,6 +1043,8 @@ window.__TTWC = window.__TTWC || {};
           } else if (type === "removePlayer") {
             const removedIndex = data;
             if (typeof removedIndex === "number") {
+              const removedPlayer = Array.isArray(TTWC.peace.players) ? TTWC.peace.players[removedIndex] : null;
+              const removedName = normalizePlayerName(removedPlayer?.name);
               if (removedIndex < TTWC.peace.selfLobbyIndex) {
                 TTWC.peace.selfLobbyIndex--;
               } else if (removedIndex === TTWC.peace.selfLobbyIndex) {
@@ -1022,6 +1057,10 @@ window.__TTWC = window.__TTWC || {};
               if (removedIndex in TTWC.client.byIndex) {
                 delete TTWC.client.byIndex[removedIndex];
               }
+              if (removedName && TTWC.client.selfName !== removedName) {
+                delete TTWC.client.byName[removedName];
+              }
+              rebuildClientIndexMap();
             }
           } else if (type === "addPlayer") {
             if (Array.isArray(TTWC.peace.players)) {
@@ -1031,6 +1070,7 @@ window.__TTWC = window.__TTWC || {};
                 inGame: false
               });
             }
+            rebuildClientIndexMap();
           } else if (type === "peace") {
             // Custom-lobby broadcast: show peace vote UI on all clients.
             // We call `aw.hp(from)` directly to mimic the normal in-game handler.
