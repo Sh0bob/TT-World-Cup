@@ -138,19 +138,6 @@ source = replaceOne(
   "replace main menu layout"
 );
 
-source = replaceOne(
-  source,
-  /this\.vU\s*=\s*function\(\)\s*\{\s*if\s*\(ec && this\.hq\(\)\)\s*\{\s*var aB;\s*for\s*\(vV\.imageSmoothingEnabled = !0,\s*aB = 0;\s*aB < 5;\s*aB\+\+\)\s*fW\[aB\] && this\.fr\[aB\] && \(vV\.setTransform\(na\[aB\], 0, 0, na\[aB\], fB\[aB\], fD\[aB\]\), vV\.drawImage\(ec\[aB\], 0, 0\)\);\s*vV\.setTransform\(1, 0, 0, 1, 0, 0\)\s*\}\s*\}/,
-  `this.vU = function() {}`,
-  "remove side buttons"
-);
-
-source = replaceOne(
-  source,
-  /return t\.u\(9,\s*t\.t8,\s*new aDb\(L\(126\),\s*bA\.qr\.a4B\(aBp\[aB\]\)\)\),\s*!0;/,
-  `return !1;`,
-  "disable side button leave-site popup"
-);
 
 source = replaceOne(
   source,
