@@ -819,6 +819,7 @@ window.__TTWC = window.__TTWC || {};
   TTWC.client.byIndex = TTWC.client.byIndex || {};
   TTWC.client.lastAnnounceAt = TTWC.client.lastAnnounceAt || 0;
   TTWC.client.announcedThisLobby = TTWC.client.announcedThisLobby || false;
+  TTWC.client.selfName = TTWC.client.selfName || "";
 
   function isMainMenu() {
     return !!document.querySelector('input[placeholder*="Kingdom"]');
@@ -845,6 +846,7 @@ window.__TTWC = window.__TTWC || {};
     TTWC.client.byIndex = {};
     TTWC.client.lastAnnounceAt = 0;
     TTWC.client.announcedThisLobby = false;
+    TTWC.client.selfName = "";
   }
 
   function decodeCustomLobbyMessage(raw) {
@@ -914,10 +916,16 @@ window.__TTWC = window.__TTWC || {};
       TTWC.client.lastAnnounceAt = now;
       TTWC.client.announcedThisLobby = true;
 
+      const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
+      const selfPlayer = players[TTWC.peace.selfLobbyIndex] || {};
+      const selfName = (selfPlayer && selfPlayer.name) ? String(selfPlayer.name) : "";
+      TTWC.client.selfName = selfName;
+
       sendCustomLobbyMessage({
         t: "clientInfo",
         d: {
           id: TTWC.peace.selfLobbyIndex,
+          name: selfName,
           client: "TTWC"
         }
       });
@@ -970,14 +978,31 @@ window.__TTWC = window.__TTWC || {};
             }
           } else if (type === "clientInfo") {
             try {
-              const idx = typeof data?.id === "number" ? data.id : -1;
               const label = (data && data.client) ? String(data.client) : "TTWC";
-              if (idx >= 0) {
-                TTWC.client.byIndex[idx] = label;
-                if (Array.isArray(TTWC.peace.players) && TTWC.peace.players[idx]) {
-                  TTWC.peace.players[idx].client = label;
+              const name = (data && data.name) ? String(data.name) : "";
+              const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
+
+              let matchedIndex = -1;
+
+              if (name) {
+                for (let i = 0; i < players.length; i++) {
+                  if (players[i] && String(players[i].name) === name) {
+                    matchedIndex = i;
+                    break;
+                  }
                 }
-                console.log("[TTWC CLIENT] received client flag", { index: idx, client: label });
+              }
+
+              if (matchedIndex < 0 && typeof data?.id === "number") {
+                matchedIndex = data.id;
+              }
+
+              if (matchedIndex >= 0) {
+                TTWC.client.byIndex[matchedIndex] = label;
+                if (players[matchedIndex]) {
+                  players[matchedIndex].client = label;
+                }
+                console.log("[TTWC CLIENT] received client flag", { index: matchedIndex, client: label, name });
               }
             } catch (e) {
               console.log("[TTWC CLIENT] clientInfo handler error:", e);
@@ -1310,8 +1335,13 @@ window.__TTWC = window.__TTWC || {};
 
   function getClientLabel(index) {
     const player = Array.isArray(TTWC.peace.players) ? TTWC.peace.players[index] : null;
-    const label = (player && player.client) || TTWC.client?.byIndex?.[index] || "Other";
-    return label === "TTWC" ? "TTWC" : "Other";
+    const rawLabel = (player && player.client) || TTWC.client?.byIndex?.[index] || "Other";
+    const isSelf =
+      (typeof TTWC.peace.selfLobbyIndex === "number" && TTWC.peace.selfLobbyIndex === index) ||
+      (player && TTWC.client?.selfName && String(player.name) === TTWC.client.selfName);
+
+    if (isSelf) return "TTWC";
+    return rawLabel === "TTWC" ? "TTWC" : "Other";
   }
 
   function getActionRows() {
