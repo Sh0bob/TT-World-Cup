@@ -321,6 +321,27 @@ source = replaceOne(
 				na[3] *= 1.07`,
   "make first three side buttons same size"
 );
+
+source = replaceOne(
+  source,
+  /this\.aDY\s*=\s*"[^"]*"/,
+  `this.aDY = "https://discord.gg/FT3N7zFwMu"`,
+  "change side button 1 link"
+);
+
+source = replaceOne(
+  source,
+  /this\.a20\s*=\s*"[^"]*"/,
+  `this.a20 = "https://discord.gg/FT3N7zFwMu"`,
+  "change side button 2 link"
+);
+
+source = replaceOne(
+  source,
+  /this\.aDZ\s*=\s*"[^"]*"/,
+  `this.aDZ = "https://discord.gg/FT3N7zFwMu"`,
+  "change side button 3 link"
+);
   return source;
 }
 
