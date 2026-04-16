@@ -806,137 +806,6 @@ window.__TTWC = window.__TTWC || {};
 
 (() => {
   const TTWC = window.__TTWC;
-
-  TTWC.peace = TTWC.peace || {};
-  TTWC.clientInfo = TTWC.clientInfo || {
-    byIndex: {},     // lobbyIndex -> { client, version, seenAt }
-    sentHello: false
-  };
-})();
-</script>
-
-<script>
-window.__TTWC = window.__TTWC || {};
-
-window.__TTWC.isCustomLobbyActive = function() {
-  try {
-    return !!(
-      window.__fx &&
-      __fx.customLobby &&
-      typeof __fx.customLobby.isActive === "function" &&
-      __fx.customLobby.isActive()
-    );
-  } catch (e) {
-    return false;
-  }
-};
-</script>
-
-<script>
-window.__TTWC = window.__TTWC || {};
-
-window.__TTWC.sendCustomLobbyMessage = function(obj) {
-  try {
-    if (
-      !window.__fx ||
-      !__fx.customLobby ||
-      typeof __fx.customLobby.isActive !== "function" ||
-      !__fx.customLobby.isActive()
-    ) {
-      return false;
-    }
-
-    const json = JSON.stringify(obj);
-    const payload = new TextEncoder().encode(json);
-    const out = new Uint8Array(payload.length + 1);
-    out[0] = 120;
-    out.set(payload, 1);
-
-    const socketId =
-      (typeof b0 !== "undefined" &&
-        b0.y &&
-        typeof b0.y.a2C !== "undefined")
-        ? b0.y.a2C
-        : undefined;
-
-    if (typeof __fx.customLobby.send === "function") {
-      if (typeof socketId !== "undefined") {
-        __fx.customLobby.send(socketId, out);
-      } else {
-        __fx.customLobby.send(out);
-      }
-      return true;
-    }
-
-    if (
-      typeof socketId !== "undefined" &&
-      typeof b0 !== "undefined" &&
-      b0.y &&
-      typeof b0.y.send === "function"
-    ) {
-      b0.y.send(socketId, out);
-      return true;
-    }
-
-    return false;
-  } catch (e) {
-    console.log("[TTWC CLIENT] global sendCustomLobbyMessage error:", e);
-    return false;
-  }
-};
-</script>
-
-<script>
-(() => {
-  const TTWC = window.__TTWC;
-
-  function trySendClientHello() {
-    try {
-      if (!window.__TTWC.isCustomLobbyActive()) {
-        TTWC.clientInfo.sentHello = false;
-        return;
-      }
-
-      if (TTWC.clientInfo.sentHello) return;
-      if (typeof TTWC.peace.selfLobbyIndex !== "number" || TTWC.peace.selfLobbyIndex < 0) return;
-
-      const sent = window.__TTWC.sendCustomLobbyMessage({
-        t: "clientHello",
-        d: {
-          id: TTWC.peace.selfLobbyIndex,
-          client: "TTWC",
-          version: "1.0"
-        }
-      });
-
-      if (sent) {
-  TTWC.clientInfo.sentHello = true;
-
-  // Mark self immediately, because the server may not echo our own custom message back.
-  TTWC.clientInfo.byIndex[TTWC.peace.selfLobbyIndex] = {
-    client: "TTWC",
-    version: "1.0",
-    seenAt: Date.now()
-  };
-
-  console.log("[TTWC CLIENT] hello sent", {
-    id: TTWC.peace.selfLobbyIndex
-  });
-}
-    } catch (e) {
-      console.log("[TTWC CLIENT] trySendClientHello error:", e);
-    }
-  }
-
-  setInterval(trySendClientHello, 1000);
-})();
-</script>
-
-<script>
-window.__TTWC = window.__TTWC || {};
-
-(() => {
-  const TTWC = window.__TTWC;
   const decoder = new TextDecoder();
 
   TTWC.peace = TTWC.peace || {};
@@ -945,6 +814,11 @@ window.__TTWC = window.__TTWC || {};
   TTWC.peace.players = [];
   TTWC.peace.patched = false;
   TTWC.peace.lastSendAt = 0;
+  // Client-identification state
+  TTWC.client = TTWC.client || {};
+  TTWC.client.byIndex = TTWC.client.byIndex || {};
+  TTWC.client.lastAnnounceAt = TTWC.client.lastAnnounceAt || 0;
+  TTWC.client.announcedThisLobby = TTWC.client.announcedThisLobby || false;
 
   function isMainMenu() {
     return !!document.querySelector('input[placeholder*="Kingdom"]');
@@ -965,6 +839,12 @@ window.__TTWC = window.__TTWC || {};
 
   function isHost() {
     return isCustomLobbyActive() && !!TTWC.peace.isHost;
+  }
+
+  function resetClientFlags() {
+    TTWC.client.byIndex = {};
+    TTWC.client.lastAnnounceAt = 0;
+    TTWC.client.announcedThisLobby = false;
   }
 
   function decodeCustomLobbyMessage(raw) {
@@ -1021,6 +901,32 @@ window.__TTWC = window.__TTWC || {};
     }
   }
 
+  function announceThisClient() {
+    try {
+      if (!isCustomLobbyActive()) return;
+      if (typeof TTWC.peace.selfLobbyIndex !== "number" || TTWC.peace.selfLobbyIndex < 0) return;
+
+      const now = Date.now();
+      if (TTWC.client.announcedThisLobby && now - TTWC.client.lastAnnounceAt < 10000) {
+        return;
+      }
+
+      TTWC.client.lastAnnounceAt = now;
+      TTWC.client.announcedThisLobby = true;
+
+      sendCustomLobbyMessage({
+        t: "clientInfo",
+        d: {
+          id: TTWC.peace.selfLobbyIndex,
+          client: "TTWC"
+        }
+      });
+      console.log("[TTWC CLIENT] announced TTWC client for lobby index", TTWC.peace.selfLobbyIndex);
+    } catch (e) {
+      console.log("[TTWC CLIENT] announceThisClient error:", e);
+    }
+  }
+
   function patchCustomLobbyHostTracking() {
     try {
       if (!window.__fx || !__fx.customLobby) return false;
@@ -1032,40 +938,24 @@ window.__TTWC = window.__TTWC || {};
       __fx.customLobby.isCustomMessage = function(raw) {
         const msg = decodeCustomLobbyMessage(raw);
 
-        if (msg) {
-          console.log("[TTWC CLIENT] incoming custom msg", msg);
-        }
-
         if (msg && msg.t) {
           const type = msg.t;
           const data = msg.d;
 
-          if (type === "clientHello") {
-           const idx = typeof data?.id === "number" ? data.id : -1;
-           if (idx >= 0) {
-             TTWC.clientInfo.byIndex[idx] = {
-             client: data?.client || "unknown",
-             version: data?.version || "",
-             seenAt: Date.now()
-          };
-
-    console.log("[TTWC CLIENT] tracked", idx, TTWC.clientInfo.byIndex[idx]);
-  }
-}
-
           if (type === "lobby") {
             TTWC.peace.players = Array.isArray(data.players) ? data.players.slice() : [];
-            TTWC.clientInfo.byIndex = {};
-            TTWC.clientInfo.sentHello = false;
             TTWC.peace.selfLobbyIndex = typeof data.id === "number" ? data.id : -1;
             TTWC.peace.isHost = !!data.isHost;
+            resetClientFlags();
             console.log("[TTWC PEACE] lobby sync", {
               isHost: TTWC.peace.isHost,
               selfLobbyIndex: TTWC.peace.selfLobbyIndex
             });
+            announceThisClient();
           } else if (type === "host") {
             TTWC.peace.isHost = true;
             console.log("[TTWC PEACE] current player became host");
+            announceThisClient();
           } else if (type === "setHost") {
             const hostIndex = data;
             if (Array.isArray(TTWC.peace.players) && TTWC.peace.players[hostIndex]) {
@@ -1077,6 +967,20 @@ window.__TTWC = window.__TTWC || {};
               console.log("[TTWC PEACE] host transferred to current player");
             } else if (typeof hostIndex === "number") {
               TTWC.peace.isHost = false;
+            }
+          } else if (type === "clientInfo") {
+            try {
+              const idx = typeof data?.id === "number" ? data.id : -1;
+              const label = (data && data.client) ? String(data.client) : "TTWC";
+              if (idx >= 0) {
+                TTWC.client.byIndex[idx] = label;
+                if (Array.isArray(TTWC.peace.players) && TTWC.peace.players[idx]) {
+                  TTWC.peace.players[idx].client = label;
+                }
+                console.log("[TTWC CLIENT] received client flag", { index: idx, client: label });
+              }
+            } catch (e) {
+              console.log("[TTWC CLIENT] clientInfo handler error:", e);
             }
           } else if (type === "removePlayer") {
             const removedIndex = data;
@@ -1090,13 +994,9 @@ window.__TTWC = window.__TTWC || {};
               if (Array.isArray(TTWC.peace.players)) {
                 TTWC.peace.players.splice(removedIndex, 1);
               }
-              const nextMap = {};
-Object.keys(TTWC.clientInfo.byIndex).forEach(k => {
-  const n = Number(k);
-  if (n < removedIndex) nextMap[n] = TTWC.clientInfo.byIndex[n];
-  else if (n > removedIndex) nextMap[n - 1] = TTWC.clientInfo.byIndex[n];
-});
-TTWC.clientInfo.byIndex = nextMap;
+              if (removedIndex in TTWC.client.byIndex) {
+                delete TTWC.client.byIndex[removedIndex];
+              }
             }
           } else if (type === "addPlayer") {
             if (Array.isArray(TTWC.peace.players)) {
@@ -1390,6 +1290,83 @@ TTWC.clientInfo.byIndex = nextMap;
 </script>
 
 <script>
+// Simple on-screen lobby client indicator for custom lobbies.
+(() => {
+  const TTWC = window.__TTWC = window.__TTWC || {};
+  TTWC.peace = TTWC.peace || {};
+
+  const badge = document.createElement("div");
+  badge.id = "ttwc-client-indicator";
+  Object.assign(badge.style, {
+    position: "fixed",
+    bottom: "18px",
+    right: "18px",
+    maxWidth: "260px",
+    maxHeight: "220px",
+    overflow: "auto",
+    padding: "8px 10px",
+    fontSize: "12px",
+    lineHeight: "1.4",
+    borderRadius: "10px",
+    border: "1px solid rgba(255,255,255,0.35)",
+    background: "rgba(8,16,24,0.88)",
+    color: "#e7f0ff",
+    zIndex: "99998",
+    fontFamily: "Arial, Helvetica, sans-serif",
+    display: "none",
+    pointerEvents: "none"
+  });
+  document.body.appendChild(badge);
+
+  function isCustomLobbyActive() {
+    try {
+      return !!(
+        window.__fx &&
+        __fx.customLobby &&
+        typeof __fx.customLobby.isActive === "function" &&
+        __fx.customLobby.isActive()
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  function tick() {
+    try {
+      const inLobby = isCustomLobbyActive();
+      const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
+
+      if (!inLobby || players.length === 0) {
+        badge.style.display = "none";
+      } else {
+        const selfIndex = typeof TTWC.peace.selfLobbyIndex === "number"
+          ? TTWC.peace.selfLobbyIndex
+          : -1;
+        const rows = players.map((p, i) => {
+          const name = (p && p.name) ? String(p.name) : `Player ${i + 1}`;
+          const client = (p && p.client) || TTWC.client?.byIndex?.[i] || "Other";
+          const you = (i === selfIndex) ? " (You)" : "";
+          const tag = client === "TTWC" ? "[TTWC]" : "[Other]";
+          return `${i + 1}. ${name}${you} ${tag}`;
+        });
+
+        badge.innerHTML =
+          `<div style="font-weight:700;margin-bottom:4px;">Lobby clients (TTWC vs Other)</div>` +
+          `<div>${rows.map(r => `<div>${r}</div>`).join("")}</div>`;
+        badge.style.display = "block";
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+})();
+</script>
+
+<script>
 (() => {
   const TTWC = window.__TTWC = window.__TTWC || {};
   TTWC.peace = TTWC.peace || {};
@@ -1521,59 +1498,60 @@ TTWC.clientInfo.byIndex = nextMap;
   }
 
   function buildPayload() {
-  try {
-    const getter = window.__TTWC?.getLeaderboardSnapshot;
+    try {
+      const getter = window.__TTWC?.getLeaderboardSnapshot;
 
-    if (typeof getter !== "function") {
-      console.log("[TTWC] getLeaderboardSnapshot() is not available yet");
+      if (typeof getter !== "function") {
+        console.log("[TTWC] getLeaderboardSnapshot() is not available yet");
+        return null;
+      }
+
+      const snapshot = getter();
+      if (!Array.isArray(snapshot) || snapshot.length === 0) {
+        console.log("[TTWC] leaderboard snapshot empty");
+        return null;
+      }
+
+      const humanNameSet = new Set(
+  Array.isArray(TTWC.humanNames)
+    ? TTWC.humanNames.map(n => String(n).trim()).filter(Boolean)
+    : []
+);
+
+const leaderboard = snapshot
+  .map((p, index) => ({
+    id: Number(p.id ?? p.playerId ?? index),
+    name: String(p.name ?? p.displayName ?? `Player ${index + 1}`).trim(),
+    territory: Number(p.territory ?? p.score ?? 0),
+    troops: Number(p.troops ?? 0)
+  }))
+  .filter(row => row.name && !Number.isNaN(row.territory))
+  .filter(row => humanNameSet.size === 0 || humanNameSet.has(row.name));
+      
+      if (leaderboard.length === 0) {
+        console.log("[TTWC] no usable leaderboard rows");
+        return null;
+console.log("[TTWC] human names:", [...humanNameSet]);
+console.log("[TTWC] filtered leaderboard:", leaderboard);
+      }
+
+      const meta = {
+        title: "TTWC Custom Lobby Match Finished",
+        endedAt: Date.now(),
+        lobbyCode: getLobbyCode(),
+        resultType: TTWC.resultType || undefined,
+        mode: window.__fx?.customLobby?.gameInfo?.mode,
+        map: window.__fx?.customLobby?.gameInfo?.map,
+        botCount: window.__fx?.customLobby?.gameInfo?.botCount,
+        matchId: `${Date.now()}-${getLobbyCode() || "nolobby"}`
+      };
+
+      return { meta, leaderboard };
+    } catch (e) {
+      console.log("[TTWC] buildPayload failed", e);
       return null;
     }
-
-    const snapshot = getter();
-    if (!Array.isArray(snapshot) || snapshot.length === 0) {
-      console.log("[TTWC] leaderboard snapshot empty");
-      return null;
-    }
-
-    const humanNameSet = new Set(
-      Array.isArray(TTWC.humanNames)
-        ? TTWC.humanNames.map(n => String(n).trim()).filter(Boolean)
-        : []
-    );
-
-    const leaderboard = snapshot
-      .map((p, index) => ({
-        id: Number(p.id ?? p.playerId ?? index),
-        name: String(p.name ?? p.displayName ?? `Player ${index + 1}`).trim()
-      }))
-      .filter(row => row.name)
-      .filter(row => humanNameSet.size === 0 || humanNameSet.has(row.name));
-
-    console.log("[TTWC] human names:", [...humanNameSet]);
-    console.log("[TTWC] filtered leaderboard:", leaderboard);
-
-    if (leaderboard.length === 0) {
-      console.log("[TTWC] no usable leaderboard rows");
-      return null;
-    }
-
-    const meta = {
-      title: "TTWC Custom Lobby Match Finished",
-      endedAt: Date.now(),
-      lobbyCode: getLobbyCode(),
-      resultType: TTWC.resultType || undefined,
-      mode: window.__fx?.customLobby?.gameInfo?.mode,
-      map: window.__fx?.customLobby?.gameInfo?.map,
-      botCount: window.__fx?.customLobby?.gameInfo?.botCount,
-      matchId: `${Date.now()}-${getLobbyCode() || "nolobby"}`
-    };
-
-    return { meta, leaderboard };
-  } catch (e) {
-    console.log("[TTWC] buildPayload failed", e);
-    return null;
   }
-}
 
   function makePayloadHash(payload) {
     try {
@@ -1635,12 +1613,10 @@ TTWC.clientInfo.byIndex = nextMap;
 
   function shouldSendFromThisTab() {
   try {
-    const peace = window.__TTWC?.peace || {};
-
     const hostInfo = {
       fxIsHost: window.__fx?.customLobby?.isHost,
-      peaceIsHost: peace.isHost,
-      peaceSelfLobbyIndex: peace.selfLobbyIndex
+      ttwcIsHost: window.__TTWC?.isHost,
+      selfLobbyIndex: window.__TTWC?.selfLobbyIndex
     };
 
     console.log("[TTWC] host check:", hostInfo);
@@ -1648,11 +1624,11 @@ TTWC.clientInfo.byIndex = nextMap;
     if (window.__fx?.customLobby?.isHost === true) return true;
     if (window.__fx?.customLobby?.isHost === false) return false;
 
-    if (peace.isHost === true) return true;
-    if (peace.isHost === false) return false;
+    if (window.__TTWC?.isHost === true) return true;
+    if (window.__TTWC?.isHost === false) return false;
 
-    if (typeof peace.selfLobbyIndex === "number") {
-      return peace.selfLobbyIndex === 0;
+    if (typeof window.__TTWC?.selfLobbyIndex === "number") {
+      return window.__TTWC.selfLobbyIndex === 0;
     }
   } catch (e) {
     console.log("[TTWC] shouldSendFromThisTab error", e);
@@ -1702,55 +1678,6 @@ TTWC.clientInfo.byIndex = nextMap;
   }
 
   requestAnimationFrame(tick);
-})();
-</script>
-
-<script>
-(() => {
-  const TTWC = window.__TTWC;
-
-  function decorateLobbyPlayers() {
-    try {
-      if (!window.__TTWC.isCustomLobbyActive()) return;
-      if (!Array.isArray(TTWC.peace?.players)) return;
-
-      const all = Array.from(document.querySelectorAll("div, span, p"));
-
-      TTWC.peace.players.forEach((player, idx) => {
-        if (!player?.name) return;
-
-        const row = all.find(el => {
-          const txt = (el.innerText || "").trim();
-          return txt === player.name || txt.startsWith(player.name + "\n") || txt.startsWith(player.name + " ");
-        });
-
-        if (!row) return;
-
-        const existing = row.querySelector?.(".ttwc-client-badge");
-        if (existing) {
-          const info = TTWC.clientInfo.byIndex[idx];
-          existing.textContent = info?.client === "TTWC" ? "TTWC" : "OTHER";
-          existing.style.color = info?.client === "TTWC" ? "#7CFC00" : "#bdbdbd";
-          return;
-        }
-
-        const badge = document.createElement("span");
-        badge.className = "ttwc-client-badge";
-        const info = TTWC.clientInfo.byIndex[idx];
-        badge.textContent = info?.client === "TTWC" ? "TTWC" : "OTHER";
-        badge.style.marginLeft = "6px";
-        badge.style.padding = "1px 5px";
-        badge.style.borderRadius = "6px";
-        badge.style.fontSize = "10px";
-        badge.style.fontWeight = "700";
-        badge.style.background = "rgba(0,0,0,0.35)";
-        badge.style.color = info?.client === "TTWC" ? "#7CFC00" : "#bdbdbd";
-        row.appendChild(badge);
-      });
-    } catch (e) {}
-  }
-
-  setInterval(decorateLobbyPlayers, 500);
 })();
 </script>
 </body>
