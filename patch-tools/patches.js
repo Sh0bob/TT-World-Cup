@@ -255,46 +255,37 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /if\s*\(gap = a0\.a1\.iD\(\) \? 2 \* bc\.gap : bc\.gap,\s*na\[0\] = tF \/ ec\[0\]\.width,\s*na\[1\] = tG \/ ec\[1\]\.width,\s*na\[2\] = a9I \/ ec\[2\]\.height,\s*na\[3\] = a9I \/ ec\[3\]\.height,\s*na\[4\] = a9I \/ ec\[4\]\.height,\s*na\[2\] \*= 1\.7,\s*na\[3\] \*= 1\.07,\s*fB\[0\] = gap,\s*fB\[1\] = gap,\s*fB\[2\] = gap,\s*fB\[3\] = gap,\s*fB\[4\] = Math\.floor\(2 \* gap \+ na\[3\] \* ec\[3\]\.width\),\s*fD\[0\] = gap,\s*fD\[1\] = fD\[0\] \+ gap \+ na\[0\] \* ec\[0\]\.height,\s*fD\[2\] = fD\[1\] \+ gap \+ na\[1\] \* ec\[1\]\.height,\s*fD\[3\] = fD\[2\] \+ gap \+ na\[2\] \* ec\[2\]\.height,\s*fD\[4\] = fD\[3\],\s*!fW\[0\]\)/,
-  `if (gap = a0.a1.iD() ? 2 * bc.gap : bc.gap,
-				na[0] = tF / ec[0].width,
-				na[1] = tG / ec[1].width,
-				na[2] = a9I / ec[2].height,
-				na[3] = a9I / ec[3].height,
-				na[4] = a9I / ec[4].height,
-				na[2] *= 1.7,
-				na[3] *= 1.07,
-				(function() {
-					var totalH, maxW, startX, startY;
-					totalH =
-						na[0] * ec[0].height +
-						gap +
-						na[1] * ec[1].height +
-						gap +
-						na[2] * ec[2].height;
+  /fB\[0\]\s*=\s*gap,\s*fB\[1\]\s*=\s*gap,\s*fB\[2\]\s*=\s*gap,\s*fB\[3\]\s*=\s*gap,\s*fB\[4\]\s*=\s*Math\.floor\(2\s*\*\s*gap\s*\+\s*na\[3\]\s*\*\s*ec\[3\]\.width\),\s*fD\[0\]\s*=\s*gap,\s*fD\[1\]\s*=\s*fD\[0\]\s*\+\s*gap\s*\+\s*na\[0\]\s*\*\s*ec\[0\]\.height,\s*fD\[2\]\s*=\s*fD\[1\]\s*\+\s*gap\s*\+\s*na\[1\]\s*\*\s*ec\[1\]\.height,\s*fD\[3\]\s*=\s*fD\[2\]\s*\+\s*gap\s*\+\s*na\[2\]\s*\*\s*ec\[2\]\.height,\s*fD\[4\]\s*=\s*fD\[3\]/,
+  `(function() {
+				var totalH, maxW, startX, startY;
+				totalH =
+					na[0] * ec[0].height +
+					gap +
+					na[1] * ec[1].height +
+					gap +
+					na[2] * ec[2].height;
 
-					maxW = Math.max(
-						na[0] * ec[0].width,
-						na[1] * ec[1].width,
-						na[2] * ec[2].width
-					);
+				maxW = Math.max(
+					na[0] * ec[0].width,
+					na[1] * ec[1].width,
+					na[2] * ec[2].width
+				);
 
-					startX = Math.floor(0.78 * h.i - maxW / 2);
-					startY = Math.floor(0.5 * h.j - totalH / 2);
+				startX = Math.floor(0.78 * h.i - maxW / 2);
+				startY = Math.floor(0.50 * h.j - totalH / 2);
 
-					fB[0] = startX;
-					fB[1] = startX;
-					fB[2] = startX;
-					fB[3] = startX;
-					fB[4] = startX;
+				fB[0] = startX;
+				fB[1] = startX;
+				fB[2] = startX;
+				fB[3] = startX;
+				fB[4] = startX;
 
-					fD[0] = startY;
-					fD[1] = fD[0] + gap + na[0] * ec[0].height;
-					fD[2] = fD[1] + gap + na[1] * ec[1].height;
-					fD[3] = fD[2] + gap + na[2] * ec[2].height;
-					fD[4] = fD[3];
-				})(),
-				!fW[0])`,
+				fD[0] = startY;
+				fD[1] = fD[0] + gap + na[0] * ec[0].height;
+				fD[2] = fD[1] + gap + na[1] * ec[1].height;
+				fD[3] = fD[2] + gap + na[2] * ec[2].height;
+				fD[4] = fD[3];
+			})()`,
   "move side buttons to center-right"
 );
   return source;
