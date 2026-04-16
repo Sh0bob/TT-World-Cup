@@ -965,6 +965,29 @@ window.__TTWC = window.__TTWC || {};
     }
   }
 
+  function broadcastClientRoster() {
+    try {
+      if (!isCustomLobbyActive() || !isHost()) return false;
+
+      const roster = Object.entries(TTWC.client.byName || {})
+        .filter(([name, client]) => normalizePlayerName(name) && client === "TTWC")
+        .map(([name, client]) => ({ name, client }));
+
+      const sent = sendCustomLobbyMessage({
+        t: "clientRoster",
+        d: roster
+      });
+
+      if (sent) {
+        console.log("[TTWC CLIENT] broadcasted client roster", roster);
+      }
+      return sent;
+    } catch (e) {
+      console.log("[TTWC CLIENT] broadcastClientRoster error:", e);
+      return false;
+    }
+  }
+
   function patchCustomLobbyHostTracking() {
     try {
       if (!window.__fx || !__fx.customLobby) return false;
@@ -1037,8 +1060,26 @@ window.__TTWC = window.__TTWC || {};
                 }
                 console.log("[TTWC CLIENT] received client flag", { index: matchedIndex, client: label, name });
               }
+
+              if (name && isHost()) {
+                broadcastClientRoster();
+              }
             } catch (e) {
               console.log("[TTWC CLIENT] clientInfo handler error:", e);
+            }
+          } else if (type === "clientRoster") {
+            try {
+              const roster = Array.isArray(data) ? data : [];
+              for (const entry of roster) {
+                const name = normalizePlayerName(entry?.name);
+                const label = String(entry?.client || "TTWC");
+                if (!name) continue;
+                TTWC.client.byName[name] = label;
+              }
+              rebuildClientIndexMap();
+              console.log("[TTWC CLIENT] received client roster", roster);
+            } catch (e) {
+              console.log("[TTWC CLIENT] clientRoster handler error:", e);
             }
           } else if (type === "removePlayer") {
             const removedIndex = data;
@@ -1351,6 +1392,21 @@ window.__TTWC = window.__TTWC || {};
       clearInterval(interval);
     }
   }, 500);
+
+  function tickClientIdentity() {
+    try {
+      if (isCustomLobbyActive()) {
+        announceThisClient();
+        if (isHost()) {
+          broadcastClientRoster();
+        }
+      }
+    } catch (e) {}
+
+    setTimeout(tickClientIdentity, 3000);
+  }
+
+  setTimeout(tickClientIdentity, 3000);
 })();
 </script>
 
