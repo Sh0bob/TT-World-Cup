@@ -15,4 +15,6 @@ module.exports = {
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=",
 
   crownIcon: pngToBase64("assets/ttwc-crown.png"),
+
+  sideButton: pngToBase64("assets/ad.png"),
 };
