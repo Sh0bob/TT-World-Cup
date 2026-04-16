@@ -12,7 +12,7 @@ function applyPatches(source, assets) {
   /aHg\(6,\s*"territorial\.io",\s*6,\s*"[^"]+"\s*\)/,
   `aHg(6, "territorial.io", 8, "${assets.ttwcLogo}")`,
   "big territorial.io logo"
-);
+); 
 
   source = replaceOne(
   source,
