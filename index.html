@@ -1290,33 +1290,10 @@ window.__TTWC = window.__TTWC || {};
 </script>
 
 <script>
-// Simple on-screen lobby client indicator for custom lobbies.
+// Inject TTWC / Other badges directly into custom-lobby player rows.
 (() => {
   const TTWC = window.__TTWC = window.__TTWC || {};
   TTWC.peace = TTWC.peace || {};
-
-  const badge = document.createElement("div");
-  badge.id = "ttwc-client-indicator";
-  Object.assign(badge.style, {
-    position: "fixed",
-    bottom: "18px",
-    right: "18px",
-    maxWidth: "260px",
-    maxHeight: "220px",
-    overflow: "auto",
-    padding: "8px 10px",
-    fontSize: "12px",
-    lineHeight: "1.4",
-    borderRadius: "10px",
-    border: "1px solid rgba(255,255,255,0.35)",
-    background: "rgba(8,16,24,0.88)",
-    color: "#e7f0ff",
-    zIndex: "99998",
-    fontFamily: "Arial, Helvetica, sans-serif",
-    display: "none",
-    pointerEvents: "none"
-  });
-  document.body.appendChild(badge);
 
   function isCustomLobbyActive() {
     try {
@@ -1331,29 +1308,101 @@ window.__TTWC = window.__TTWC || {};
     }
   }
 
+  function getClientLabel(index) {
+    const player = Array.isArray(TTWC.peace.players) ? TTWC.peace.players[index] : null;
+    const label = (player && player.client) || TTWC.client?.byIndex?.[index] || "Other";
+    return label === "TTWC" ? "TTWC" : "Other";
+  }
+
+  function getActionRows() {
+    const actionButtons = Array.from(document.querySelectorAll("button"))
+      .filter(btn => {
+        const text = (btn.textContent || "").trim().toLowerCase();
+        return text === "host" || text === "kick";
+      });
+
+    const rowMap = new Map();
+    for (const btn of actionButtons) {
+      const row = btn.parentElement;
+      if (!row) continue;
+      if (!rowMap.has(row)) {
+        rowMap.set(row, {
+          row,
+          buttons: []
+        });
+      }
+      rowMap.get(row).buttons.push(btn);
+    }
+
+    return Array.from(rowMap.values())
+      .sort((a, b) => {
+        const ar = a.row.getBoundingClientRect();
+        const br = b.row.getBoundingClientRect();
+        return ar.top - br.top;
+      });
+  }
+
+  function applyBadge(rowInfo, index) {
+    const row = rowInfo?.row;
+    if (!row) return;
+
+    const label = getClientLabel(index);
+    let badge = row.querySelector(".ttwc-client-row-badge");
+
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "ttwc-client-row-badge";
+      Object.assign(badge.style, {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: "52px",
+        height: "24px",
+        padding: "0 8px",
+        marginRight: "6px",
+        borderRadius: "999px",
+        fontSize: "12px",
+        fontWeight: "700",
+        fontFamily: "Arial, Helvetica, sans-serif",
+        color: "#fff",
+        verticalAlign: "middle",
+        boxSizing: "border-box"
+      });
+
+      const anchor = rowInfo.buttons
+        .slice()
+        .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
+
+      if (anchor && anchor.parentNode) {
+        anchor.parentNode.insertBefore(badge, anchor);
+      } else {
+        row.appendChild(badge);
+      }
+    }
+
+    badge.textContent = label;
+    badge.style.background = label === "TTWC"
+      ? "linear-gradient(180deg, #1f8f60, #146542)"
+      : "linear-gradient(180deg, #707780, #4d545d)";
+    badge.style.border = label === "TTWC"
+      ? "1px solid rgba(180,255,220,0.45)"
+      : "1px solid rgba(255,255,255,0.28)";
+  }
+
+  function clearBadges() {
+    document.querySelectorAll(".ttwc-client-row-badge").forEach(el => el.remove());
+  }
+
   function tick() {
     try {
       const inLobby = isCustomLobbyActive();
       const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
 
       if (!inLobby || players.length === 0) {
-        badge.style.display = "none";
+        clearBadges();
       } else {
-        const selfIndex = typeof TTWC.peace.selfLobbyIndex === "number"
-          ? TTWC.peace.selfLobbyIndex
-          : -1;
-        const rows = players.map((p, i) => {
-          const name = (p && p.name) ? String(p.name) : `Player ${i + 1}`;
-          const client = (p && p.client) || TTWC.client?.byIndex?.[i] || "Other";
-          const you = (i === selfIndex) ? " (You)" : "";
-          const tag = client === "TTWC" ? "[TTWC]" : "[Other]";
-          return `${i + 1}. ${name}${you} ${tag}`;
-        });
-
-        badge.innerHTML =
-          `<div style="font-weight:700;margin-bottom:4px;">Lobby clients (TTWC vs Other)</div>` +
-          `<div>${rows.map(r => `<div>${r}</div>`).join("")}</div>`;
-        badge.style.display = "block";
+        const rows = getActionRows();
+        rows.forEach((rowInfo, index) => applyBadge(rowInfo, index));
       }
     } catch (e) {
       // ignore
