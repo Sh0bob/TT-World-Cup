@@ -833,6 +833,60 @@ window.__TTWC.isCustomLobbyActive = function() {
 </script>
 
 <script>
+window.__TTWC = window.__TTWC || {};
+
+window.__TTWC.sendCustomLobbyMessage = function(obj) {
+  try {
+    if (
+      !window.__fx ||
+      !__fx.customLobby ||
+      typeof __fx.customLobby.isActive !== "function" ||
+      !__fx.customLobby.isActive()
+    ) {
+      return false;
+    }
+
+    const json = JSON.stringify(obj);
+    const payload = new TextEncoder().encode(json);
+    const out = new Uint8Array(payload.length + 1);
+    out[0] = 120;
+    out.set(payload, 1);
+
+    const socketId =
+      (typeof b0 !== "undefined" &&
+        b0.y &&
+        typeof b0.y.a2C !== "undefined")
+        ? b0.y.a2C
+        : undefined;
+
+    if (typeof __fx.customLobby.send === "function") {
+      if (typeof socketId !== "undefined") {
+        __fx.customLobby.send(socketId, out);
+      } else {
+        __fx.customLobby.send(out);
+      }
+      return true;
+    }
+
+    if (
+      typeof socketId !== "undefined" &&
+      typeof b0 !== "undefined" &&
+      b0.y &&
+      typeof b0.y.send === "function"
+    ) {
+      b0.y.send(socketId, out);
+      return true;
+    }
+
+    return false;
+  } catch (e) {
+    console.log("[TTWC CLIENT] global sendCustomLobbyMessage error:", e);
+    return false;
+  }
+};
+</script>
+
+<script>
 (() => {
   const TTWC = window.__TTWC;
 
@@ -846,7 +900,7 @@ window.__TTWC.isCustomLobbyActive = function() {
       if (TTWC.clientInfo.sentHello) return;
       if (typeof TTWC.peace.selfLobbyIndex !== "number" || TTWC.peace.selfLobbyIndex < 0) return;
 
-      const sent = sendCustomLobbyMessage({
+      const sent = window.__TTWC.sendCustomLobbyMessage({
         t: "clientHello",
         d: {
           id: TTWC.peace.selfLobbyIndex,
