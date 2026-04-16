@@ -288,6 +288,39 @@ source = replaceOne(
 			})()`,
   "move side buttons to center-right"
 );
+
+source = replaceOne(
+  source,
+  /aHg\(8,\s*"googleplay",\s*3,\s*"[^"]+"\s*\)/,
+  `aHg(8, "googleplay", 3, "${assets.sideButton}")`,
+  "replace google play button image"
+);
+
+source = replaceOne(
+  source,
+  /aHg\(16,\s*"apple",\s*3,\s*"[^"]+"\s*\)/,
+  `aHg(16, "apple", 3, "${assets.sideButton}")`,
+  "replace apple button image"
+);
+
+source = replaceOne(
+  source,
+  /aHg\(9,\s*"discord",\s*7,\s*"[^"]+"\s*\)/,
+  `aHg(9, "discord", 3, "${assets.sideButton}")`,
+  "replace discord button image"
+);
+
+source = replaceOne(
+  source,
+  /na\[0\]\s*=\s*tF\s*\/\s*ec\[0\]\.width,\s*na\[1\]\s*=\s*tG\s*\/\s*ec\[1\]\.width,\s*na\[2\]\s*=\s*a9I\s*\/\s*ec\[2\]\.height,\s*na\[3\]\s*=\s*a9I\s*\/\s*ec\[3\]\.height,\s*na\[4\]\s*=\s*a9I\s*\/\s*ec\[4\]\.height,\s*na\[2\]\s*\*=\s*1\.7,\s*na\[3\]\s*\*=\s*1\.07/,
+  `na[0] = tF / ec[0].width,
+				na[1] = tF / ec[1].width,
+				na[2] = tF / ec[2].width,
+				na[3] = a9I / ec[3].height,
+				na[4] = a9I / ec[4].height,
+				na[3] *= 1.07`,
+  "make first three side buttons same size"
+);
   return source;
 }
 
