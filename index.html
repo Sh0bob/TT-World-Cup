@@ -816,12 +816,29 @@ window.__TTWC = window.__TTWC || {};
 </script>
 
 <script>
+window.__TTWC = window.__TTWC || {};
+
+window.__TTWC.isCustomLobbyActive = function() {
+  try {
+    return !!(
+      window.__fx &&
+      __fx.customLobby &&
+      typeof __fx.customLobby.isActive === "function" &&
+      __fx.customLobby.isActive()
+    );
+  } catch (e) {
+    return false;
+  }
+};
+</script>
+
+<script>
 (() => {
   const TTWC = window.__TTWC;
 
   function trySendClientHello() {
     try {
-      if (!isCustomLobbyActive()) {
+      if (!window.__TTWC.isCustomLobbyActive()) {
         TTWC.clientInfo.sentHello = false;
         return;
       }
@@ -1628,7 +1645,7 @@ TTWC.clientInfo.byIndex = nextMap;
 
   function decorateLobbyPlayers() {
     try {
-      if (!isCustomLobbyActive()) return;
+      if (!window.__TTWC.isCustomLobbyActive()) return;
       if (!Array.isArray(TTWC.peace?.players)) return;
 
       const all = Array.from(document.querySelectorAll("div, span, p"));
