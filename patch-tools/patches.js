@@ -292,21 +292,21 @@ source = replaceOne(
 source = replaceOne(
   source,
   /aHg\(8,\s*"googleplay",\s*3,\s*"[^"]+"\s*\)/,
-  `aHg(8, "googleplay", 3, "${assets.sideButton}")`,
+  `aHg(8, "googleplay", 8, "${assets.sideButton}")`,
   "replace google play button image"
 );
 
 source = replaceOne(
   source,
   /aHg\(16,\s*"apple",\s*3,\s*"[^"]+"\s*\)/,
-  `aHg(16, "apple", 3, "${assets.sideButton}")`,
+  `aHg(16, "apple", 8, "${assets.sideButton}")`,
   "replace apple button image"
 );
 
 source = replaceOne(
   source,
   /aHg\(9,\s*"discord",\s*7,\s*"[^"]+"\s*\)/,
-  `aHg(9, "discord", 3, "${assets.sideButton}")`,
+  `aHg(9, "discord", 8, "${assets.sideButton}")`,
   "replace discord button image"
 );
 
