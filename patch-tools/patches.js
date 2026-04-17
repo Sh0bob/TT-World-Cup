@@ -289,26 +289,6 @@ source = replaceOne(
   "move side buttons to center-right"
 );
 
-source = replaceOne(
-  source,
-  /aHg\(8,\s*"googleplay",\s*3,\s*"[^"]+"\s*\)/,
-  `aHg(8, "googleplay", 8, "${assets.sideButton}")`,
-  "replace google play button image"
-);
-
-source = replaceOne(
-  source,
-  /aHg\(16,\s*"apple",\s*3,\s*"[^"]+"\s*\)/,
-  `aHg(16, "apple", 8, "${assets.sideButton}")`,
-  "replace apple button image"
-);
-
-source = replaceOne(
-  source,
-  /aHg\(9,\s*"discord",\s*7,\s*"[^"]+"\s*\)/,
-  `aHg(9, "discord", 8, "${assets.sideButton}")`,
-  "replace discord button image"
-);
 
 source = replaceOne(
   source,
@@ -341,6 +321,23 @@ source = replaceOne(
   /this\.aDZ\s*=\s*"[^"]*"/,
   `this.aDZ = "https://discord.gg/FT3N7zFwMu"`,
   "change side button 3 link"
+);
+
+source = replaceOne(
+  source,
+  /\), aHg\(21,\s*"stalemate",\s*6,/,
+  `), aHg(17, "ttwcSide1", 8, "${assets.sideButton}"),
+					aHg(18, "ttwcSide2", 8, "${assets.sideButton}"),
+					aHg(20, "ttwcSide3", 8, "${assets.sideButton}"),
+					aHg(21, "stalemate", 6,`,
+  "add clean TTWC side button canvases"
+);
+
+source = replaceOne(
+  source,
+  /bY\.aDW\(\[canvas\[8\],\s*canvas\[16\],\s*canvas\[9\],\s*canvas\[9\],\s*canvas\[10\]\]/,
+  `bY.aDW([canvas[17], canvas[18], canvas[20], canvas[20], canvas[10]]`,
+  "use clean TTWC side button canvases"
 );
   return source;
 }
