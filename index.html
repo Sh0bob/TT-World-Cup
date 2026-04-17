@@ -418,6 +418,31 @@ div[style*="white-space: nowrap"] > button:active {
   transform: translateY(2px) scale(0.99);
   filter: brightness(0.95);
 }
+
+.ttwc-game-menu-back {
+  background:
+    radial-gradient(120% 90% at 10% 0%, rgba(255,255,255,0.10), transparent 40%),
+    linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 34%, rgba(0,0,0,0.12) 100%),
+    linear-gradient(180deg, rgba(40,55,66,0.68), rgba(12,18,24,0.82)) !important;
+  border: 1px solid rgba(225, 235, 243, 0.35) !important;
+  border-radius: 16px !important;
+  color: #f5fbff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.28),
+    0 8px 20px rgba(0,0,0,0.22) !important;
+  transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease !important;
+}
+
+.ttwc-game-menu-back:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.ttwc-game-menu-back:active {
+  transform: translateY(2px) scale(0.99);
+  filter: brightness(0.95);
+}
   </style>
   <script>
 // Service worker disabled for this fork (prevents sw2.js 404 + caching headaches during development)
@@ -484,6 +509,27 @@ div[style*="white-space: nowrap"] > button:active {
 </script>
   <script src="./FX Client_files/game.patched.js?v=4"></script>
 
+<script>
+(() => {
+  function markBackButton() {
+    const buttons = Array.from(document.querySelectorAll("button"));
+    for (const btn of buttons) {
+      const text = (btn.textContent || "").trim().toLowerCase();
+      if (text === "⬅️ back" || text === "back" || text.endsWith(" back")) {
+        btn.classList.add("ttwc-game-menu-back");
+      }
+    }
+  }
+
+  function tick() {
+    markBackButton();
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+})();
+</script>
+  
   <script>
 (() => {
   const labels = [
