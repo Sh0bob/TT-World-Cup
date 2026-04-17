@@ -443,6 +443,155 @@ div[style*="white-space: nowrap"] > button:active {
   transform: translateY(2px) scale(0.99);
   filter: brightness(0.95);
 }
+
+/* ===== TTWC WINDOW RESKIN: SETTINGS + CUSTOM LOBBY ===== */
+
+.window {
+  background:
+    radial-gradient(120% 120% at 10% 0%, rgba(255,255,255,0.08), transparent 38%),
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02) 28%, rgba(0,0,0,0.10) 100%),
+    linear-gradient(180deg, rgba(20,30,38,0.82), rgba(8,14,20,0.90)) !important;
+  border: 1px solid rgba(220, 235, 245, 0.32) !important;
+  border-radius: 20px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.10),
+    inset 0 -1px 0 rgba(0,0,0,0.24),
+    0 16px 40px rgba(0,0,0,0.34) !important;
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  color: #f3f8fc !important;
+}
+
+.window h1,
+.window h2,
+.window h3 {
+  color: #ffffff !important;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.28);
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.window hr {
+  border: none !important;
+  border-top: 1px solid rgba(220, 235, 245, 0.20) !important;
+  margin: 14px 0 !important;
+}
+
+.window label,
+.window p,
+.window span,
+.window div,
+.window td,
+.window th {
+  color: #edf5fa !important;
+}
+
+/* Shared TTWC controls inside windows */
+.window button,
+.window select,
+.window input[type="text"],
+.window input[type="number"] {
+  border-radius: 12px !important;
+  border: 1px solid rgba(225, 235, 243, 0.30) !important;
+  color: #f5fbff !important;
+  background:
+    radial-gradient(120% 90% at 10% 0%, rgba(255,255,255,0.08), transparent 40%),
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02) 34%, rgba(0,0,0,0.10) 100%),
+    linear-gradient(180deg, rgba(40,55,66,0.62), rgba(12,18,24,0.82)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.10),
+    inset 0 -1px 0 rgba(0,0,0,0.22),
+    0 6px 14px rgba(0,0,0,0.18) !important;
+  transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease !important;
+}
+
+.window button:hover,
+.window select:hover,
+.window input[type="text"]:hover,
+.window input[type="number"]:hover {
+  filter: brightness(1.04);
+}
+
+.window button:active {
+  transform: translateY(2px) scale(0.99);
+  filter: brightness(0.95);
+}
+
+.window input::placeholder {
+  color: rgba(228, 238, 245, 0.70) !important;
+}
+
+/* Settings window specifically */
+.window.settings {
+  padding: 18px 22px !important;
+}
+
+.window.settings .scrollable {
+  padding-right: 8px;
+}
+
+.window.settings footer {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Checkbox/range rows in settings */
+.window.settings input[type="checkbox"] {
+  accent-color: #4db6ac;
+}
+
+.window.settings select {
+  min-height: 42px;
+  padding: 0 12px !important;
+}
+
+/* Custom Lobby join/create popup */
+#customLobbyJoinMenu {
+  min-width: 560px !important;
+  padding: 22px !important;
+  text-align: center;
+}
+
+#customLobbyJoinMenu > input,
+#customLobbyJoinMenu #customLobbyRegion,
+#customLobbyJoinMenu #createLobbyButton {
+  min-height: 44px;
+}
+
+#customLobbyJoinMenu > input {
+  width: 290px !important;
+  padding: 0 14px !important;
+  text-align: left !important;
+}
+
+#customLobbyJoinMenu > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+#customLobbyJoinMenu label {
+  font-weight: 600;
+  color: #edf5fa !important;
+}
+
+#customLobbyJoinMenu #createLobbyButton {
+  padding: 0 18px !important;
+}
+
+#customLobbyJoinMenu #customLobbyRegion {
+  padding: 0 12px !important;
+}
+
+/* Player list / donation windows will benefit too */
+#playerlist,
+#donationhistory,
+#updateNotification {
+  border-radius: 20px !important;
+}
   </style>
   <script>
 // Service worker disabled for this fork (prevents sw2.js 404 + caching headaches during development)
