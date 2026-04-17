@@ -392,6 +392,32 @@ div[style*="position: absolute"][style*="white-space: nowrap"][style*="border-to
     inset 0 1px 0 rgba(255,255,255,0.06),
     0 -8px 24px rgba(0,0,0,0.18) !important;
 }
+
+/* TTWC game menu back button */
+div[style*="white-space: nowrap"] > button {
+  background:
+    radial-gradient(120% 90% at 10% 0%, rgba(255,255,255,0.10), transparent 40%),
+    linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 34%, rgba(0,0,0,0.12) 100%),
+    linear-gradient(180deg, rgba(40,55,66,0.68), rgba(12,18,24,0.82)) !important;
+  border: 1px solid rgba(225, 235, 243, 0.35) !important;
+  border-radius: 16px !important;
+  color: #f5fbff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.28),
+    0 8px 20px rgba(0,0,0,0.22) !important;
+  transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease !important;
+}
+
+div[style*="white-space: nowrap"] > button:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+div[style*="white-space: nowrap"] > button:active {
+  transform: translateY(2px) scale(0.99);
+  filter: brightness(0.95);
+}
   </style>
   <script>
 // Service worker disabled for this fork (prevents sw2.js 404 + caching headaches during development)
