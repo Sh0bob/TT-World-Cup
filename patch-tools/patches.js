@@ -345,22 +345,22 @@ source = replaceOne(
 source = replaceOne(
   source,
   /var gap,\s*aBp,\s*fB = \[0, 0, 0, 0, 0\],/,
-  `var gap, aBp, aPress = -1, fB = [0, 0, 0, 0, 0],`,
-  "add side button pressed state"
+  `var gap, aBp, aPress = -1, aPressUntil = 0, fB = [0, 0, 0, 0, 0],`,
+  "add side button press state"
 );
 
 source = replaceOne(
   source,
   /vV\.setTransform\(na\[aB\], 0, 0, na\[aB\], fB\[aB\], fD\[aB\]\), vV\.drawImage\(ec\[aB\], 0, 0\)/,
-  `vV.setTransform(na[aB], 0, 0, na[aB], fB[aB], fD[aB] + (aPress === aB ? 6 : 0)), vV.drawImage(ec[aB], 0, 0)`,
-  "add press offset to side buttons"
+  `vV.setTransform(na[aB], 0, 0, na[aB], fB[aB], fD[aB] + (aPress === aB && Date.now() < aPressUntil ? 5 : 0)), vV.drawImage(ec[aB], 0, 0)`,
+  "draw pressed side button lower"
 );
 
 source = replaceOne(
   source,
-  /if \(fW\[aB\] && this\.fr\[aB\] && fB\[aB\] < iL && fD\[aB\] < iM && iL < fB\[aB\] \+ na\[aB\] \* ec\[aB\]\.width && iM < fD\[aB\] \+ na\[aB\] \* ec\[aB\]\.height\) return t\.u\(9, t\.t8, new aDb\(L\(126\), bA\.qr\.a4B\(aBp\[aB\]\)\)\), !0;/,
-  `if (fW[aB] && this.fr[aB] && fB[aB] < iL && fD[aB] < iM && iL < fB[aB] + na[aB] * ec[aB].width && iM < fD[aB] + na[aB] * ec[aB].height) return aPress = aB, setTimeout(function() { aPress = -1; }, 140), t.u(9, t.t8, new aDb(L(126), bA.qr.a4B(aBp[aB]))), !0;`,
-  "animate side buttons on click"
+  /return t\.u\(9,\s*t\.t8,\s*new aDb\(L\(126\),\s*bA\.qr\.a4B\(aBp\[aB\]\)\)\),\s*!0;/,
+  `return aPress = aB, aPressUntil = Date.now() + 160, t.u(9, t.t8, new aDb(L(126), bA.qr.a4B(aBp[aB]))), !0;`,
+  "press animate side buttons"
 );
   return source;
 }
