@@ -325,10 +325,17 @@ source = replaceOne(
 
 source = replaceOne(
   source,
+  /aHZ\s*=\s*23/,
+  `aHZ = 26`,
+  "expand canvas pool for custom side buttons"
+);
+
+source = replaceOne(
+  source,
   /\), aHg\(21,\s*"stalemate",\s*6,/,
-  `), aHg(17, "ttwcSide1", 8, "${assets.sideButton}"),
-					aHg(18, "ttwcSide2", 8, "${assets.sideButton}"),
-					aHg(20, "ttwcSide3", 8, "${assets.sideButton}"),
+  `), aHg(23, "ttwcSide1", 8, "${assets.sideButton}"),
+					aHg(24, "ttwcSide2", 8, "${assets.sideButton}"),
+					aHg(25, "ttwcSide3", 8, "${assets.sideButton}"),
 					aHg(21, "stalemate", 6,`,
   "add clean TTWC side button canvases"
 );
@@ -336,8 +343,8 @@ source = replaceOne(
 source = replaceOne(
   source,
   /bY\.aDW\(\[canvas\[8\],\s*canvas\[16\],\s*canvas\[9\],\s*canvas\[9\],\s*canvas\[10\]\]/,
-  `bY.aDW([canvas[17], canvas[18], canvas[20], canvas[20], canvas[10]]`,
-  "use clean TTWC side button canvases"
+  `bY.aDW([canvas[23], canvas[24], canvas[25], canvas[25], canvas[10]]`,
+  "use custom side button canvases"
 );
   return source;
 }
