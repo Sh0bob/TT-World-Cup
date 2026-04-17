@@ -306,6 +306,11 @@ button.ttwc-color-btn::after {
   display: none;
 }
 
+button.ttwc-menu-btn.ttwc-pressed {
+  transform: translateY(2px) scale(0.99) !important;
+  filter: brightness(0.95) !important;
+}
+
 /* ===== TTWC GAME MENU RESKIN ===== */
 
 /* Main dark menu panels created at runtime */
@@ -619,6 +624,34 @@ div[style*="white-space: nowrap"] > button:active {
   background-color: #24586a !important;
   color: #ffffff !important;
 }
+
+/* ===== TTWC GENERIC ACTION BUTTONS ===== */
+
+.ttwc-action-btn {
+  background:
+    radial-gradient(120% 90% at 10% 0%, rgba(255,255,255,0.10), transparent 40%),
+    linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 34%, rgba(0,0,0,0.12) 100%),
+    linear-gradient(180deg, rgba(40,55,66,0.68), rgba(12,18,24,0.82)) !important;
+  border: 1px solid rgba(225, 235, 243, 0.35) !important;
+  border-radius: 16px !important;
+  color: #f5fbff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.28),
+    0 8px 20px rgba(0,0,0,0.22) !important;
+  transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease !important;
+}
+
+.ttwc-action-btn:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.ttwc-action-btn:active,
+.ttwc-action-btn.ttwc-pressed {
+  transform: translateY(2px) scale(0.99);
+  filter: brightness(0.95);
+}
   </style>
   <script>
 // Service worker disabled for this fork (prevents sw2.js 404 + caching headaches during development)
@@ -671,7 +704,7 @@ div[style*="white-space: nowrap"] > button:active {
       </table>
     </div>
     <div class="window" style="display: none" id="updateNotification">
-      <h3>A new version of FX is available! Click the "Update" button below to update</h3>
+      <h3>Do NOT click "update". This will take you out of TTWC Client to FX Client - Click "back" to continue</h3>
       <button id="swUpdateButton">Update</button>
       <button onclick="document.getElementById('updateNotification').style.display = 'none'">Dismiss</button>
     </div>
@@ -687,6 +720,31 @@ div[style*="white-space: nowrap"] > button:active {
 
 <script>
 (() => {
+  function bindPressAnimation(btn) {
+    if (!btn || btn.dataset.ttwcPressBound === "1") return;
+    btn.dataset.ttwcPressBound = "1";
+
+    const pressOn = () => btn.classList.add("ttwc-pressed");
+    const pressOff = () => btn.classList.remove("ttwc-pressed");
+
+    btn.addEventListener("pointerdown", pressOn);
+    btn.addEventListener("pointerup", pressOff);
+    btn.addEventListener("pointerleave", pressOff);
+    btn.addEventListener("pointercancel", pressOff);
+    btn.addEventListener("blur", pressOff);
+  }
+
+  function tickBindMenuButtons() {
+    document.querySelectorAll("button.ttwc-menu-btn").forEach(bindPressAnimation);
+    requestAnimationFrame(tickBindMenuButtons);
+  }
+
+  requestAnimationFrame(tickBindMenuButtons);
+})();
+</script>
+
+<script>
+(() => {
   function markBackButton() {
     const buttons = Array.from(document.querySelectorAll("button"));
     for (const btn of buttons) {
@@ -699,6 +757,32 @@ div[style*="white-space: nowrap"] > button:active {
 
   function tick() {
     markBackButton();
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+})();
+</script>
+
+<script>
+(() => {
+  const ACTION_LABELS = [
+    "back", "reload", "clear", "reset", "launch", "copy", "select all",
+    "save settings", "reset settings", "import", "export", "dismiss", "update"
+  ];
+
+  function markActionButtons() {
+    const buttons = Array.from(document.querySelectorAll("button"));
+    for (const btn of buttons) {
+      const text = (btn.textContent || "").trim().toLowerCase();
+      if (ACTION_LABELS.some(label => text === label || text.endsWith(" " + label) || text.includes(label))) {
+        btn.classList.add("ttwc-action-btn");
+      }
+    }
+  }
+
+  function tick() {
+    markActionButtons();
     requestAnimationFrame(tick);
   }
 
