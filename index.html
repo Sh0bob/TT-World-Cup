@@ -308,8 +308,8 @@ button.ttwc-color-btn::after {
 
 /* ===== TTWC GAME MENU RESKIN ===== */
 
-/* Fullscreen menu panels created at runtime */
-body > div[style*="position: absolute"][style*="width: 100%"][style*="background-color: rgba(0, 0, 0, 0.85)"] {
+/* Main dark menu panels created at runtime */
+div[style*="position: absolute"][style*="background-color: rgba(0, 0, 0, 0.85)"] {
   background: rgba(6, 12, 18, 0.78) !important;
   backdrop-filter: blur(10px) saturate(120%);
   -webkit-backdrop-filter: blur(10px) saturate(120%);
@@ -319,14 +319,14 @@ body > div[style*="position: absolute"][style*="width: 100%"][style*="background
     0 10px 30px rgba(0,0,0,0.30) !important;
 }
 
-/* Grid holding the game menu tiles */
-body > div[style*="position: absolute"] > div[style*="display: grid"][style*="grid-template-columns"] {
+/* Any runtime grid used by the menu */
+div[style*="display: grid"][style*="grid-template-columns"] {
   gap: 18px !important;
   padding: 20px !important;
 }
 
-/* Menu tiles */
-body > div[style*="position: absolute"] > div[style*="display: grid"][style*="grid-template-columns"] > button {
+/* Game menu tiles */
+div[style*="display: grid"][style*="grid-template-columns"] > button {
   background:
     radial-gradient(120% 90% at 10% 0%, rgba(255,255,255,0.10), transparent 40%),
     linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 34%, rgba(0,0,0,0.12) 100%),
@@ -342,7 +342,7 @@ body > div[style*="position: absolute"] > div[style*="display: grid"][style*="gr
 }
 
 /* Hover */
-body > div[style*="position: absolute"] > div[style*="display: grid"][style*="grid-template-columns"] > button:hover {
+div[style*="display: grid"][style*="grid-template-columns"] > button:hover {
   filter: brightness(1.06);
   transform: translateY(-1px);
   box-shadow:
@@ -352,29 +352,23 @@ body > div[style*="position: absolute"] > div[style*="display: grid"][style*="gr
 }
 
 /* Pressed */
-body > div[style*="position: absolute"] > div[style*="display: grid"][style*="grid-template-columns"] > button:active {
+div[style*="display: grid"][style*="grid-template-columns"] > button:active {
   transform: translateY(2px) scale(0.99);
   filter: brightness(0.95);
 }
 
-/* Special accent for selected/active-looking tile like Propaganda */
-body > div[style*="position: absolute"] > div[style*="display: grid"][style*="grid-template-columns"] > button[style*="background-color: rgb(95, 95, 95)"] {
+/* Selected/active tile */
+div[style*="display: grid"][style*="grid-template-columns"] > button[style*="rgb(95, 95, 95)"] {
   background:
     radial-gradient(120% 90% at 10% 0%, rgba(255,255,255,0.14), transparent 40%),
     linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04) 34%, rgba(0,0,0,0.10) 100%),
     linear-gradient(180deg, rgba(70,88,100,0.74), rgba(24,34,42,0.88)) !important;
 }
 
-/* Top title band */
-body > div[style*="position: absolute"][style*="height: 165px"] {
+/* Header and footer bars */
+div[style*="display: flex"][style*="height: 165px"] {
   background: rgba(5, 10, 16, 0.82) !important;
-  border-bottom: 1px solid rgba(220,235,245,0.35) !important;
-}
-
-/* Bottom back row */
-body > div[style*="position: absolute"][style*="display: flex"][style*="height: 165px"] {
-  background: rgba(5, 10, 16, 0.82) !important;
-  border-top: 1px solid rgba(220,235,245,0.35) !important;
+  border-color: rgba(220,235,245,0.35) !important;
 }
   </style>
   <script>
