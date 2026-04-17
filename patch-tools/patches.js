@@ -341,6 +341,27 @@ source = replaceOne(
 	}`,
   "use raw image for side buttons"
 );
+
+source = replaceOne(
+  source,
+  /var gap,\s*aBp,\s*fB = \[0, 0, 0, 0, 0\],/,
+  `var gap, aBp, aPress = -1, fB = [0, 0, 0, 0, 0],`,
+  "add side button pressed state"
+);
+
+source = replaceOne(
+  source,
+  /vV\.setTransform\(na\[aB\], 0, 0, na\[aB\], fB\[aB\], fD\[aB\]\), vV\.drawImage\(ec\[aB\], 0, 0\)/,
+  `vV.setTransform(na[aB], 0, 0, na[aB], fB[aB], fD[aB] + (aPress === aB ? 6 : 0)), vV.drawImage(ec[aB], 0, 0)`,
+  "add press offset to side buttons"
+);
+
+source = replaceOne(
+  source,
+  /if \(fW\[aB\] && this\.fr\[aB\] && fB\[aB\] < iL && fD\[aB\] < iM && iL < fB\[aB\] \+ na\[aB\] \* ec\[aB\]\.width && iM < fD\[aB\] \+ na\[aB\] \* ec\[aB\]\.height\) return t\.u\(9, t\.t8, new aDb\(L\(126\), bA\.qr\.a4B\(aBp\[aB\]\)\)\), !0;/,
+  `if (fW[aB] && this.fr[aB] && fB[aB] < iL && fD[aB] < iM && iL < fB[aB] + na[aB] * ec[aB].width && iM < fD[aB] + na[aB] * ec[aB].height) return aPress = aB, setTimeout(function() { aPress = -1; }, 140), t.u(9, t.t8, new aDb(L(126), bA.qr.a4B(aBp[aB]))), !0;`,
+  "animate side buttons on click"
+);
   return source;
 }
 
