@@ -592,6 +592,33 @@ div[style*="white-space: nowrap"] > button:active {
 #updateNotification {
   border-radius: 20px !important;
 }
+
+/* TTWC dropdowns inside windows */
+.window select,
+#customLobbyJoinMenu select,
+.window.settings select {
+  color: #f5fbff !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02) 34%, rgba(0,0,0,0.10) 100%),
+    linear-gradient(180deg, rgba(40,55,66,0.62), rgba(12,18,24,0.82)) !important;
+  border: 1px solid rgba(225, 235, 243, 0.30) !important;
+}
+
+/* Dropdown list items */
+.window select option,
+#customLobbyJoinMenu select option,
+.window.settings select option {
+  color: #ffffff !important;
+  background-color: #1a2731 !important;
+}
+
+/* Optional: different colours for hover/selected where supported */
+.window select option:checked,
+#customLobbyJoinMenu select option:checked,
+.window.settings select option:checked {
+  background-color: #24586a !important;
+  color: #ffffff !important;
+}
   </style>
   <script>
 // Service worker disabled for this fork (prevents sw2.js 404 + caching headaches during development)
