@@ -325,26 +325,21 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /aHZ\s*=\s*23/,
-  `aHZ = 26`,
-  "expand canvas pool for custom side buttons"
-);
-
-source = replaceOne(
-  source,
-  /\), aHg\(21,\s*"stalemate",\s*6,/,
-  `), aHg(23, "ttwcSide1", 8, "${assets.sideButton}"),
-					aHg(24, "ttwcSide2", 8, "${assets.sideButton}"),
-					aHg(25, "ttwcSide3", 8, "${assets.sideButton}"),
-					aHg(21, "stalemate", 6,`,
-  "add clean TTWC side button canvases"
-);
-
-source = replaceOne(
-  source,
-  /bY\.aDW\(\[canvas\[8\],\s*canvas\[16\],\s*canvas\[9\],\s*canvas\[9\],\s*canvas\[10\]\]/,
-  `bY.aDW([canvas[23], canvas[24], canvas[25], canvas[25], canvas[10]]`,
-  "use custom side button canvases"
+  /function aHf\(\)\s*\{\s*aL\.a69\(\),\s*bY\.aDW\(\[[\s\S]*?\),\s*aj\.xW = new zN,\s*aj\.xW\.dd\(\),\s*aw\.de\(\)\s*\}/,
+  `function aHf() {
+		aL.a69(), window.__TTWC = window.__TTWC || {};
+		if (!window.__TTWC.sideButtonImg) {
+			var img = new Image;
+			img.src = "data:image/png;base64,${assets.sideButton}";
+			window.__TTWC.sideButtonImg = img;
+		}
+		var ttwcImg = window.__TTWC.sideButtonImg,
+			side1 = ttwcImg.complete && ttwcImg.naturalWidth ? ttwcImg : canvas[8],
+			side2 = ttwcImg.complete && ttwcImg.naturalWidth ? ttwcImg : canvas[16],
+			side3 = ttwcImg.complete && ttwcImg.naturalWidth ? ttwcImg : canvas[9];
+		bY.aDW([side1, side2, side3, side3, canvas[10]], [2 !== a0.id, 1 !== a0.id, !0, !0, !0]), aj.xW = new zN, aj.xW.dd(), aw.de()
+	}`,
+  "use raw image for side buttons"
 );
   return source;
 }
