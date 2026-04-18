@@ -357,7 +357,7 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /vV\.setTransform\(aRb,\s*0,\s*0,\s*aRb,\s*\.08 \* h\.i,\s*nc \+ \.04 \* h\.j\),\s*vV\.drawImage\(f4,\s*0,\s*0\),/,
+  /vV\.setTransform\(aRb,\s*0,\s*0,\s*aRb,\s*[^,]+,\s*[^)]+\),\s*vV\.drawImage\(f4,\s*0,\s*0\),/,
   `if (f4 && f4.complete && f4.naturalWidth) {
 					aRb = .24 * h.i / f4.width,
 					nb = .06 * h.i,
