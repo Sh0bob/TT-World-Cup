@@ -344,21 +344,16 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /var f4 = ab\.aHK\("logo"\),\s*aRb = [^,]+,\s*nb = [^,]+,\s*nc = [^,]+,\s*vV\.setTransform\(aRb,\s*0,\s*0,\s*aRb,\s*[^,]+,\s*[^)]+\),\s*vV\.drawImage\(f4,\s*0,\s*0\),/,
-  `window.__TTWC = window.__TTWC || {};
-				if (!window.__TTWC.partnersImg) {
-					var img = new Image;
-					img.src = "data:image/png;base64,${assets.partners}";
-					window.__TTWC.partnersImg = img;
-				}
-				var f4 = window.__TTWC.partnersImg;
-				if (f4 && f4.complete && f4.naturalWidth) {
-					var aRb = .24 * h.i / f4.width,
-						nb = .06 * h.i,
-						nc = .30 * h.j;
-					vV.setTransform(aRb, 0, 0, aRb, nb, nc), vV.drawImage(f4, 0, 0),
-				}`,
-  "draw raw partners image once"
+  /f4\s*=\s*ab\.aHK\("logo"\)/,
+  `f4 = (window.__TTWC = window.__TTWC || {}, window.__TTWC.partnersImg || (window.__TTWC.partnersImg = new Image, window.__TTWC.partnersImg.src = "data:image/png;base64,${assets.partners}"), window.__TTWC.partnersImg)`,
+  "replace logo source with raw partners image"
+);
+
+source = replaceOne(
+  source,
+  /vV\.setTransform\(aRb,\s*0,\s*0,\s*aRb,\s*nb\s*-\s*\.6\s*\*\s*textLength\s*\*\s*text\.width,\s*nc\),\s*vV\.drawImage\(f4,\s*0,\s*0\),\s*vV\.setTransform\(aRb,\s*0,\s*0,\s*aRb,\s*nb\s*\+\s*\.6\s*\*\s*textLength\s*\*\s*text\.width\s*-\s*aRb\s*\*\s*f4\.width,\s*nc\),\s*vV\.drawImage\(f4,\s*0,\s*0\)/,
+  `f4 && f4.complete && f4.naturalWidth && (aRb = .24 * h.i / f4.width, nb = .06 * h.i, nc = .30 * h.j, vV.setTransform(aRb, 0, 0, aRb, nb, nc), vV.drawImage(f4, 0, 0))`,
+  "replace double partners draw with one raw draw"
 );
   return source;
 }
