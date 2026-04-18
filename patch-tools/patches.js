@@ -344,21 +344,27 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /f4 = ab\.aHK\("logo"\),[\s\S]*?vV\.setTransform\(aRb,\s*0,\s*0,\s*aRb,\s*\.08 \* h\.i,\s*nc \+ \.04 \* h\.j\),\s*vV\.drawImage\(f4,\s*0,\s*0\),/,
+  /f4 = ab\.aHK\("logo"\),/,
   `window.__TTWC = window.__TTWC || {};
 				if (!window.__TTWC.partnersImg) {
 					var img = new Image;
 					img.src = "data:image/png;base64,${assets.partners}";
 					window.__TTWC.partnersImg = img;
 				}
-				f4 = window.__TTWC.partnersImg;
-				if (f4 && f4.complete && f4.naturalWidth) {
+				f4 = window.__TTWC.partnersImg,`,
+  "use raw partners image instead of logo asset"
+);
+
+source = replaceOne(
+  source,
+  /aRb = \.24 \* h\.i \/ f4\.width,\s*nb = \.06 \* h\.i,\s*nc = \.30 \* h\.j,\s*vV\.setTransform\(aRb, 0, 0, aRb, nb, nc\), vV\.drawImage\(f4, 0, 0\),/,
+  `if (f4 && f4.complete && f4.naturalWidth) {
 					aRb = .24 * h.i / f4.width,
 					nb = .06 * h.i,
 					nc = .30 * h.j,
 					vV.setTransform(aRb, 0, 0, aRb, nb, nc), vV.drawImage(f4, 0, 0),
 				}`,
-  "draw partners image directly instead of logo canvas"
+  "guard raw partners image draw"
 );
   return source;
 }
