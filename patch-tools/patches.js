@@ -357,14 +357,14 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /aRb = \.24 \* h\.i \/ f4\.width,\s*nb = \.06 \* h\.i,\s*nc = \.30 \* h\.j,\s*vV\.setTransform\(aRb, 0, 0, aRb, nb, nc\), vV\.drawImage\(f4, 0, 0\),/,
+  /vV\.setTransform\(aRb,\s*0,\s*0,\s*aRb,\s*\.08 \* h\.i,\s*nc \+ \.04 \* h\.j\),\s*vV\.drawImage\(f4,\s*0,\s*0\),/,
   `if (f4 && f4.complete && f4.naturalWidth) {
 					aRb = .24 * h.i / f4.width,
 					nb = .06 * h.i,
 					nc = .30 * h.j,
 					vV.setTransform(aRb, 0, 0, aRb, nb, nc), vV.drawImage(f4, 0, 0),
 				}`,
-  "guard raw partners image draw"
+  "draw raw partners image once"
 );
   return source;
 }
