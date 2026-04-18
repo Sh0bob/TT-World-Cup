@@ -344,12 +344,8 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /f4 = ab\.aHK\("logo"\),\s*aRb = \.666 \* textLength \* text\.height \/ f4\.height,\s*nb = \.5 \* h\.i,\s*nc = aQZ\.fD \+ \.5 \* textLength \* text\.height - \.5 \* aRb \* f4\.height,\s*vV\.setTransform\(aRb, 0, 0, aRb, nb - \.6 \* textLength \* text\.width, nc\), vV\.drawImage\(f4, 0, 0\),\s*vV\.setTransform\(aRb, 0, 0, aRb, nb \+ \.6 \* textLength \* text\.width - aRb \* f4\.width, nc\), vV\.drawImage\(f4, 0, 0\),/,
-  `f4 = ab.aHK("logo"),
-				aRb = .95 * textLength * text.height / f4.height,
-				nb = .18 * h.i,
-				nc = aQZ.fD + .70 * textLength * text.height,
-				vV.setTransform(aRb, 0, 0, aRb, nb, nc), vV.drawImage(f4, 0, 0),`,
+  /vV\.setTransform\(aRb,\s*0,\s*0,\s*aRb,\s*nb\s*-\s*\.6\s*\*\s*textLength\s*\*\s*text\.width,\s*nc\),\s*vV\.drawImage\(f4,\s*0,\s*0\),\s*vV\.setTransform\(aRb,\s*0,\s*0,\s*aRb,\s*nb\s*\+\s*\.6\s*\*\s*textLength\s*\*\s*text\.width\s*-\s*aRb\s*\*\s*f4\.width,\s*nc\),\s*vV\.drawImage\(f4,\s*0,\s*0\)/,
+  `vV.setTransform(aRb, 0, 0, aRb, .08 * h.i, nc + .04 * h.j), vV.drawImage(f4, 0, 0)`,
   "move logo asset to single left promo draw"
 );
   return source;
