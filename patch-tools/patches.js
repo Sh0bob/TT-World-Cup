@@ -344,24 +344,18 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /f4 = ab\.aHK\("logo"\),/,
+  /var f4 = ab\.aHK\("logo"\),\s*aRb = [^,]+,\s*nb = [^,]+,\s*nc = [^,]+,\s*vV\.setTransform\(aRb,\s*0,\s*0,\s*aRb,\s*[^,]+,\s*[^)]+\),\s*vV\.drawImage\(f4,\s*0,\s*0\),/,
   `window.__TTWC = window.__TTWC || {};
 				if (!window.__TTWC.partnersImg) {
 					var img = new Image;
 					img.src = "data:image/png;base64,${assets.partners}";
 					window.__TTWC.partnersImg = img;
 				}
-				f4 = window.__TTWC.partnersImg,`,
-  "use raw partners image instead of logo asset"
-);
-
-source = replaceOne(
-  source,
-  /vV\.setTransform\(aRb,\s*0,\s*0,\s*aRb,\s*[^,]+,\s*[^)]+\),\s*vV\.drawImage\(f4,\s*0,\s*0\),/,
-  `if (f4 && f4.complete && f4.naturalWidth) {
-					aRb = .24 * h.i / f4.width,
-					nb = .06 * h.i,
-					nc = .30 * h.j,
+				var f4 = window.__TTWC.partnersImg;
+				if (f4 && f4.complete && f4.naturalWidth) {
+					var aRb = .24 * h.i / f4.width,
+						nb = .06 * h.i,
+						nc = .30 * h.j;
 					vV.setTransform(aRb, 0, 0, aRb, nb, nc), vV.drawImage(f4, 0, 0),
 				}`,
   "draw raw partners image once"
