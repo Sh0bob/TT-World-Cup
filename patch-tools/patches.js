@@ -363,7 +363,7 @@ source = replaceOne(
 	function a23(e) {
 		lj(e)
 	}
-`,
+}`,
   "disable new game update popup but keep lj"
 );
   return source;
