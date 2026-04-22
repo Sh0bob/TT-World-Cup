@@ -358,9 +358,11 @@ source = replaceOne(
 
 source = replaceOne(
   source,
-  /lj\(e\),\s*t\.u\(4,\s*5,\s*new v\("🚀 New Game Update"[\s\S]*?\)\)\)/,
-  `lj(e)`,
-  "remove new game update popup call"
+  /function a23\(e\)\s*\{[\s\S]*?\}/,
+  `function a23(e) {
+		lj(e)
+	}`,
+  "remove new game update popup"
 );
   return source;
 }
