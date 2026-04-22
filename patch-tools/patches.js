@@ -355,15 +355,6 @@ source = replaceOne(
   `f4 && f4.complete && f4.naturalWidth && (aRb = .24 * h.i / f4.width, nb = .06 * h.i, nc = .30 * h.j, vV.setTransform(aRb, 0, 0, aRb, nb, nc), vV.drawImage(f4, 0, 0))`,
   "replace double partners draw with one raw draw"
 );
-
-source = replaceOne(
-  source,
-  /function a23\(e\)\s*\{[\s\S]*?\}/,
-  `function a23(e) {
-		lj(e)
-	}`,
-  "remove new game update popup"
-);
   return source;
 }
 
