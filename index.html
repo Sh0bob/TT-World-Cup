@@ -1339,47 +1339,71 @@ window.__TTWC = window.__TTWC || {};
   }
 
   function encodeCustomLobbyMessage(obj) {
-    const json = JSON.stringify(obj);
-    const payload = new TextEncoder().encode(json);
-    const out = new Uint8Array(payload.length + 1);
-    out[0] = 120; // custom-lobby marker byte used by FX
-    out.set(payload, 1);
-    return out;
-  }
+  const json = JSON.stringify(obj);
+  const payload = new TextEncoder().encode(json);
 
-  function sendCustomLobbyMessage(obj) {
-    try {
-      if (!isCustomLobbyActive()) return false;
-      if (typeof __fx === "undefined" || !__fx.customLobby) return false;
-      const bytes = encodeCustomLobbyMessage(obj);
-      const socketId = (typeof b0 !== "undefined" && b0.y && typeof b0.y.a2C !== "undefined") ? b0.y.a2C : undefined;
+  // FX custom lobby packets are ArrayBuffers with marker byte 120.
+  // This matches the FX Client's own internal sender:
+  // Z(1, packet)
+  const buffer = new ArrayBuffer(payload.length + 1);
+  const out = new Uint8Array(buffer);
 
-      // Prefer custom-lobby send hook if exposed.
-      const fn = __fx.customLobby.send;
-      if (typeof fn === "function") {
-        if (typeof socketId !== "undefined") {
-          console.log("[TTWC PEACE] sending custom lobby message via __fx.customLobby.send", { t: obj?.t, socket: socketId, bytes: bytes.length });
-          fn.call(__fx.customLobby, socketId, bytes);
-          return true;
-        }
-        console.log("[TTWC PEACE] sending custom lobby message via __fx.customLobby.send (no socket)", { t: obj?.t, bytes: bytes.length });
-        fn.call(__fx.customLobby, bytes);
-        return true;
-      }
+  out[0] = 120;
+  out.set(payload, 1);
 
-      // Fallback: send directly over the game's socket transport.
-      if (typeof socketId !== "undefined" && typeof b0 !== "undefined" && b0.y && typeof b0.y.send === "function") {
-        console.log("[TTWC PEACE] sending custom lobby message via b0.y.send", { t: obj?.t, socket: socketId, bytes: bytes.length });
-        b0.y.send(socketId, bytes);
-        return true;
-      }
+  return buffer;
+}
 
-      return false;
-    } catch (e) {
-      console.log("[TTWC PEACE] sendCustomLobbyMessage error:", e);
-      return false;
+function sendCustomLobbyMessage(obj) {
+  try {
+    if (!isCustomLobbyActive()) return false;
+    if (typeof __fx === "undefined" || !__fx.customLobby) return false;
+
+    const packet = encodeCustomLobbyMessage(obj);
+
+    /*
+      IMPORTANT FIX:
+      FX custom lobby messages are sent on channel/socket 1.
+
+      Your old code was trying to send to b0.y.a2C.
+      That is why your own screen updated locally, but other TTWC clients
+      did not receive the "clientInfo" / "clientRoster" messages.
+    */
+
+    // If a custom send hook exists, use it correctly.
+    if (typeof __fx.customLobby.send === "function") {
+      console.log("[TTWC CLIENT] sending custom lobby message via __fx.customLobby.send", {
+        type: obj?.t
+      });
+
+      __fx.customLobby.send(1, packet);
+      return true;
     }
+
+    // Reliable fallback: use the game's socket sender on custom-lobby channel 1.
+    if (
+      typeof b0 !== "undefined" &&
+      b0.y &&
+      typeof b0.y.send === "function"
+    ) {
+      console.log("[TTWC CLIENT] sending custom lobby message via b0.y.send channel 1", {
+        type: obj?.t
+      });
+
+      b0.y.send(1, packet);
+      return true;
+    }
+
+    console.log("[TTWC CLIENT] could not send custom lobby message - sender not ready", {
+      type: obj?.t
+    });
+
+    return false;
+  } catch (e) {
+    console.log("[TTWC CLIENT] sendCustomLobbyMessage error:", e);
+    return false;
   }
+}
 
   function announceThisClient() {
     try {
@@ -1392,7 +1416,7 @@ window.__TTWC = window.__TTWC || {};
       }
 
       TTWC.client.lastAnnounceAt = now;
-      TTWC.client.announcedThisLobby = true;
+      // Do not lock announcement unless the packet actually sends.
 
       const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
       const selfPlayer = players[TTWC.peace.selfLobbyIndex] || {};
@@ -1407,15 +1431,19 @@ window.__TTWC = window.__TTWC || {};
         players[TTWC.peace.selfLobbyIndex].client = "TTWC";
       }
 
-      sendCustomLobbyMessage({
-        t: "clientInfo",
-        d: {
-          id: TTWC.peace.selfLobbyIndex,
-          name: selfName,
-          client: "TTWC"
-        }
-      });
-      console.log("[TTWC CLIENT] announced TTWC client for lobby index", TTWC.peace.selfLobbyIndex);
+      const sent = sendCustomLobbyMessage({
+  t: "clientInfo",
+  d: {
+    id: TTWC.peace.selfLobbyIndex,
+    name: selfName,
+    client: "TTWC"
+  }
+});
+
+if (sent) {
+  TTWC.client.announcedThisLobby = true;
+  console.log("[TTWC CLIENT] announced TTWC client for lobby index", TTWC.peace.selfLobbyIndex);
+}
     } catch (e) {
       console.log("[TTWC CLIENT] announceThisClient error:", e);
     }
