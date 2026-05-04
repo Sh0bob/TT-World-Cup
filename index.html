@@ -1236,7 +1236,6 @@ window.__TTWC = window.__TTWC || {};
   // Client-identification state
   TTWC.client = TTWC.client || {};
   TTWC.client.byIndex = TTWC.client.byIndex || {};
-  TTWC.client.byName = TTWC.client.byName || {};
   TTWC.client.lastAnnounceAt = TTWC.client.lastAnnounceAt || 0;
   TTWC.client.announcedThisLobby = TTWC.client.announcedThisLobby || false;
   TTWC.client.selfName = TTWC.client.selfName || "";
@@ -1266,31 +1265,13 @@ window.__TTWC = window.__TTWC || {};
     return String(name || "").trim();
   }
 
-  function getPlayerNameKey(name) {
-    const normalized = normalizePlayerName(name);
-    if (!normalized) return "";
-    let key = normalized;
-    try {
-      if (typeof key.normalize === "function") {
-        key = key.normalize("NFKC");
-      }
-    } catch (e) {}
-    return key
-      .replace(/[\u200B-\u200D\uFEFF]/g, "")
-      .replace(/\s+/g, " ")
-      .toLowerCase();
-  }
-
   function rebuildClientIndexMap() {
-    TTWC.client.byIndex = {};
     const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
 
     for (let i = 0; i < players.length; i++) {
       const player = players[i];
-      const nameKey = getPlayerNameKey(player?.name);
-      const label = nameKey ? TTWC.client.byName[nameKey] : undefined;
+      const label = TTWC.client.byIndex[i];
       if (label) {
-        TTWC.client.byIndex[i] = label;
         if (player) player.client = label;
       } else if (player && player.client) {
         delete player.client;
@@ -1298,9 +1279,19 @@ window.__TTWC = window.__TTWC || {};
     }
   }
 
+  function shiftClientIndexMapAfterRemoval(removedIndex) {
+    const prev = TTWC.client.byIndex || {};
+    const next = {};
+    Object.keys(prev).forEach((key) => {
+      const idx = Number(key);
+      if (!Number.isFinite(idx) || idx === removedIndex) return;
+      next[idx > removedIndex ? idx - 1 : idx] = prev[key];
+    });
+    TTWC.client.byIndex = next;
+  }
+
   function resetClientFlags() {
     TTWC.client.byIndex = {};
-    TTWC.client.byName = {};
     TTWC.client.lastAnnounceAt = 0;
     TTWC.client.announcedThisLobby = false;
     TTWC.client.selfName = "";
@@ -1376,14 +1367,10 @@ window.__TTWC = window.__TTWC || {};
       const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
       const selfPlayer = players[TTWC.peace.selfLobbyIndex] || {};
       const selfName = normalizePlayerName(selfPlayer && selfPlayer.name);
-      const selfNameKey = getPlayerNameKey(selfName);
       TTWC.client.selfName = selfName;
-      if (selfNameKey) {
-        TTWC.client.byName[selfNameKey] = "TTWC";
-        TTWC.client.byIndex[TTWC.peace.selfLobbyIndex] = "TTWC";
-        if (players[TTWC.peace.selfLobbyIndex]) {
-          players[TTWC.peace.selfLobbyIndex].client = "TTWC";
-        }
+      TTWC.client.byIndex[TTWC.peace.selfLobbyIndex] = "TTWC";
+      if (players[TTWC.peace.selfLobbyIndex]) {
+        players[TTWC.peace.selfLobbyIndex].client = "TTWC";
       }
 
       sendCustomLobbyMessage({
@@ -1406,13 +1393,14 @@ window.__TTWC = window.__TTWC || {};
 
       const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
       const roster = players
-        .map((player) => {
-          const name = normalizePlayerName(player?.name);
-          const key = getPlayerNameKey(name);
-          if (!key) return null;
-          const label = TTWC.client.byName[key];
+        .map((player, index) => {
+          const label = TTWC.client.byIndex[index];
           if (label !== "TTWC") return null;
-          return { name, client: "TTWC" };
+          return {
+            id: index,
+            client: "TTWC",
+            name: normalizePlayerName(player?.name || "")
+          };
         })
         .filter(Boolean);
 
@@ -1477,26 +1465,11 @@ window.__TTWC = window.__TTWC || {};
           } else if (type === "clientInfo") {
             try {
               const label = (data && data.client) ? String(data.client) : "TTWC";
-              const name = normalizePlayerName(data && data.name);
-              const nameKey = getPlayerNameKey(name);
               const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
 
               let matchedIndex = -1;
 
-              if (nameKey) {
-                TTWC.client.byName[nameKey] = label;
-                for (let i = 0; i < players.length; i++) {
-                  if (players[i] && getPlayerNameKey(players[i].name) === nameKey) {
-                    matchedIndex = i;
-                    break;
-                  }
-                }
-              }
-
-              // Fallback to id when name matching fails; this keeps compatibility with
-              // clients that send empty/modified names in custom messages.
               if (
-                matchedIndex < 0 &&
                 typeof data?.id === "number" &&
                 data.id >= 0 &&
                 data.id < players.length
@@ -1509,10 +1482,10 @@ window.__TTWC = window.__TTWC || {};
                 if (players[matchedIndex]) {
                   players[matchedIndex].client = label;
                 }
-                console.log("[TTWC CLIENT] received client flag", { index: matchedIndex, client: label, name });
+                console.log("[TTWC CLIENT] received client flag", { index: matchedIndex, client: label });
               }
 
-              if (name && isHost()) {
+              if (isHost()) {
                 broadcastClientRoster();
               }
             } catch (e) {
@@ -1522,11 +1495,10 @@ window.__TTWC = window.__TTWC || {};
             try {
               const roster = Array.isArray(data) ? data : [];
               for (const entry of roster) {
-                const name = normalizePlayerName(entry?.name);
-                const nameKey = getPlayerNameKey(name);
+                const id = entry?.id;
                 const label = String(entry?.client || "TTWC");
-                if (!nameKey) continue;
-                TTWC.client.byName[nameKey] = label;
+                if (typeof id !== "number" || id < 0) continue;
+                TTWC.client.byIndex[id] = label;
               }
               rebuildClientIndexMap();
               console.log("[TTWC CLIENT] received client roster", roster);
@@ -1537,7 +1509,6 @@ window.__TTWC = window.__TTWC || {};
             const removedIndex = data;
             if (typeof removedIndex === "number") {
               const removedPlayer = Array.isArray(TTWC.peace.players) ? TTWC.peace.players[removedIndex] : null;
-              const removedName = normalizePlayerName(removedPlayer?.name);
               if (removedIndex < TTWC.peace.selfLobbyIndex) {
                 TTWC.peace.selfLobbyIndex--;
               } else if (removedIndex === TTWC.peace.selfLobbyIndex) {
@@ -1550,11 +1521,7 @@ window.__TTWC = window.__TTWC || {};
               if (removedIndex in TTWC.client.byIndex) {
                 delete TTWC.client.byIndex[removedIndex];
               }
-              const removedNameKey = getPlayerNameKey(removedName);
-              const selfNameKey = getPlayerNameKey(TTWC.client.selfName);
-              if (removedNameKey && removedNameKey !== selfNameKey) {
-                delete TTWC.client.byName[removedNameKey];
-              }
+              shiftClientIndexMapAfterRemoval(removedIndex);
               rebuildClientIndexMap();
             }
           } else if (type === "addPlayer") {
