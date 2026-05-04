@@ -1269,8 +1269,13 @@ window.__TTWC = window.__TTWC || {};
   function getPlayerNameKey(name) {
     const normalized = normalizePlayerName(name);
     if (!normalized) return "";
-    return normalized
-      .normalize("NFKC")
+    let key = normalized;
+    try {
+      if (typeof key.normalize === "function") {
+        key = key.normalize("NFKC");
+      }
+    } catch (e) {}
+    return key
       .replace(/[\u200B-\u200D\uFEFF]/g, "")
       .replace(/\s+/g, " ")
       .toLowerCase();
@@ -1488,18 +1493,14 @@ window.__TTWC = window.__TTWC || {};
                 }
               }
 
-              // Fallback to id only when the index appears to reference the same player name.
+              // Fallback to id when name matching fails; this keeps compatibility with
+              // clients that send empty/modified names in custom messages.
               if (
                 matchedIndex < 0 &&
                 typeof data?.id === "number" &&
                 data.id >= 0 &&
                 data.id < players.length
               ) {
-                const idNameKey = getPlayerNameKey(players[data.id]?.name);
-                if (!nameKey || (idNameKey && idNameKey === nameKey)) {
-                  matchedIndex = data.id;
-                }
-              } else if (matchedIndex < 0 && !nameKey && typeof data?.id === "number") {
                 matchedIndex = data.id;
               }
 
