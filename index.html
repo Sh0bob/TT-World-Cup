@@ -1854,8 +1854,7 @@ window.__TTWC = window.__TTWC || {};
     const player = Array.isArray(TTWC.peace.players) ? TTWC.peace.players[index] : null;
     const rawLabel = (player && player.client) || TTWC.client?.byIndex?.[index] || "Other";
     const isSelf =
-      (typeof TTWC.peace.selfLobbyIndex === "number" && TTWC.peace.selfLobbyIndex === index) ||
-      (player && TTWC.client?.selfName && String(player.name) === TTWC.client.selfName);
+      (typeof TTWC.peace.selfLobbyIndex === "number" && TTWC.peace.selfLobbyIndex === index);
 
     if (isSelf) return "TTWC";
     return rawLabel === "TTWC" ? "TTWC" : "Other";
