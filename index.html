@@ -2681,7 +2681,44 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
 
   function injectUniversalClientPanel() {
   try {
-    if (!isCustomLobbyWaitingRoom()) {
+    /*
+      Only show on the custom lobby waiting-room screen.
+      We do NOT rely on helper functions from another script block.
+    */
+    if (!isCustomLobbyActive()) {
+      removeUniversalClientPanel();
+      return;
+    }
+
+    const pageText = document.body.innerText || "";
+    const hasLobbyTitle = /Custom\s+Lobby\s+[A-Za-z0-9_-]+/i.test(pageText);
+
+    const visibleButtons = Array.from(document.querySelectorAll("button"))
+      .filter(btn => {
+        const r = btn.getBoundingClientRect();
+        const s = getComputedStyle(btn);
+        return (
+          r.width > 0 &&
+          r.height > 0 &&
+          s.display !== "none" &&
+          s.visibility !== "hidden" &&
+          s.opacity !== "0"
+        );
+      });
+
+    const hasLeaveLobby = visibleButtons.some(btn =>
+      String(btn.textContent || "").trim().toLowerCase() === "leave lobby"
+    );
+
+    const hasCopyLink = visibleButtons.some(btn =>
+      String(btn.textContent || "").trim().toLowerCase() === "copy link"
+    );
+
+    /*
+      If the match has started, Leave Lobby / Copy Link are no longer visible,
+      so remove the panel.
+    */
+    if (!hasLobbyTitle || !hasLeaveLobby || !hasCopyLink) {
       removeUniversalClientPanel();
       return;
     }
@@ -2701,29 +2738,81 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
       document.body.appendChild(panel);
     }
 
-    const lobbyRect = getLobbyPanelRect();
-    const playerLeftEdge = getPlayerButtonLeftEdge();
+    /*
+      Find the main lobby panel using the Leave Lobby button.
+    */
+    const anchor =
+      visibleButtons.find(btn =>
+        ["leave lobby", "copy link", "start game"].includes(
+          String(btn.textContent || "").trim().toLowerCase()
+        )
+      ) || null;
+
+    let lobbyRect = {
+      left: 8,
+      top: 8,
+      right: window.innerWidth - 8,
+      bottom: window.innerHeight - 8,
+      width: window.innerWidth - 16,
+      height: window.innerHeight - 16
+    };
+
+    if (anchor) {
+      let best = anchor.parentElement;
+
+      for (let el = anchor.parentElement; el && el !== document.body; el = el.parentElement) {
+        const r = el.getBoundingClientRect();
+
+        if (
+          r.width > window.innerWidth * 0.55 &&
+          r.height > 220 &&
+          r.top < window.innerHeight * 0.45
+        ) {
+          best = el;
+        }
+      }
+
+      if (best) {
+        const r = best.getBoundingClientRect();
+        lobbyRect = {
+          left: r.left,
+          top: r.top,
+          right: r.right,
+          bottom: r.bottom,
+          width: r.width,
+          height: r.height
+        };
+      }
+    }
 
     /*
-      Position panel inside the custom lobby panel,
-      in the empty space on the left side of the player list.
+      Find the player row buttons so we can place the panel in the empty area
+      to the left of the player list.
     */
-    const left = Math.max(12, Math.round(lobbyRect.left + 18));
-    const top = Math.round(lobbyRect.top + 92);
+    const playerButtons = visibleButtons.filter(btn => {
+      const text = String(btn.textContent || "").trim().toLowerCase();
+      return text === "host" || text === "kick" || text === "in game";
+    });
 
-    let width = 250;
+    const playerLeftEdge = playerButtons.length
+      ? Math.min(...playerButtons.map(btn => btn.getBoundingClientRect().left))
+      : 0;
+
+    const left = Math.max(12, Math.round(lobbyRect.left + 18));
+    const top = Math.round(lobbyRect.top + 86);
+
+    let width = 230;
 
     if (playerLeftEdge > 0) {
       width = Math.max(
-        180,
-        Math.min(270, Math.round(playerLeftEdge - left - 22))
+        170,
+        Math.min(250, Math.round(playerLeftEdge - left - 24))
       );
     }
 
-    const bottomPadding = 72;
     const maxHeight = Math.max(
       110,
-      Math.round(lobbyRect.bottom - top - bottomPadding)
+      Math.round(lobbyRect.bottom - top - 76)
     );
 
     Object.assign(panel.style, {
@@ -2737,8 +2826,8 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
       maxHeight: maxHeight + "px",
       overflowY: "auto",
       overflowX: "hidden",
-      padding: "10px",
-      borderRadius: "14px",
+      padding: "9px",
+      borderRadius: "13px",
       background: "rgba(8, 14, 20, 0.88)",
       border: "1px solid rgba(220, 235, 245, 0.35)",
       boxShadow: "0 10px 26px rgba(0,0,0,0.32)",
@@ -2817,7 +2906,7 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
 
   setInterval(() => {
   try {
-    if (!isCustomLobbyWaitingRoom()) {
+    if (!isCustomLobbyActive()) {
       removeUniversalClientPanel();
       return;
     }
