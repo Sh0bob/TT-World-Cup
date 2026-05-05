@@ -1497,12 +1497,13 @@ if (sent) {
           const data = msg.d;
 
           if (type === "lobby") {
+            const prevSelfIndex = TTWC.peace.selfLobbyIndex;
             TTWC.peace.players = Array.isArray(data.players) ? data.players.slice() : [];
             TTWC.peace.selfLobbyIndex = typeof data.id === "number" ? data.id : -1;
             TTWC.peace.isHost = !!data.isHost;
-            TTWC.client.byIndex = {};
-            TTWC.client.byName = {};
-            TTWC.client.announcedThisLobby = false;
+            if (prevSelfIndex !== TTWC.peace.selfLobbyIndex) {
+              TTWC.client.announcedThisLobby = false;
+            }
             rebuildClientIndexMap();
             console.log("[TTWC PEACE] lobby sync", {
               isHost: TTWC.peace.isHost,
@@ -2473,6 +2474,36 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
     }
   }
 
+  function syncClientMapWithPlayers() {
+    try {
+      const players = getPlayers();
+      const nextByIndex = {};
+      const nextByName = {};
+
+      for (let i = 0; i < players.length; i++) {
+        const player = players[i];
+        if (!player) continue;
+
+        const key = getNameKey(player.name);
+        const fromIndex = TTWC.client?.byIndex?.[i];
+        const fromPlayer = player.client;
+        const fromName = key ? TTWC.client?.byName?.[key] : "";
+        const label = (fromIndex === "TTWC" || fromPlayer === "TTWC" || fromName === "TTWC") ? "TTWC" : "";
+
+        if (label) {
+          nextByIndex[i] = label;
+          player.client = label;
+          if (key) nextByName[key] = label;
+        } else if (player.client) {
+          delete player.client;
+        }
+      }
+
+      TTWC.client.byIndex = nextByIndex;
+      TTWC.client.byName = nextByName;
+    } catch {}
+  }
+
   function getClientLabel(index) {
     const players = getPlayers();
     const player = players[index] || null;
@@ -2670,7 +2701,7 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
         Host usually has Host/Kick anchors for all players.
         Non-host usually does not, so canvas fallback handles non-host view.
       */
-      TTWC.badges.domCoversAllPlayers = rows.length >= players.length;
+      TTWC.badges.domCoversAllPlayers = false;
     } catch (e) {
       console.log("[TTWC CLIENT] DOM badge inject error:", e);
     }
@@ -2863,8 +2894,10 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
 
       if (isCustomLobbyActive()) {
         patchIncomingPlayers();
+        syncClientMapWithPlayers();
         cleanDOMTextMarkers();
-        injectDomBadges();
+        removeOldDomBadges();
+        TTWC.badges.domCoversAllPlayers = false;
       } else {
         removeOldDomBadges();
         TTWC.badges.domCoversAllPlayers = false;
