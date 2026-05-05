@@ -2373,6 +2373,35 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
   let lastLobbyId = "";
   let jsonpCounter = 0;
 
+/*
+  Suppress occasional cross-origin JSONP "Script error" popups from Apps Script.
+
+  Apps Script JSONP is loaded through a temporary <script> tag.
+  If Google returns a temporary HTML/error response instead of valid JS,
+  the browser may report only: "Script error." with line 0 / column 0.
+
+  This prevents the popup without hiding normal TTWC/game errors.
+*/
+TTWC.presence.jsonpActiveUntil = 0;
+
+window.addEventListener("error", function(event) {
+  try {
+    const msg = String(event?.message || "");
+    const now = Date.now();
+
+    const looksLikeJsonpScriptError =
+      msg === "Script error." &&
+      now < (TTWC.presence.jsonpActiveUntil || 0);
+
+    if (looksLikeJsonpScriptError) {
+      console.log("[TTWC PRESENCE] suppressed transient Apps Script JSONP error");
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return true;
+    }
+  } catch {}
+}, true);
+  
   function isCustomLobbyActive() {
     try {
       return !!(
@@ -2548,6 +2577,9 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
         Date.now();
 
       const script = document.createElement("script");
+
+      TTWC.presence.jsonpActiveUntil = Date.now() + timeoutMs + 1000;
+      script.dataset.ttwcPresenceJsonp = "1";
 
       let done = false;
 
