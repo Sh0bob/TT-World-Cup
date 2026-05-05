@@ -2594,9 +2594,40 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
     document.querySelectorAll(".ttwc-client-row-badge").forEach(el => el.remove());
   }
 
-  function applyDomBadge(rowInfo, index) {
+  function getPlayerIndexForRow(row) {
+    try {
+      const players = getPlayers();
+      if (!row || !players.length) return -1;
+
+      const rowText = cleanName(row.textContent || "").toLowerCase();
+      if (!rowText) return -1;
+
+      let bestIndex = -1;
+      let bestLen = 0;
+
+      for (let i = 0; i < players.length; i++) {
+        const playerName = cleanName(players[i]?.name || "");
+        const key = playerName.toLowerCase();
+        if (!key || key.length < 2) continue;
+
+        if (rowText.includes(key) && key.length > bestLen) {
+          bestIndex = i;
+          bestLen = key.length;
+        }
+      }
+
+      return bestIndex;
+    } catch {
+      return -1;
+    }
+  }
+
+  function applyDomBadge(rowInfo) {
     const row = rowInfo?.row;
     if (!row) return;
+
+    const index = getPlayerIndexForRow(row);
+    if (index < 0) return;
 
     const label = getClientLabel(index);
     const badge = makeBadgeElement(label);
@@ -2631,10 +2662,8 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
 
       removeOldDomBadges();
 
-      const count = Math.min(players.length, rows.length);
-
-      for (let i = 0; i < count; i++) {
-        applyDomBadge(rows[i], i);
+      for (let i = 0; i < rows.length; i++) {
+        applyDomBadge(rows[i]);
       }
 
       /*
