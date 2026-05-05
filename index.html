@@ -2326,58 +2326,15 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
     before lobby join/create. It is invisible, and we do not use [TTWC].
   */
   function ensureInputHasMarker() {
-    try {
-      const input = getNameInput();
-      if (!input) return false;
-
-      const current = String(input.value || "");
-      const clean = stripMarker(current);
-
-      if (!clean.trim()) return false;
-
-      const marked = addMarker(clean);
-
-      if (input.value !== marked) {
-        const start = input.selectionStart;
-        const end = input.selectionEnd;
-
-        input.value = marked;
-
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        input.dispatchEvent(new Event("change", { bubbles: true }));
-        input.dispatchEvent(new KeyboardEvent("keyup", { bubbles: true }));
-
-        /*
-          Keep cursor sensible if user is editing the name.
-        */
-        try {
-          const safeStart = Math.min(start || clean.length, clean.length);
-          const safeEnd = Math.min(end || clean.length, clean.length);
-          input.setSelectionRange(safeStart, safeEnd);
-        } catch {}
-      }
-
-      return true;
-    } catch {
-      return false;
-    }
+    // Display-only mode: do not mutate name input or outbound identity data.
+    return false;
   }
 
   /*
     During lobby joining, keep the marker attached for a short window.
     This catches delayed FX reads of the name value.
   */
-  function boostMarkerForJoinWindow() {
-    const until = Date.now() + 2500;
-
-    const timer = setInterval(() => {
-      ensureInputHasMarker();
-
-      if (Date.now() > until || isCustomLobbyActive()) {
-        clearInterval(timer);
-      }
-    }, 80);
-  }
+  function boostMarkerForJoinWindow() {}
 
   function patchNameFieldsDeep(value, depth = 0) {
     if (!value || depth > 10) return value;
@@ -2453,86 +2410,9 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
   }
 
   function patchSenders() {
-    try {
-      if (
-        window.b0 &&
-        b0.y &&
-        typeof b0.y.send === "function" &&
-        !b0.y.__ttwcNoServerMarkerPatchedV2
-      ) {
-        const originalSend = b0.y.send;
-
-        b0.y.send = function(channel, packet) {
-          try {
-            ensureInputHasMarker();
-
-            if (arguments.length >= 2) {
-              arguments[1] = patchCustomLobbyPacket(packet);
-            } else if (arguments.length === 1) {
-              arguments[0] = patchCustomLobbyPacket(channel);
-            }
-          } catch {}
-
-          return originalSend.apply(this, arguments);
-        };
-
-        b0.y.__ttwcNoServerMarkerPatchedV2 = true;
-        console.log("[TTWC CLIENT] patched b0.y.send for invisible marker V2");
-      }
-
-      if (
-        window.__fx &&
-        __fx.customLobby &&
-        typeof __fx.customLobby.send === "function" &&
-        !__fx.customLobby.__ttwcNoServerMarkerPatchedV2
-      ) {
-        const originalCustomSend = __fx.customLobby.send;
-
-        __fx.customLobby.send = function(channel, packet) {
-          try {
-            ensureInputHasMarker();
-
-            if (arguments.length >= 2) {
-              arguments[1] = patchCustomLobbyPacket(packet);
-            } else if (arguments.length === 1) {
-              arguments[0] = patchCustomLobbyPacket(channel);
-            }
-          } catch {}
-
-          return originalCustomSend.apply(this, arguments);
-        };
-
-        __fx.customLobby.__ttwcNoServerMarkerPatchedV2 = true;
-        console.log("[TTWC CLIENT] patched __fx.customLobby.send for invisible marker V2");
-      }
-
-      /*
-        Fallback: catch raw WebSocket sends.
-        This helps when FX bypasses b0.y.send or __fx.customLobby.send.
-      */
-      if (
-        window.WebSocket &&
-        WebSocket.prototype &&
-        typeof WebSocket.prototype.send === "function" &&
-        !WebSocket.prototype.__ttwcNoServerMarkerPatchedV2
-      ) {
-        const originalWsSend = WebSocket.prototype.send;
-
-        WebSocket.prototype.send = function(data) {
-          try {
-            ensureInputHasMarker();
-            data = patchCustomLobbyPacket(data);
-          } catch {}
-
-          return originalWsSend.call(this, data);
-        };
-
-        WebSocket.prototype.__ttwcNoServerMarkerPatchedV2 = true;
-        console.log("[TTWC CLIENT] patched WebSocket.send for invisible marker V2");
-      }
-    } catch (e) {
-      console.log("[TTWC CLIENT] patchSenders V2 error:", e);
-    }
+    // Intentionally disabled.
+    // The stable client-identification path is the custom-lobby clientInfo/clientRoster
+    // flow implemented earlier in this file. Packet mutation here caused desync.
   }
 
   /*
@@ -2888,17 +2768,34 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
       };
 
       CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
+        let cleanText = text;
+
         try {
-          if (typeof text === "string") {
-            text = stripMarker(text);
+          if (typeof cleanText === "string") {
+            cleanText = stripMarker(cleanText);
           }
         } catch {}
 
-        if (arguments.length >= 4) {
-          return originalStrokeText.call(this, text, x, y, maxWidth);
-        }
+        const result = arguments.length >= 4
+          ? originalStrokeText.call(this, cleanText, x, y, maxWidth)
+          : originalStrokeText.call(this, cleanText, x, y);
 
-        return originalStrokeText.call(this, text, x, y);
+        try {
+          if (
+            isCustomLobbyActive() &&
+            !TTWC.badges.domCoversAllPlayers &&
+            typeof cleanText === "string"
+          ) {
+            const index = findPlayerIndexForDrawnText(cleanText);
+            if (index >= 0) {
+              const label = getClientLabel(index);
+              const width = this.measureText(cleanText).width || 0;
+              drawCanvasBadge(this, x + width + 8, y, label);
+            }
+          }
+        } catch {}
+
+        return result;
       };
 
       CanvasRenderingContext2D.prototype.__ttwcCanvasBadgesPatchedV2 = true;
