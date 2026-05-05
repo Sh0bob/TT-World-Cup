@@ -719,342 +719,6 @@ div[style*="white-space: nowrap"] > button:active {
   <script src="./FX Client_files/game.patched.js?v=4"></script>
 
 <script>
-/*
-  TTWC CLIENT DETECTION - RELIABLE MARKER SYSTEM
-
-  This version does more than only change the visible name input.
-  It also patches custom-lobby outgoing messages and silently adds
-  a TTWC marker to player name fields before they are sent.
-
-  This is needed because FX custom lobby may read the player name from
-  internal settings/state instead of directly from the visible input.
-*/
-
-(() => {
-  const TTWC = window.__TTWC = window.__TTWC || {};
-
-  /*
-    Use a visible-in-data but uncommon marker.
-    TTWC clients hide this marker from display.
-    This is more reliable than pure zero-width characters, which can be
-    stripped, normalised, or missed by some lobby paths.
-  */
-  const MARKER = "⟦TTWC⟧";
-
-  TTWC.CLIENT_MARKER = MARKER;
-
-  TTWC.hasClientMarker = function(name) {
-    return String(name || "").includes(MARKER);
-  };
-
-  TTWC.stripClientMarker = function(name) {
-    return String(name || "").split(MARKER).join("");
-  };
-
-  TTWC.addClientMarker = function(name) {
-    const clean = TTWC.stripClientMarker(name || "");
-    if (!clean.trim()) return clean;
-    return clean + MARKER;
-  };
-
-  function getNameInput() {
-    return document.querySelector('input[placeholder*="Kingdom"]');
-  }
-
-  function setNativeInputValue(input, value) {
-    try {
-      const proto = Object.getPrototypeOf(input);
-      const desc = Object.getOwnPropertyDescriptor(proto, "value");
-      if (desc && desc.set) {
-        desc.set.call(input, value);
-      } else {
-        input.value = value;
-      }
-    } catch {
-      input.value = value;
-    }
-  }
-
-  function forceNameMarker() {
-    const input = getNameInput();
-    if (!input) return false;
-
-    const current = String(input.value || "");
-    const clean = TTWC.stripClientMarker(current);
-
-    if (!clean.trim()) return false;
-
-    const marked = TTWC.addClientMarker(clean);
-
-    if (input.value !== marked) {
-      setNativeInputValue(input, marked);
-
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-      input.dispatchEvent(new KeyboardEvent("keyup", { bubbles: true }));
-    }
-
-    try {
-      const keys = [
-        "playerName",
-        "name",
-        "username",
-        "kingdomName",
-        "nickname",
-        "fx.playerName",
-        "territorial.playerName"
-      ];
-
-      for (const key of keys) {
-        const existing = localStorage.getItem(key);
-        if (existing && existing.trim()) {
-          localStorage.setItem(key, TTWC.addClientMarker(existing));
-        }
-      }
-    } catch {}
-
-    return true;
-  }
-
-  function markNameFieldsDeep(value, depth = 0) {
-    if (!value || depth > 8) return value;
-
-    if (Array.isArray(value)) {
-      for (let i = 0; i < value.length; i++) {
-        value[i] = markNameFieldsDeep(value[i], depth + 1);
-      }
-      return value;
-    }
-
-    if (typeof value === "object") {
-      for (const key of Object.keys(value)) {
-        const lower = key.toLowerCase();
-
-        /*
-          These are the common field names used for player names.
-          Do not mark lobby codes or region strings.
-        */
-        const isNameField =
-          lower === "name" ||
-          lower === "playername" ||
-          lower === "username" ||
-          lower === "nickname" ||
-          lower === "nick" ||
-          lower === "kingdom" ||
-          lower === "kingdomname";
-
-        if (isNameField && typeof value[key] === "string") {
-          const clean = TTWC.stripClientMarker(value[key]);
-
-          /*
-            Only mark plausible player names.
-            This avoids touching empty strings or weird config values.
-          */
-          if (clean.trim() && clean.length <= 40) {
-            value[key] = TTWC.addClientMarker(clean);
-          }
-        } else {
-          value[key] = markNameFieldsDeep(value[key], depth + 1);
-        }
-      }
-    }
-
-    return value;
-  }
-
-  function tryPatchPacket(rawPacket) {
-    try {
-      const bytes =
-        rawPacket instanceof Uint8Array
-          ? rawPacket
-          : rawPacket instanceof ArrayBuffer
-            ? new Uint8Array(rawPacket)
-            : ArrayBuffer.isView(rawPacket)
-              ? new Uint8Array(rawPacket.buffer)
-              : null;
-
-      if (!bytes || !bytes.length || bytes[0] !== 120) return rawPacket;
-
-      const jsonText = new TextDecoder().decode(bytes.subarray(1));
-      const msg = JSON.parse(jsonText);
-
-      /*
-        Mark outgoing name fields inside custom-lobby packets.
-      */
-      markNameFieldsDeep(msg);
-
-      const payload = new TextEncoder().encode(JSON.stringify(msg));
-      const out = new Uint8Array(payload.length + 1);
-      out[0] = 120;
-      out.set(payload, 1);
-
-      return out.buffer;
-    } catch {
-      return rawPacket;
-    }
-  }
-
-  function patchCustomLobbySenders() {
-    try {
-      if (TTWC._clientMarkerSendPatchInstalled) return true;
-
-      let patchedSomething = false;
-
-      /*
-        Patch FX custom lobby sender if available.
-      */
-      if (
-        window.__fx &&
-        __fx.customLobby &&
-        typeof __fx.customLobby.send === "function" &&
-        !__fx.customLobby.__ttwcMarkerPatched
-      ) {
-        const originalSend = __fx.customLobby.send;
-
-        __fx.customLobby.send = function(channel, packet) {
-          try {
-            forceNameMarker();
-
-            if (arguments.length >= 2) {
-              arguments[1] = tryPatchPacket(packet);
-            } else if (arguments.length === 1) {
-              arguments[0] = tryPatchPacket(channel);
-            }
-          } catch {}
-
-          return originalSend.apply(this, arguments);
-        };
-
-        __fx.customLobby.__ttwcMarkerPatched = true;
-        patchedSomething = true;
-
-        console.log("[TTWC CLIENT] patched __fx.customLobby.send for marker injection");
-      }
-
-      /*
-        Patch lower-level socket sender too.
-      */
-      if (
-        window.b0 &&
-        b0.y &&
-        typeof b0.y.send === "function" &&
-        !b0.y.__ttwcMarkerPatched
-      ) {
-        const originalSocketSend = b0.y.send;
-
-        b0.y.send = function(channel, packet) {
-          try {
-            forceNameMarker();
-
-            if (arguments.length >= 2) {
-              arguments[1] = tryPatchPacket(packet);
-            } else if (arguments.length === 1) {
-              arguments[0] = tryPatchPacket(channel);
-            }
-          } catch {}
-
-          return originalSocketSend.apply(this, arguments);
-        };
-
-        b0.y.__ttwcMarkerPatched = true;
-        patchedSomething = true;
-
-        console.log("[TTWC CLIENT] patched b0.y.send for marker injection");
-      }
-
-      if (patchedSomething) {
-        TTWC._clientMarkerSendPatchInstalled = true;
-        return true;
-      }
-
-      return false;
-    } catch (e) {
-      console.log("[TTWC CLIENT] marker sender patch error:", e);
-      return false;
-    }
-  }
-
-  /*
-    Hide the marker anywhere it accidentally appears in normal DOM text.
-  */
-  function cleanMarkerFromDOMText() {
-    try {
-      const marker = TTWC.CLIENT_MARKER;
-      if (!marker) return;
-
-      const walker = document.createTreeWalker(
-        document.body,
-        NodeFilter.SHOW_TEXT
-      );
-
-      const nodes = [];
-
-      while (walker.nextNode()) {
-        const node = walker.currentNode;
-        if (node && node.nodeValue && node.nodeValue.includes(marker)) {
-          nodes.push(node);
-        }
-      }
-
-      for (const node of nodes) {
-        node.nodeValue = node.nodeValue.split(marker).join("");
-      }
-    } catch {}
-  }
-
-  document.addEventListener("pointerdown", function(e) {
-    if (e.target && e.target.closest && e.target.closest("#createLobbyButton")) {
-      forceNameMarker();
-    }
-  }, true);
-
-  document.addEventListener("mousedown", function(e) {
-    if (e.target && e.target.closest && e.target.closest("#createLobbyButton")) {
-      forceNameMarker();
-    }
-  }, true);
-
-  document.addEventListener("click", function(e) {
-    if (e.target && e.target.closest && e.target.closest("#createLobbyButton")) {
-      forceNameMarker();
-    }
-  }, true);
-
-  document.addEventListener("input", function(e) {
-    if (
-      e.target &&
-      (
-        e.target.id === "lobbyCode" ||
-        (e.target.matches && e.target.matches('input[placeholder*="Kingdom"]'))
-      )
-    ) {
-      forceNameMarker();
-    }
-  }, true);
-
-  document.addEventListener("keydown", function(e) {
-    if (e.target && e.target.id === "lobbyCode") {
-      forceNameMarker();
-    }
-
-    if (e.key === "Enter") {
-      forceNameMarker();
-    }
-  }, true);
-
-  setInterval(() => {
-    try {
-      forceNameMarker();
-      patchCustomLobbySenders();
-      cleanMarkerFromDOMText();
-    } catch {}
-  }, 250);
-
-  console.log("[TTWC CLIENT] reliable marker detection installed");
-})();
-</script>
-
-<script>
 (() => {
   function bindPressAnimation(btn) {
     if (!btn || btn.dataset.ttwcPressBound === "1") return;
@@ -2248,12 +1912,14 @@ if (sent) {
 </script>
 
 <script>
-// Inject TTWC / Other badges directly next to custom-lobby player names/buttons.
+// Inject TTWC / Other badges directly into custom-lobby player rows.
+// This keeps your original good placement logic: badge goes before Host/Kick.
 (() => {
   const TTWC = window.__TTWC = window.__TTWC || {};
   TTWC.peace = TTWC.peace || {};
   TTWC.client = TTWC.client || {};
   TTWC.client.byIndex = TTWC.client.byIndex || {};
+  TTWC.client.byName = TTWC.client.byName || {};
 
   function isCustomLobbyActive() {
     try {
@@ -2268,39 +1934,34 @@ if (sent) {
     }
   }
 
-  function stripMarker(name) {
-    try {
-      if (typeof TTWC.stripClientMarker === "function") {
-        return TTWC.stripClientMarker(name);
-      }
-    } catch {}
-
-    return String(name || "");
+  function cleanName(name) {
+    return String(name || "")
+      .replace(/\[TTWC\]/gi, "")
+      .replace(/\[TT\]/gi, "")
+      .replace(/\u2060/g, "")
+      .replace(/\u200B/g, "")
+      .replace(/\u200C/g, "")
+      .replace(/\u200D/g, "")
+      .trim();
   }
 
-  function hasMarker(name) {
-    try {
-      if (typeof TTWC.hasClientMarker === "function") {
-        return TTWC.hasClientMarker(name);
-      }
-    } catch {}
-
-    return false;
+  function getNameKey(name) {
+    return cleanName(name).toLowerCase();
   }
 
-  function getPlayers() {
-    return Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
+  function detectByKnownName(index) {
+    const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
+    const player = players[index];
+    if (!player) return false;
+
+    const key = getNameKey(player.name);
+    if (!key) return false;
+
+    return TTWC.client.byName[key] === "TTWC";
   }
 
   function getClientLabel(index) {
-    const players = getPlayers();
-    const player = players[index] || null;
-
-    if (player && hasMarker(player.name)) {
-      player.client = "TTWC";
-      TTWC.client.byIndex[index] = "TTWC";
-      return "TTWC";
-    }
+    const player = Array.isArray(TTWC.peace.players) ? TTWC.peace.players[index] : null;
 
     const isSelf =
       typeof TTWC.peace.selfLobbyIndex === "number" &&
@@ -2309,96 +1970,29 @@ if (sent) {
     if (isSelf) {
       if (player) player.client = "TTWC";
       TTWC.client.byIndex[index] = "TTWC";
+
+      const key = getNameKey(player?.name);
+      if (key) TTWC.client.byName[key] = "TTWC";
+
       return "TTWC";
     }
 
-    const oldLabel =
+    if (detectByKnownName(index)) {
+      if (player) player.client = "TTWC";
+      TTWC.client.byIndex[index] = "TTWC";
+      return "TTWC";
+    }
+
+    const rawLabel =
       (player && player.client) ||
       TTWC.client?.byIndex?.[index] ||
       "Other";
 
-    return oldLabel === "TTWC" ? "TTWC" : "Other";
-  }
-
-  function patchPlayerObjects() {
-    const players = getPlayers();
-
-    for (let i = 0; i < players.length; i++) {
-      const player = players[i];
-      if (!player) continue;
-
-      if (hasMarker(player.name)) {
-        player.client = "TTWC";
-        TTWC.client.byIndex[i] = "TTWC";
-      }
-
-      player.cleanName = stripMarker(player.name || "").trim();
-    }
-  }
-
-  function removeOldBadges() {
-    document.querySelectorAll(".ttwc-client-row-badge").forEach(el => {
-      /*
-        Only remove our own old badges.
-      */
-      el.remove();
-    });
-  }
-
-  function makeBadge(label) {
-    const badge = document.createElement("span");
-    badge.className = "ttwc-client-row-badge";
-    badge.textContent = label;
-
-    Object.assign(badge.style, {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minWidth: "44px",
-      height: "20px",
-      padding: "0 7px",
-      marginLeft: "6px",
-      marginRight: "6px",
-      borderRadius: "999px",
-      fontSize: "11px",
-      fontWeight: "800",
-      fontFamily: "Arial, Helvetica, sans-serif",
-      letterSpacing: "0.2px",
-      lineHeight: "1",
-      verticalAlign: "middle",
-      boxSizing: "border-box",
-      pointerEvents: "none",
-      whiteSpace: "nowrap",
-      position: "static",
-      transform: "none"
-    });
-
-    if (label === "TTWC") {
-      Object.assign(badge.style, {
-        color: "#dfffea",
-        border: "1px solid rgba(74, 222, 128, 0.75)",
-        background: "rgba(22, 101, 52, 0.76)",
-        boxShadow: "0 0 8px rgba(34, 197, 94, 0.22)"
-      });
-    } else {
-      Object.assign(badge.style, {
-        color: "#e5e7eb",
-        border: "1px solid rgba(156, 163, 175, 0.58)",
-        background: "rgba(55, 65, 81, 0.76)",
-        boxShadow: "0 0 6px rgba(0, 0, 0, 0.18)"
-      });
-    }
-
-    return badge;
+    return rawLabel === "TTWC" ? "TTWC" : "Other";
   }
 
   function getActionRows() {
-    /*
-      This returns the actual lobby rows by using the Host/Kick buttons.
-      This is safer than searching every div/span because the custom lobby
-      has big generated containers that cause badges to float in odd places.
-    */
-    const buttons = Array.from(document.querySelectorAll("button"))
+    const actionButtons = Array.from(document.querySelectorAll("button"))
       .filter(btn => {
         const text = (btn.textContent || "").trim().toLowerCase();
         return text === "host" || text === "kick";
@@ -2410,19 +2004,8 @@ if (sent) {
 
     const rowMap = new Map();
 
-    for (const btn of buttons) {
-      let row = btn.parentElement;
-
-      /*
-        If the immediate parent is too tiny, move one level up.
-      */
-      if (row) {
-        const r = row.getBoundingClientRect();
-        if ((r.width < 40 || r.height < 12) && row.parentElement) {
-          row = row.parentElement;
-        }
-      }
-
+    for (const btn of actionButtons) {
+      const row = btn.parentElement;
       if (!row) continue;
 
       if (!rowMap.has(row)) {
@@ -2439,124 +2022,91 @@ if (sent) {
       .sort((a, b) => {
         const ar = a.row.getBoundingClientRect();
         const br = b.row.getBoundingClientRect();
-
-        if (Math.abs(ar.top - br.top) > 3) {
-          return ar.top - br.top;
-        }
-
-        return ar.left - br.left;
+        return ar.top - br.top;
       });
   }
 
-  function applyBadgeToRow(rowInfo, index) {
+  function applyBadge(rowInfo, index) {
     const row = rowInfo?.row;
     if (!row) return;
 
     const label = getClientLabel(index);
-    const badge = makeBadge(label);
+    let badge = row.querySelector(".ttwc-client-row-badge");
 
-    const anchor = rowInfo.buttons
-      .slice()
-      .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "ttwc-client-row-badge";
 
-    if (anchor && anchor.parentNode) {
-      /*
-        Put badge immediately before Host/Kick.
-        In the FX custom lobby layout, this places it beside the player name,
-        which is how your earlier version behaved.
-      */
-      anchor.parentNode.insertBefore(badge, anchor);
+      Object.assign(badge.style, {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: "52px",
+        height: "24px",
+        padding: "0 8px",
+        marginRight: "6px",
+        borderRadius: "999px",
+        fontSize: "12px",
+        fontWeight: "700",
+        fontFamily: "Arial, Helvetica, sans-serif",
+        color: "#fff",
+        verticalAlign: "middle",
+        boxSizing: "border-box",
+        position: "static",
+        transform: "none",
+        pointerEvents: "none",
+        whiteSpace: "nowrap"
+      });
+
+      const anchor = rowInfo.buttons
+        .slice()
+        .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
+
+      if (anchor && anchor.parentNode) {
+        anchor.parentNode.insertBefore(badge, anchor);
+      } else {
+        row.appendChild(badge);
+      }
+    }
+
+    badge.textContent = label;
+
+    if (label === "TTWC") {
+      badge.style.background = "rgba(22, 101, 52, 0.85)";
+      badge.style.border = "1px solid rgba(74, 222, 128, 0.85)";
+      badge.style.boxShadow = "0 0 8px rgba(34, 197, 94, 0.25)";
     } else {
-      row.appendChild(badge);
+      badge.style.background = "rgba(55, 65, 81, 0.85)";
+      badge.style.border = "1px solid rgba(156, 163, 175, 0.65)";
+      badge.style.boxShadow = "none";
     }
   }
 
-  function hideMarkerInCanvasText() {
-    /*
-      The main name text is drawn by the game/client.
-      If the marker appears in canvas text on this client, this hook hides it.
-    */
-    try {
-      if (CanvasRenderingContext2D.prototype.__ttwcMarkerTextPatched) return;
+  function removeBadgesOutsideCustomLobby() {
+    if (isCustomLobbyActive()) return;
 
-      const originalFillText = CanvasRenderingContext2D.prototype.fillText;
-      const originalStrokeText = CanvasRenderingContext2D.prototype.strokeText;
-
-      CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
-        try {
-          if (typeof text === "string" && typeof TTWC.stripClientMarker === "function") {
-            text = TTWC.stripClientMarker(text);
-          }
-        } catch {}
-
-        if (arguments.length >= 4) {
-          return originalFillText.call(this, text, x, y, maxWidth);
-        }
-
-        return originalFillText.call(this, text, x, y);
-      };
-
-      CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
-        try {
-          if (typeof text === "string" && typeof TTWC.stripClientMarker === "function") {
-            text = TTWC.stripClientMarker(text);
-          }
-        } catch {}
-
-        if (arguments.length >= 4) {
-          return originalStrokeText.call(this, text, x, y, maxWidth);
-        }
-
-        return originalStrokeText.call(this, text, x, y);
-      };
-
-      CanvasRenderingContext2D.prototype.__ttwcMarkerTextPatched = true;
-      console.log("[TTWC CLIENT] canvas marker hiding installed");
-    } catch (e) {
-      console.log("[TTWC CLIENT] canvas marker hiding error:", e);
-    }
+    document.querySelectorAll(".ttwc-client-row-badge").forEach(el => {
+      el.remove();
+    });
   }
 
   function injectBadges() {
     try {
-      if (!isCustomLobbyActive()) {
-        removeOldBadges();
-        return;
-      }
+      removeBadgesOutsideCustomLobby();
+      if (!isCustomLobbyActive()) return;
 
-      hideMarkerInCanvasText();
-      patchPlayerObjects();
-
-      const players = getPlayers();
-      if (!players.length) {
-        removeOldBadges();
-        return;
-      }
-
+      const players = Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
       const rows = getActionRows();
 
-      /*
-        If there are no Host/Kick rows yet, do nothing.
-        This avoids placing badges on the wrong menu containers.
-      */
-      if (!rows.length) {
-        removeOldBadges();
-        return;
-      }
+      if (!players.length || !rows.length) return;
 
-      removeOldBadges();
-
-      /*
-        Row order matches player order in the lobby.
-        Host row is first, then the other kick rows.
-      */
       const count = Math.min(players.length, rows.length);
 
       for (let i = 0; i < count; i++) {
-        applyBadgeToRow(rows[i], i);
+        applyBadge(rows[i], i);
       }
     } catch (e) {
-      console.log("[TTWC CLIENT] badge injection error:", e);
+      console.log("[TTWC CLIENT] badge inject error:", e);
     }
   }
 
@@ -2567,7 +2117,191 @@ if (sent) {
 
   requestAnimationFrame(tick);
 
-  console.log("[TTWC CLIENT] corrected TTWC/Other badge script installed");
+  console.log("[TTWC CLIENT] original-placement badge script installed");
+})();
+</script>
+
+<script>
+/*
+  TTWC CLIENT DETECTOR
+
+  This script does not edit the visible player name.
+  It detects other TTWC users by using normal browser cross-tab/local signalling
+  and by repairing the byName/byIndex map whenever the lobby player list updates.
+
+  Important:
+  This works best when all TTWC users are on the same updated client build.
+*/
+
+(() => {
+  const TTWC = window.__TTWC = window.__TTWC || {};
+  TTWC.peace = TTWC.peace || {};
+  TTWC.client = TTWC.client || {};
+  TTWC.client.byIndex = TTWC.client.byIndex || {};
+  TTWC.client.byName = TTWC.client.byName || {};
+
+  const CHANNEL_NAME = "ttwc-client-presence-v1";
+
+  function isCustomLobbyActive() {
+    try {
+      return !!(
+        window.__fx &&
+        __fx.customLobby &&
+        typeof __fx.customLobby.isActive === "function" &&
+        __fx.customLobby.isActive()
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  function cleanName(name) {
+    return String(name || "")
+      .replace(/\[TTWC\]/gi, "")
+      .replace(/\[TT\]/gi, "")
+      .replace(/\u2060/g, "")
+      .replace(/\u200B/g, "")
+      .replace(/\u200C/g, "")
+      .replace(/\u200D/g, "")
+      .trim();
+  }
+
+  function getNameKey(name) {
+    return cleanName(name).toLowerCase();
+  }
+
+  function getPlayers() {
+    return Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
+  }
+
+  function getSelfPlayer() {
+    const players = getPlayers();
+    const index = TTWC.peace.selfLobbyIndex;
+
+    if (typeof index !== "number" || index < 0) return null;
+    return players[index] || null;
+  }
+
+  function markTTWCByName(name) {
+    const key = getNameKey(name);
+    if (!key) return false;
+
+    TTWC.client.byName[key] = "TTWC";
+
+    const players = getPlayers();
+
+    for (let i = 0; i < players.length; i++) {
+      const player = players[i];
+      if (!player) continue;
+
+      if (getNameKey(player.name) === key) {
+        player.client = "TTWC";
+        TTWC.client.byIndex[i] = "TTWC";
+      }
+    }
+
+    return true;
+  }
+
+  function markSelf() {
+    const self = getSelfPlayer();
+    if (!self) return;
+
+    const index = TTWC.peace.selfLobbyIndex;
+
+    self.client = "TTWC";
+    TTWC.client.byIndex[index] = "TTWC";
+    markTTWCByName(self.name);
+  }
+
+  function repairIndexesFromNames() {
+    const players = getPlayers();
+
+    for (let i = 0; i < players.length; i++) {
+      const player = players[i];
+      if (!player) continue;
+
+      const key = getNameKey(player.name);
+      if (!key) continue;
+
+      if (TTWC.client.byName[key] === "TTWC") {
+        player.client = "TTWC";
+        TTWC.client.byIndex[i] = "TTWC";
+      }
+    }
+  }
+
+  /*
+    BroadcastChannel only works between tabs/browsers on the same device.
+    It will not detect other physical computers by itself, but it prevents
+    duplicate local test clients from showing as Other.
+  */
+  let channel = null;
+
+  try {
+    if ("BroadcastChannel" in window) {
+      channel = new BroadcastChannel(CHANNEL_NAME);
+
+      channel.onmessage = function(event) {
+        const data = event?.data || {};
+        if (!data || data.type !== "ttwc-presence") return;
+
+        markTTWCByName(data.name);
+        repairIndexesFromNames();
+      };
+    }
+  } catch {}
+
+  function broadcastSelfPresence() {
+    try {
+      if (!isCustomLobbyActive()) return;
+
+      markSelf();
+
+      const self = getSelfPlayer();
+      if (!self) return;
+
+      const clean = cleanName(self.name);
+      if (!clean) return;
+
+      const payload = {
+        type: "ttwc-presence",
+        name: clean,
+        at: Date.now()
+      };
+
+      if (channel) {
+        channel.postMessage(payload);
+      }
+
+      /*
+        Same-tab fallback.
+      */
+      window.dispatchEvent(new CustomEvent("ttwc-presence", {
+        detail: payload
+      }));
+    } catch {}
+  }
+
+  window.addEventListener("ttwc-presence", function(event) {
+    const data = event?.detail || {};
+    if (data.type !== "ttwc-presence") return;
+
+    markTTWCByName(data.name);
+    repairIndexesFromNames();
+  });
+
+  setInterval(() => {
+    try {
+      if (!isCustomLobbyActive()) return;
+
+      markSelf();
+      repairIndexesFromNames();
+      broadcastSelfPresence();
+    } catch {}
+  }, 1000);
+
+  console.log("[TTWC CLIENT] detector installed without name-input marker");
 })();
 </script>
 
