@@ -2229,15 +2229,16 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
 
 <script>
 /*
-  TTWC CLIENT DETECTION - NO SERVER VERSION V2
+  TTWC CLIENT DETECTION - GOOGLE APPS SCRIPT VERSION
 
-  Fixes:
-  - More reliable invisible TTWC marker injection before lobby join/create.
-  - Does not use Cloudflare.
-  - Does not use BroadcastChannel.
-  - Does not use visible [TTWC] or [TT] text.
-  - Keeps Host/Kick button badge placement for host view.
-  - Adds canvas fallback badges so non-host players can also see TTWC/Other.
+  This replaces:
+  - invisible name marker detection
+  - BroadcastChannel/localStorage same-device detection
+  - clientInfo/clientRoster custom packet detection
+
+  TTWC clients report to Apps Script.
+  All TTWC clients read the same lobby status from Apps Script.
+  FX Client does not report, so FX stays "Other".
 */
 
 (() => {
@@ -2246,33 +2247,16 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
   TTWC.client = TTWC.client || {};
   TTWC.client.byIndex = TTWC.client.byIndex || {};
   TTWC.client.byName = TTWC.client.byName || {};
-  TTWC.badges = TTWC.badges || {};
+  TTWC.presence = TTWC.presence || {};
+  TTWC.presence.byIndex = TTWC.presence.byIndex || {};
+  TTWC.presence.byName = TTWC.presence.byName || {};
 
-  /*
-    Invisible signature.
-    Do not replace this with visible [TTWC] text.
-  */
-  const MARKER = "\u2060\u200B\u200C\u200D\u2060\u200D\u200C\u200B\u2060";
+  const TTWC_PRESENCE_URL = "https://script.google.com/macros/s/AKfycbywaf6WXVLe__ZJqHEI5h6OZnbocODBa_rdlgpsUX-OYil6YDZbMNWNDWoE2CUl-RjQ/exec";
 
-  TTWC.CLIENT_MARKER = MARKER;
-
-  function hasMarker(value) {
-    return String(value || "").includes(MARKER);
-  }
-
-  function stripMarker(value) {
-    return String(value || "").split(MARKER).join("");
-  }
-
-  function addMarker(value) {
-    const clean = stripMarker(value || "");
-    if (!clean.trim()) return clean;
-    return clean + MARKER;
-  }
-
-  TTWC.hasClientMarker = hasMarker;
-  TTWC.stripClientMarker = stripMarker;
-  TTWC.addClientMarker = addMarker;
+  let lastPostAt = 0;
+  let lastPollAt = 0;
+  let lastLobbyId = "";
+  let jsonpCounter = 0;
 
   function isCustomLobbyActive() {
     try {
@@ -2287,14 +2271,14 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
     }
   }
 
-  function getPlayers() {
-    return Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
-  }
-
   function cleanName(name) {
-    return stripMarker(name)
+    return String(name || "")
       .replace(/\[TTWC\]/gi, "")
       .replace(/\[TT\]/gi, "")
+      .replace(/\u2060/g, "")
+      .replace(/\u200B/g, "")
+      .replace(/\u200C/g, "")
+      .replace(/\u200D/g, "")
       .trim();
   }
 
@@ -2302,205 +2286,247 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
     return cleanName(name).toLowerCase();
   }
 
-  function getNameInput() {
-    return document.querySelector('input[placeholder*="Kingdom"]');
+  function getPlayers() {
+    return Array.isArray(TTWC.peace.players) ? TTWC.peace.players : [];
   }
 
-  function markPlayerAsTTWC(index) {
+  function getSelfIndex() {
+    return typeof TTWC.peace.selfLobbyIndex === "number"
+      ? TTWC.peace.selfLobbyIndex
+      : -1;
+  }
+
+  function getSelfPlayer() {
+    const index = getSelfIndex();
     const players = getPlayers();
-    const player = players[index];
+
+    if (index < 0) return null;
+    return players[index] || null;
+  }
+
+  function getLobbyId() {
+    try {
+      const text = document.body.innerText || "";
+      const match = text.match(/Custom\s+Lobby\s+([A-Za-z0-9_-]+)/i);
+
+      if (match && match[1]) {
+        return match[1].trim().toLowerCase();
+      }
+    } catch {}
+
+    try {
+      const candidates = [
+        window.__fx?.customLobby?.lobbyCode,
+        window.__fx?.customLobby?.code,
+        window.__fx?.customLobby?.id,
+        window.__fx?.customLobby?.gameInfo?.code,
+        window.__fx?.customLobby?.gameInfo?.id
+      ];
+
+      for (const candidate of candidates) {
+        const value = String(candidate || "").trim();
+        if (value) return value.toLowerCase();
+      }
+    } catch {}
+
+    return "";
+  }
+
+  function clearPresenceState() {
+    TTWC.presence.byIndex = {};
+    TTWC.presence.byName = {};
+  }
+
+  function markIndexAsTTWC(index, name) {
+    const players = getPlayers();
+
+    if (typeof index !== "number" || index < 0) return false;
+    if (!players[index]) return false;
+
+    const reportedName = cleanName(name);
+    const lobbyName = cleanName(players[index]?.name || "");
+
+    /*
+      Safety check:
+      If the slot changed and the name no longer matches, do not mark it.
+    */
+    if (
+      reportedName &&
+      lobbyName &&
+      getNameKey(reportedName) !== getNameKey(lobbyName)
+    ) {
+      return false;
+    }
 
     TTWC.client.byIndex[index] = "TTWC";
 
-    if (player) {
-      player.client = "TTWC";
+    TTWC.presence.byIndex[index] = {
+      client: "TTWC",
+      name: lobbyName || reportedName,
+      at: Date.now()
+    };
 
-      const key = getNameKey(player.name);
-      if (key) {
-        TTWC.client.byName[key] = "TTWC";
-      }
-    }
-  }
+    const key = getNameKey(lobbyName || reportedName);
 
-  /*
-    Temporarily ensure the visible name input has the invisible marker
-    before lobby join/create. It is invisible, and we do not use [TTWC].
-  */
-  function ensureInputHasMarker() {
-    // Display-only mode: do not mutate name input or outbound identity data.
-    return false;
-  }
-
-  /*
-    During lobby joining, keep the marker attached for a short window.
-    This catches delayed FX reads of the name value.
-  */
-  function boostMarkerForJoinWindow() {}
-
-  function patchNameFieldsDeep(value, depth = 0) {
-    if (!value || depth > 10) return value;
-
-    if (Array.isArray(value)) {
-      for (let i = 0; i < value.length; i++) {
-        value[i] = patchNameFieldsDeep(value[i], depth + 1);
-      }
-      return value;
+    if (key) {
+      TTWC.client.byName[key] = "TTWC";
+      TTWC.presence.byName[key] = {
+        client: "TTWC",
+        index,
+        at: Date.now()
+      };
     }
 
-    if (typeof value === "object") {
-      for (const key of Object.keys(value)) {
-        const lower = key.toLowerCase();
+    players[index].client = "TTWC";
 
-        const looksLikeNameField =
-          lower === "name" ||
-          lower === "playername" ||
-          lower === "username" ||
-          lower === "nickname" ||
-          lower === "nick" ||
-          lower === "kingdom" ||
-          lower === "kingdomname";
-
-        if (looksLikeNameField && typeof value[key] === "string") {
-          const clean = stripMarker(value[key]);
-
-          if (clean.trim() && clean.length <= 60) {
-            value[key] = addMarker(clean);
-          }
-        } else {
-          value[key] = patchNameFieldsDeep(value[key], depth + 1);
-        }
-      }
-    }
-
-    return value;
+    return true;
   }
 
-  function patchCustomLobbyPacket(packet) {
+  async function postSelfPresence() {
     try {
-      const bytes =
-        packet instanceof Uint8Array
-          ? packet
-          : packet instanceof ArrayBuffer
-            ? new Uint8Array(packet)
-            : ArrayBuffer.isView(packet)
-              ? new Uint8Array(packet.buffer, packet.byteOffset, packet.byteLength)
-              : null;
+      if (!isCustomLobbyActive()) return;
 
-      if (!bytes || !bytes.length) return packet;
+      const lobbyId = getLobbyId();
+      const index = getSelfIndex();
+      const self = getSelfPlayer();
+      const name = cleanName(self?.name || "");
+
+      if (!lobbyId || index < 0 || !name) return;
+
+      markIndexAsTTWC(index, name);
 
       /*
-        FX custom lobby messages normally start with byte 120, followed by JSON.
+        no-cors means we do not read the POST response.
+        Apps Script receives it and stores the presence.
       */
-      if (bytes[0] !== 120) return packet;
-
-      const text = new TextDecoder().decode(bytes.subarray(1));
-      if (!text || (text[0] !== "{" && text[0] !== "[")) return packet;
-
-      const msg = JSON.parse(text);
-      patchNameFieldsDeep(msg);
-
-      const payload = new TextEncoder().encode(JSON.stringify(msg));
-      const out = new Uint8Array(payload.length + 1);
-      out[0] = 120;
-      out.set(payload, 1);
-
-      return out.buffer;
-    } catch {
-      return packet;
+      await fetch(TTWC_PRESENCE_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify({
+          lobbyId,
+          index,
+          name,
+          client: "TTWC",
+          at: Date.now()
+        })
+      });
+    } catch (e) {
+      console.log("[TTWC PRESENCE] post failed:", e);
     }
   }
 
-  function patchSenders() {
-    // Intentionally disabled.
-    // The stable client-identification path is the custom-lobby clientInfo/clientRoster
-    // flow implemented earlier in this file. Packet mutation here caused desync.
+  function jsonpRequest(params, timeoutMs = 4000) {
+    return new Promise((resolve, reject) => {
+      const id = ++jsonpCounter;
+      const callbackName = "__ttwcPresenceCallback_" + id;
+
+      const url =
+        TTWC_PRESENCE_URL +
+        "?" +
+        params +
+        "&callback=" +
+        encodeURIComponent(callbackName) +
+        "&_=" +
+        Date.now();
+
+      const script = document.createElement("script");
+
+      let done = false;
+
+      const cleanup = () => {
+        try { delete window[callbackName]; } catch {}
+        try { script.remove(); } catch {}
+      };
+
+      const timer = setTimeout(() => {
+        if (done) return;
+        done = true;
+        cleanup();
+        reject(new Error("JSONP timeout"));
+      }, timeoutMs);
+
+      window[callbackName] = data => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        cleanup();
+        resolve(data);
+      };
+
+      script.onerror = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        cleanup();
+        reject(new Error("JSONP load error"));
+      };
+
+      script.src = url;
+      document.head.appendChild(script);
+    });
   }
 
-  /*
-    Join/create hooks.
-  */
-  document.addEventListener("pointerdown", function(e) {
-    if (e.target && e.target.closest && e.target.closest("#createLobbyButton")) {
-      ensureInputHasMarker();
-      boostMarkerForJoinWindow();
-    }
-  }, true);
+  async function pollLobbyPresence() {
+    try {
+      if (!isCustomLobbyActive()) return;
 
-  document.addEventListener("mousedown", function(e) {
-    if (e.target && e.target.closest && e.target.closest("#createLobbyButton")) {
-      ensureInputHasMarker();
-      boostMarkerForJoinWindow();
-    }
-  }, true);
+      const lobbyId = getLobbyId();
+      if (!lobbyId) return;
 
-  document.addEventListener("click", function(e) {
-    if (e.target && e.target.closest && e.target.closest("#createLobbyButton")) {
-      ensureInputHasMarker();
-      boostMarkerForJoinWindow();
-    }
-  }, true);
-
-  document.addEventListener("input", function(e) {
-    if (e.target && e.target.id === "lobbyCode") {
-      ensureInputHasMarker();
-      boostMarkerForJoinWindow();
-    }
-  }, true);
-
-  document.addEventListener("keydown", function(e) {
-    if (e.target && e.target.id === "lobbyCode") {
-      ensureInputHasMarker();
-      boostMarkerForJoinWindow();
-    }
-
-    if (e.key === "Enter") {
-      ensureInputHasMarker();
-      boostMarkerForJoinWindow();
-    }
-  }, true);
-
-  function patchIncomingPlayers() {
-    const players = getPlayers();
-
-    for (let i = 0; i < players.length; i++) {
-      const player = players[i];
-      if (!player) continue;
-
-      if (hasMarker(player.name)) {
-        markPlayerAsTTWC(i);
+      if (lastLobbyId && lastLobbyId !== lobbyId) {
+        clearPresenceState();
       }
 
-      player.cleanName = cleanName(player.name);
+      lastLobbyId = lobbyId;
+
+      const data = await jsonpRequest(
+        "action=list&lobbyId=" + encodeURIComponent(lobbyId)
+      );
+
+      if (!data || data.ok !== true || !Array.isArray(data.players)) {
+        return;
+      }
+
+      const players = getPlayers();
+
+      clearPresenceState();
+
+      for (const entry of data.players) {
+        const index = Number(entry.index);
+        const name = cleanName(entry.name || "");
+
+        if (!Number.isFinite(index) || index < 0) continue;
+        if (!players[index]) continue;
+
+        markIndexAsTTWC(index, name);
+      }
+    } catch (e) {
+      console.log("[TTWC PRESENCE] poll failed:", e);
     }
   }
 
-  function syncClientMapWithPlayers() {
+  function repairLabels() {
     try {
       const players = getPlayers();
-      const nextByIndex = {};
-      const nextByName = {};
 
       for (let i = 0; i < players.length; i++) {
-        const player = players[i];
-        if (!player) continue;
+        const presence = TTWC.presence.byIndex?.[i];
 
-        const key = getNameKey(player.name);
-        const fromIndex = TTWC.client?.byIndex?.[i];
-        const fromPlayer = player.client;
-        const fromName = key ? TTWC.client?.byName?.[key] : "";
-        const label = (fromIndex === "TTWC" || fromPlayer === "TTWC" || fromName === "TTWC") ? "TTWC" : "";
-
-        if (label) {
-          nextByIndex[i] = label;
-          player.client = label;
-          if (key) nextByName[key] = label;
-        } else if (player.client) {
-          delete player.client;
+        if (presence && presence.client === "TTWC") {
+          players[i].client = "TTWC";
+          TTWC.client.byIndex[i] = "TTWC";
         }
       }
 
-      TTWC.client.byIndex = nextByIndex;
-      TTWC.client.byName = nextByName;
+      const selfIndex = getSelfIndex();
+      const self = getSelfPlayer();
+
+      if (selfIndex >= 0 && self) {
+        markIndexAsTTWC(selfIndex, self.name);
+      }
     } catch {}
   }
 
@@ -2513,644 +2539,162 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
       TTWC.peace.selfLobbyIndex === index;
 
     if (isSelf) {
-      markPlayerAsTTWC(index);
+      markIndexAsTTWC(index, player?.name || "");
       return "TTWC";
     }
 
-    if (player && hasMarker(player.name)) {
-      markPlayerAsTTWC(index);
+    if (TTWC.presence?.byIndex?.[index]?.client === "TTWC") {
       return "TTWC";
     }
 
-    const key = getNameKey(player?.name);
-
-    if (key && TTWC.client.byName[key] === "TTWC") {
-      markPlayerAsTTWC(index);
-      return "TTWC";
-    }
-
-    const rawLabel =
-      (player && player.client) ||
-      TTWC.client?.byIndex?.[index] ||
-      "Other";
-
-    return rawLabel === "TTWC" ? "TTWC" : "Other";
-  }
-
-  function makeBadgeElement(label) {
-    const badge = document.createElement("span");
-    badge.className = "ttwc-client-row-badge";
-    badge.textContent = label;
-
-    Object.assign(badge.style, {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minWidth: "52px",
-      height: "22px",
-      padding: "0 8px",
-      marginRight: "6px",
-      borderRadius: "999px",
-      fontSize: "11px",
-      fontWeight: "800",
-      fontFamily: "Arial, Helvetica, sans-serif",
-      letterSpacing: "0.2px",
-      color: "#fff",
-      verticalAlign: "middle",
-      boxSizing: "border-box",
-      position: "static",
-      transform: "none",
-      pointerEvents: "none",
-      whiteSpace: "nowrap"
-    });
-
-    if (label === "TTWC") {
-      Object.assign(badge.style, {
-        background: "rgba(22, 101, 52, 0.85)",
-        border: "1px solid rgba(74, 222, 128, 0.85)",
-        boxShadow: "0 0 8px rgba(34, 197, 94, 0.25)"
-      });
-    } else {
-      Object.assign(badge.style, {
-        background: "rgba(55, 65, 81, 0.85)",
-        border: "1px solid rgba(156, 163, 175, 0.65)",
-        boxShadow: "none"
-      });
-    }
-
-    return badge;
-  }
-
-  function getActionRows() {
-    const actionButtons = Array.from(document.querySelectorAll("button"))
-      .filter(btn => {
-        const text = (btn.textContent || "").trim().toLowerCase();
-        return text === "host" || text === "kick";
-      })
-      .filter(btn => {
-        const rect = btn.getBoundingClientRect();
-        return rect.width > 0 && rect.height > 0;
-      });
-
-    const rowMap = new Map();
-
-    for (const btn of actionButtons) {
-      const row = btn.parentElement;
-      if (!row) continue;
-
-      if (!rowMap.has(row)) {
-        rowMap.set(row, {
-          row,
-          buttons: []
-        });
-      }
-
-      rowMap.get(row).buttons.push(btn);
-    }
-
-    return Array.from(rowMap.values())
-      .sort((a, b) => {
-        const ar = a.row.getBoundingClientRect();
-        const br = b.row.getBoundingClientRect();
-
-        if (Math.abs(ar.top - br.top) > 3) {
-          return ar.top - br.top;
-        }
-
-        return ar.left - br.left;
-      });
-  }
-
-  function removeOldDomBadges() {
-    document.querySelectorAll(".ttwc-client-row-badge").forEach(el => el.remove());
-  }
-
-  function removeNameBadges() {
-    document.querySelectorAll(".ttwc-client-name-badge").forEach(el => el.remove());
-  }
-
-  function isVisibleElement(el) {
-    try {
-      if (!el || !el.isConnected) return false;
-      const rect = el.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) return false;
-      const style = window.getComputedStyle(el);
-      if (!style) return false;
-      return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
-    } catch {
-      return false;
-    }
-  }
-
-  function makeInlineNameBadge(label) {
-    const badge = document.createElement("span");
-    badge.className = "ttwc-client-name-badge";
-    badge.textContent = label;
-    Object.assign(badge.style, {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minWidth: "40px",
-      height: "16px",
-      padding: "0 6px",
-      marginLeft: "6px",
-      borderRadius: "999px",
-      fontSize: "10px",
-      fontWeight: "800",
-      fontFamily: "Arial, Helvetica, sans-serif",
-      letterSpacing: "0.15px",
-      color: "#fff",
-      verticalAlign: "middle",
-      boxSizing: "border-box",
-      pointerEvents: "none",
-      whiteSpace: "nowrap"
-    });
-
-    if (label === "TTWC") {
-      Object.assign(badge.style, {
-        background: "rgba(22, 101, 52, 0.88)",
-        border: "1px solid rgba(74, 222, 128, 0.88)"
-      });
-    } else {
-      Object.assign(badge.style, {
-        background: "rgba(55, 65, 81, 0.88)",
-        border: "1px solid rgba(156, 163, 175, 0.70)"
-      });
-    }
-
-    return badge;
-  }
-
-  function injectNameBadges() {
-    try {
-      if (!isCustomLobbyActive()) {
-        removeNameBadges();
-        return;
-      }
-
-      const players = getPlayers();
-      if (!players.length) {
-        removeNameBadges();
-        return;
-      }
-
-      removeNameBadges();
-
-      for (let i = 0; i < players.length; i++) {
-        const playerName = cleanName(players[i]?.name || "");
-        if (!playerName) continue;
-        const playerNameLower = playerName.toLowerCase();
-
-        const candidates = Array.from(document.querySelectorAll("span, div, p, td, li"));
-        let bestEl = null;
-        let bestLen = 0;
-
-        for (const el of candidates) {
-          if (!isVisibleElement(el)) continue;
-          if (el.closest(".ttwc-client-name-badge")) continue;
-          if (el.querySelector && el.querySelector("button")) continue;
-
-          const text = cleanName(el.textContent || "");
-          if (!text) continue;
-          const lower = text.toLowerCase();
-
-          const exact = lower === playerNameLower;
-          const suffix = lower.endsWith(playerNameLower) && playerNameLower.length >= 3;
-          if (!exact && !suffix) continue;
-
-          if (playerNameLower.length > bestLen) {
-            bestEl = el;
-            bestLen = playerNameLower.length;
-          }
-        }
-
-        if (!bestEl || !bestEl.parentNode) continue;
-
-        const label = getClientLabel(i);
-        const badge = makeInlineNameBadge(label);
-        bestEl.insertAdjacentElement("afterend", badge);
-      }
-    } catch (e) {
-      console.log("[TTWC CLIENT] name badge inject error:", e);
-    }
-  }
-
-  function getPlayerIndexForRow(row) {
-    try {
-      const players = getPlayers();
-      if (!row || !players.length) return -1;
-
-      const rowText = cleanName(row.textContent || "").toLowerCase();
-      if (!rowText) return -1;
-
-      let bestIndex = -1;
-      let bestLen = 0;
-
-      for (let i = 0; i < players.length; i++) {
-        const playerName = cleanName(players[i]?.name || "");
-        const key = playerName.toLowerCase();
-        if (!key || key.length < 2) continue;
-
-        if (rowText.includes(key) && key.length > bestLen) {
-          bestIndex = i;
-          bestLen = key.length;
-        }
-      }
-
-      return bestIndex;
-    } catch {
-      return -1;
-    }
-  }
-
-  function applyDomBadge(rowInfo) {
-    const row = rowInfo?.row;
-    if (!row) return;
-
-    const index = getPlayerIndexForRow(row);
-    if (index < 0) return;
-
-    const label = getClientLabel(index);
-    const badge = makeBadgeElement(label);
-
-    const anchor = rowInfo.buttons
-      .slice()
-      .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0];
-
-    if (anchor && anchor.parentNode) {
-      anchor.parentNode.insertBefore(badge, anchor);
-    } else {
-      row.appendChild(badge);
-    }
-  }
-
-  function injectDomBadges() {
-    try {
-      if (!isCustomLobbyActive()) {
-        removeOldDomBadges();
-        TTWC.badges.domCoversAllPlayers = false;
-        return;
-      }
-
-      const players = getPlayers();
-      const rows = getActionRows();
-
-      if (!players.length || !rows.length) {
-        removeOldDomBadges();
-        TTWC.badges.domCoversAllPlayers = false;
-        return;
-      }
-
-      removeOldDomBadges();
-
-      for (let i = 0; i < rows.length; i++) {
-        applyDomBadge(rows[i]);
-      }
-
-      /*
-        Host usually has Host/Kick anchors for all players.
-        Non-host usually does not, so canvas fallback handles non-host view.
-      */
-      TTWC.badges.domCoversAllPlayers = false;
-    } catch (e) {
-      console.log("[TTWC CLIENT] DOM badge inject error:", e);
-    }
-  }
-
-  function drawCanvasBadge(ctx, x, y, label) {
-    try {
-      const scale = Math.max(1, Math.min(1.4, (parseFloat(ctx.font) || 16) / 16));
-      const w = label === "TTWC" ? 45 * scale : 43 * scale;
-      const h = 17 * scale;
-      const r = h / 2;
-
-      const bx = x;
-      const by = y - h + 3;
-
-      ctx.save();
-
-      ctx.font = `${Math.round(10 * scale)}px Arial`;
-      ctx.textBaseline = "middle";
-      ctx.textAlign = "center";
-
-      ctx.beginPath();
-      ctx.moveTo(bx + r, by);
-      ctx.lineTo(bx + w - r, by);
-      ctx.quadraticCurveTo(bx + w, by, bx + w, by + r);
-      ctx.lineTo(bx + w, by + h - r);
-      ctx.quadraticCurveTo(bx + w, by + h, bx + w - r, by + h);
-      ctx.lineTo(bx + r, by + h);
-      ctx.quadraticCurveTo(bx, by + h, bx, by + h - r);
-      ctx.lineTo(bx, by + r);
-      ctx.quadraticCurveTo(bx, by, bx + r, by);
-      ctx.closePath();
-
-      if (label === "TTWC") {
-        ctx.fillStyle = "rgba(22, 101, 52, 0.90)";
-        ctx.strokeStyle = "rgba(74, 222, 128, 0.90)";
-      } else {
-        ctx.fillStyle = "rgba(55, 65, 81, 0.90)";
-        ctx.strokeStyle = "rgba(156, 163, 175, 0.75)";
-      }
-
-      ctx.lineWidth = 1;
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText(label, bx + w / 2, by + h / 2 + 0.5);
-
-      ctx.restore();
-    } catch {}
-  }
-
-  function findPlayerIndexForDrawnText(text) {
-    const players = getPlayers();
-    const drawn = cleanName(text);
-
-    if (!drawn) return -1;
-
-    /*
-      Exact match first.
-    */
-    for (let i = 0; i < players.length; i++) {
-      if (cleanName(players[i]?.name) === drawn) return i;
-    }
-
-    /*
-      Many lobby names wrap over multiple lines, e.g.
-      "[USA]" then "Player 41".
-      Use endsWith so badge appears beside the final line.
-    */
-    for (let i = 0; i < players.length; i++) {
-      const full = cleanName(players[i]?.name);
-      if (!full) continue;
-
-      if (full.endsWith(drawn) && drawn.length >= 3) {
-        return i;
-      }
-    }
-
-    return -1;
-  }
-
-  function patchCanvasBadges() {
-    try {
-      if (CanvasRenderingContext2D.prototype.__ttwcCanvasBadgesPatchedV2) return;
-
-      const originalFillText = CanvasRenderingContext2D.prototype.fillText;
-      const originalStrokeText = CanvasRenderingContext2D.prototype.strokeText;
-
-      CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
-        let cleanText = text;
-
-        try {
-          if (typeof cleanText === "string") {
-            cleanText = stripMarker(cleanText);
-          }
-        } catch {}
-
-        const result = arguments.length >= 4
-          ? originalFillText.call(this, cleanText, x, y, maxWidth)
-          : originalFillText.call(this, cleanText, x, y);
-
-        try {
-          if (
-            isCustomLobbyActive() &&
-            !TTWC.badges.domCoversAllPlayers &&
-            typeof cleanText === "string"
-          ) {
-            const index = findPlayerIndexForDrawnText(cleanText);
-
-            if (index >= 0) {
-              const label = getClientLabel(index);
-              const width = this.measureText(cleanText).width || 0;
-
-              /*
-                Put badge beside the drawn name fragment.
-              */
-              drawCanvasBadge(this, x + width + 8, y, label);
-            }
-          }
-        } catch {}
-
-        return result;
-      };
-
-      CanvasRenderingContext2D.prototype.strokeText = function(text, x, y, maxWidth) {
-        let cleanText = text;
-
-        try {
-          if (typeof cleanText === "string") {
-            cleanText = stripMarker(cleanText);
-          }
-        } catch {}
-
-        const result = arguments.length >= 4
-          ? originalStrokeText.call(this, cleanText, x, y, maxWidth)
-          : originalStrokeText.call(this, cleanText, x, y);
-
-        try {
-          if (
-            isCustomLobbyActive() &&
-            !TTWC.badges.domCoversAllPlayers &&
-            typeof cleanText === "string"
-          ) {
-            const index = findPlayerIndexForDrawnText(cleanText);
-            if (index >= 0) {
-              const label = getClientLabel(index);
-              const width = this.measureText(cleanText).width || 0;
-              drawCanvasBadge(this, x + width + 8, y, label);
-            }
-          }
-        } catch {}
-
-        return result;
-      };
-
-      CanvasRenderingContext2D.prototype.__ttwcCanvasBadgesPatchedV2 = true;
-      console.log("[TTWC CLIENT] canvas badge fallback installed V2");
-    } catch (e) {
-      console.log("[TTWC CLIENT] canvas badge patch error:", e);
-    }
-  }
-
-  function cleanDOMTextMarkers() {
-    try {
-      const walker = document.createTreeWalker(
-        document.body,
-        NodeFilter.SHOW_TEXT
-      );
-
-      const nodes = [];
-
-      while (walker.nextNode()) {
-        const node = walker.currentNode;
-        if (node && node.nodeValue && node.nodeValue.includes(MARKER)) {
-          nodes.push(node);
-        }
-      }
-
-      for (const node of nodes) {
-        node.nodeValue = stripMarker(node.nodeValue);
-      }
-    } catch {}
+    return "Other";
   }
 
   function removeUniversalClientPanel() {
-  const el = document.getElementById("ttwc-client-status-panel");
-  if (el) el.remove();
-}
-
-function injectUniversalClientPanel() {
-  try {
-    if (!isCustomLobbyActive()) {
-      removeUniversalClientPanel();
-      return;
-    }
-
-    const players = getPlayers();
-    if (!players.length) {
-      removeUniversalClientPanel();
-      return;
-    }
-
-    let panel = document.getElementById("ttwc-client-status-panel");
-
-    if (!panel) {
-      panel = document.createElement("div");
-      panel.id = "ttwc-client-status-panel";
-
-      Object.assign(panel.style, {
-        position: "fixed",
-        right: "18px",
-        top: "96px",
-        zIndex: "999999",
-        minWidth: "220px",
-        maxWidth: "320px",
-        maxHeight: "60vh",
-        overflowY: "auto",
-        padding: "12px",
-        borderRadius: "16px",
-        background: "rgba(8, 14, 20, 0.88)",
-        border: "1px solid rgba(220, 235, 245, 0.35)",
-        boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-        fontFamily: "Arial, Helvetica, sans-serif",
-        color: "#ffffff",
-        pointerEvents: "none"
-      });
-
-      document.body.appendChild(panel);
-    }
-
-    const rows = players.map((player, index) => {
-      const name = cleanName(player?.name || `Player ${index + 1}`);
-      const label = getClientLabel(index);
-
-      const badgeStyle =
-        label === "TTWC"
-          ? "background:rgba(22,101,52,.88);border:1px solid rgba(74,222,128,.88);"
-          : "background:rgba(55,65,81,.88);border:1px solid rgba(156,163,175,.70);";
-
-      return `
-        <div style="
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          gap:10px;
-          padding:6px 0;
-          border-top:1px solid rgba(255,255,255,0.08);
-        ">
-          <span style="
-            overflow:hidden;
-            text-overflow:ellipsis;
-            white-space:nowrap;
-            font-size:12px;
-            color:#f5fbff;
-          ">${escapeHtml(name)}</span>
-
-          <span style="
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            min-width:52px;
-            height:21px;
-            padding:0 8px;
-            border-radius:999px;
-            color:#fff;
-            font-size:11px;
-            font-weight:800;
-            ${badgeStyle}
-          ">${label}</span>
-        </div>
-      `;
-    }).join("");
-
-    panel.innerHTML = `
-      <div style="
-        font-size:13px;
-        font-weight:900;
-        letter-spacing:.3px;
-        margin-bottom:6px;
-        color:#ffffff;
-      ">
-        TTWC Client Status
-      </div>
-      ${rows}
-    `;
-  } catch (e) {
-    console.log("[TTWC CLIENT] universal panel error:", e);
+    const el = document.getElementById("ttwc-client-status-panel");
+    if (el) el.remove();
   }
-}
 
-function escapeHtml(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-  
-  function tick() {
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function injectUniversalClientPanel() {
     try {
-      patchSenders();
-      patchCanvasBadges();
+      if (!isCustomLobbyActive()) {
+        removeUniversalClientPanel();
+        return;
+      }
 
-      if (isCustomLobbyActive()) {
-  patchIncomingPlayers();
-  syncClientMapWithPlayers();
-  cleanDOMTextMarkers();
+      const players = getPlayers();
 
-  /*
-    IMPORTANT:
-    Do not remove DOM badges immediately after creating name badges.
-    The previous code was likely deleting the badges during the same tick.
-  */
-injectDomBadges();
-injectNameBadges();
-injectUniversalClientPanel();
+      if (!players.length) {
+        removeUniversalClientPanel();
+        return;
+      }
 
-  /*
-    Keep this false so canvas fallback can still draw badges where DOM matching fails.
-  */
-  TTWC.badges.domCoversAllPlayers = false;
-} else {
-  removeNameBadges();
-  removeOldDomBadges();
-  removeUniversalClientPanel();
-  TTWC.badges.domCoversAllPlayers = false;
-}
-    } catch {}
+      let panel = document.getElementById("ttwc-client-status-panel");
 
-    requestAnimationFrame(tick);
+      if (!panel) {
+        panel = document.createElement("div");
+        panel.id = "ttwc-client-status-panel";
+
+        Object.assign(panel.style, {
+          position: "fixed",
+          right: "18px",
+          top: "96px",
+          zIndex: "999999",
+          minWidth: "220px",
+          maxWidth: "330px",
+          maxHeight: "60vh",
+          overflowY: "auto",
+          padding: "12px",
+          borderRadius: "16px",
+          background: "rgba(8, 14, 20, 0.88)",
+          border: "1px solid rgba(220, 235, 245, 0.35)",
+          boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          fontFamily: "Arial, Helvetica, sans-serif",
+          color: "#ffffff",
+          pointerEvents: "none"
+        });
+
+        document.body.appendChild(panel);
+      }
+
+      const rows = players.map((player, index) => {
+        const name = cleanName(player?.name || `Player ${index + 1}`);
+        const label = getClientLabel(index);
+
+        const badgeStyle =
+          label === "TTWC"
+            ? "background:rgba(22,101,52,.88);border:1px solid rgba(74,222,128,.88);"
+            : "background:rgba(55,65,81,.88);border:1px solid rgba(156,163,175,.70);";
+
+        return `
+          <div style="
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+            padding:6px 0;
+            border-top:1px solid rgba(255,255,255,0.08);
+          ">
+            <span style="
+              overflow:hidden;
+              text-overflow:ellipsis;
+              white-space:nowrap;
+              font-size:12px;
+              color:#f5fbff;
+            ">${escapeHtml(name)}</span>
+
+            <span style="
+              display:inline-flex;
+              align-items:center;
+              justify-content:center;
+              min-width:52px;
+              height:21px;
+              padding:0 8px;
+              border-radius:999px;
+              color:#fff;
+              font-size:11px;
+              font-weight:800;
+              ${badgeStyle}
+            ">${label}</span>
+          </div>
+        `;
+      }).join("");
+
+      panel.innerHTML = `
+        <div style="
+          font-size:13px;
+          font-weight:900;
+          letter-spacing:.3px;
+          margin-bottom:6px;
+          color:#ffffff;
+        ">
+          TTWC Client Status
+        </div>
+        ${rows}
+      `;
+    } catch (e) {
+      console.log("[TTWC CLIENT] universal panel error:", e);
+    }
   }
 
-  requestAnimationFrame(tick);
+  setInterval(() => {
+    try {
+      if (!isCustomLobbyActive()) {
+        removeUniversalClientPanel();
+        return;
+      }
 
-  console.log("[TTWC CLIENT] no-server TTWC detection V2 installed");
+      const now = Date.now();
+
+      if (now - lastPostAt > 2000) {
+        lastPostAt = now;
+        postSelfPresence();
+      }
+
+      if (now - lastPollAt > 1500) {
+        lastPollAt = now;
+        pollLobbyPresence();
+      }
+
+      repairLabels();
+      injectUniversalClientPanel();
+    } catch (e) {
+      console.log("[TTWC PRESENCE] interval error:", e);
+    }
+  }, 500);
+
+  console.log("[TTWC PRESENCE] Google Apps Script presence detector installed");
 })();
 </script>
 </body>
