@@ -2997,6 +2997,123 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
     } catch {}
   }
 
+  function removeUniversalClientPanel() {
+  const el = document.getElementById("ttwc-client-status-panel");
+  if (el) el.remove();
+}
+
+function injectUniversalClientPanel() {
+  try {
+    if (!isCustomLobbyActive()) {
+      removeUniversalClientPanel();
+      return;
+    }
+
+    const players = getPlayers();
+    if (!players.length) {
+      removeUniversalClientPanel();
+      return;
+    }
+
+    let panel = document.getElementById("ttwc-client-status-panel");
+
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "ttwc-client-status-panel";
+
+      Object.assign(panel.style, {
+        position: "fixed",
+        right: "18px",
+        top: "96px",
+        zIndex: "999999",
+        minWidth: "220px",
+        maxWidth: "320px",
+        maxHeight: "60vh",
+        overflowY: "auto",
+        padding: "12px",
+        borderRadius: "16px",
+        background: "rgba(8, 14, 20, 0.88)",
+        border: "1px solid rgba(220, 235, 245, 0.35)",
+        boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        fontFamily: "Arial, Helvetica, sans-serif",
+        color: "#ffffff",
+        pointerEvents: "none"
+      });
+
+      document.body.appendChild(panel);
+    }
+
+    const rows = players.map((player, index) => {
+      const name = cleanName(player?.name || `Player ${index + 1}`);
+      const label = getClientLabel(index);
+
+      const badgeStyle =
+        label === "TTWC"
+          ? "background:rgba(22,101,52,.88);border:1px solid rgba(74,222,128,.88);"
+          : "background:rgba(55,65,81,.88);border:1px solid rgba(156,163,175,.70);";
+
+      return `
+        <div style="
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:10px;
+          padding:6px 0;
+          border-top:1px solid rgba(255,255,255,0.08);
+        ">
+          <span style="
+            overflow:hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap;
+            font-size:12px;
+            color:#f5fbff;
+          ">${escapeHtml(name)}</span>
+
+          <span style="
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            min-width:52px;
+            height:21px;
+            padding:0 8px;
+            border-radius:999px;
+            color:#fff;
+            font-size:11px;
+            font-weight:800;
+            ${badgeStyle}
+          ">${label}</span>
+        </div>
+      `;
+    }).join("");
+
+    panel.innerHTML = `
+      <div style="
+        font-size:13px;
+        font-weight:900;
+        letter-spacing:.3px;
+        margin-bottom:6px;
+        color:#ffffff;
+      ">
+        TTWC Client Status
+      </div>
+      ${rows}
+    `;
+  } catch (e) {
+    console.log("[TTWC CLIENT] universal panel error:", e);
+  }
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+  
   function tick() {
     try {
       patchSenders();
@@ -3012,8 +3129,9 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
     Do not remove DOM badges immediately after creating name badges.
     The previous code was likely deleting the badges during the same tick.
   */
-  injectDomBadges();
-  injectNameBadges();
+injectDomBadges();
+injectNameBadges();
+injectUniversalClientPanel();
 
   /*
     Keep this false so canvas fallback can still draw badges where DOM matching fails.
@@ -3022,6 +3140,7 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
 } else {
   removeNameBadges();
   removeOldDomBadges();
+  removeUniversalClientPanel();
   TTWC.badges.domCoversAllPlayers = false;
 }
     } catch {}
