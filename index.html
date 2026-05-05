@@ -2625,6 +2625,116 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
     document.querySelectorAll(".ttwc-client-row-badge").forEach(el => el.remove());
   }
 
+  function removeNameBadges() {
+    document.querySelectorAll(".ttwc-client-name-badge").forEach(el => el.remove());
+  }
+
+  function isVisibleElement(el) {
+    try {
+      if (!el || !el.isConnected) return false;
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return false;
+      const style = window.getComputedStyle(el);
+      if (!style) return false;
+      return style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
+    } catch {
+      return false;
+    }
+  }
+
+  function makeInlineNameBadge(label) {
+    const badge = document.createElement("span");
+    badge.className = "ttwc-client-name-badge";
+    badge.textContent = label;
+    Object.assign(badge.style, {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minWidth: "40px",
+      height: "16px",
+      padding: "0 6px",
+      marginLeft: "6px",
+      borderRadius: "999px",
+      fontSize: "10px",
+      fontWeight: "800",
+      fontFamily: "Arial, Helvetica, sans-serif",
+      letterSpacing: "0.15px",
+      color: "#fff",
+      verticalAlign: "middle",
+      boxSizing: "border-box",
+      pointerEvents: "none",
+      whiteSpace: "nowrap"
+    });
+
+    if (label === "TTWC") {
+      Object.assign(badge.style, {
+        background: "rgba(22, 101, 52, 0.88)",
+        border: "1px solid rgba(74, 222, 128, 0.88)"
+      });
+    } else {
+      Object.assign(badge.style, {
+        background: "rgba(55, 65, 81, 0.88)",
+        border: "1px solid rgba(156, 163, 175, 0.70)"
+      });
+    }
+
+    return badge;
+  }
+
+  function injectNameBadges() {
+    try {
+      if (!isCustomLobbyActive()) {
+        removeNameBadges();
+        return;
+      }
+
+      const players = getPlayers();
+      if (!players.length) {
+        removeNameBadges();
+        return;
+      }
+
+      removeNameBadges();
+
+      for (let i = 0; i < players.length; i++) {
+        const playerName = cleanName(players[i]?.name || "");
+        if (!playerName) continue;
+        const playerNameLower = playerName.toLowerCase();
+
+        const candidates = Array.from(document.querySelectorAll("span, div, p, td, li"));
+        let bestEl = null;
+        let bestLen = 0;
+
+        for (const el of candidates) {
+          if (!isVisibleElement(el)) continue;
+          if (el.closest(".ttwc-client-name-badge")) continue;
+          if (el.querySelector && el.querySelector("button")) continue;
+
+          const text = cleanName(el.textContent || "");
+          if (!text) continue;
+          const lower = text.toLowerCase();
+
+          const exact = lower === playerNameLower;
+          const suffix = lower.endsWith(playerNameLower) && playerNameLower.length >= 3;
+          if (!exact && !suffix) continue;
+
+          if (playerNameLower.length > bestLen) {
+            bestEl = el;
+            bestLen = playerNameLower.length;
+          }
+        }
+
+        if (!bestEl || !bestEl.parentNode) continue;
+
+        const label = getClientLabel(i);
+        const badge = makeInlineNameBadge(label);
+        bestEl.insertAdjacentElement("afterend", badge);
+      }
+    } catch (e) {
+      console.log("[TTWC CLIENT] name badge inject error:", e);
+    }
+  }
+
   function getPlayerIndexForRow(row) {
     try {
       const players = getPlayers();
@@ -2896,9 +3006,11 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
         patchIncomingPlayers();
         syncClientMapWithPlayers();
         cleanDOMTextMarkers();
+        injectNameBadges();
         removeOldDomBadges();
         TTWC.badges.domCoversAllPlayers = false;
       } else {
+        removeNameBadges();
         removeOldDomBadges();
         TTWC.badges.domCoversAllPlayers = false;
       }
