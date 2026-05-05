@@ -3003,17 +3003,26 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
       patchCanvasBadges();
 
       if (isCustomLobbyActive()) {
-        patchIncomingPlayers();
-        syncClientMapWithPlayers();
-        cleanDOMTextMarkers();
-        injectNameBadges();
-        removeOldDomBadges();
-        TTWC.badges.domCoversAllPlayers = false;
-      } else {
-        removeNameBadges();
-        removeOldDomBadges();
-        TTWC.badges.domCoversAllPlayers = false;
-      }
+  patchIncomingPlayers();
+  syncClientMapWithPlayers();
+  cleanDOMTextMarkers();
+
+  /*
+    IMPORTANT:
+    Do not remove DOM badges immediately after creating name badges.
+    The previous code was likely deleting the badges during the same tick.
+  */
+  injectNameBadges();
+
+  /*
+    Keep this false so canvas fallback can still draw badges where DOM matching fails.
+  */
+  TTWC.badges.domCoversAllPlayers = false;
+} else {
+  removeNameBadges();
+  removeOldDomBadges();
+  TTWC.badges.domCoversAllPlayers = false;
+}
     } catch {}
 
     requestAnimationFrame(tick);
