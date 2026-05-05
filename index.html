@@ -1308,6 +1308,121 @@ window.__TTWC = window.__TTWC || {};
     }
   }
 
+function isVisibleElement(el) {
+  if (!el) return false;
+
+  const rect = el.getBoundingClientRect();
+  const style = getComputedStyle(el);
+
+  return (
+    rect.width > 0 &&
+    rect.height > 0 &&
+    style.display !== "none" &&
+    style.visibility !== "hidden" &&
+    style.opacity !== "0"
+  );
+}
+
+function getVisibleButtons() {
+  return Array.from(document.querySelectorAll("button"))
+    .filter(isVisibleElement);
+}
+
+function hasVisibleButtonText(text) {
+  const wanted = String(text || "").trim().toLowerCase();
+
+  return getVisibleButtons().some(btn => {
+    const label = String(btn.textContent || "").trim().toLowerCase();
+    return label === wanted;
+  });
+}
+
+function isCustomLobbyWaitingRoom() {
+  if (!isCustomLobbyActive()) return false;
+
+  /*
+    During an actual match, __fx.customLobby may still be active.
+    The waiting-room screen is identified by the lobby controls.
+  */
+  const pageText = document.body.innerText || "";
+
+  const hasLobbyTitle = /Custom\s+Lobby\s+[A-Za-z0-9_-]+/i.test(pageText);
+  const hasLeaveLobby = hasVisibleButtonText("Leave lobby");
+  const hasCopyLink = hasVisibleButtonText("Copy link");
+
+  /*
+    Host sees Start Game.
+    Non-host may not always have the same controls, so Leave Lobby + Copy Link
+    are the safest waiting-room indicators.
+  */
+  return hasLobbyTitle && hasLeaveLobby && hasCopyLink;
+}
+
+function getLobbyPanelRect() {
+  /*
+    Finds the large visible custom lobby panel by using the Leave Lobby /
+    Copy Link buttons and walking up to the big container.
+  */
+  const buttons = getVisibleButtons();
+
+  const anchor = buttons.find(btn => {
+    const text = String(btn.textContent || "").trim().toLowerCase();
+    return text === "leave lobby" || text === "copy link" || text === "start game";
+  });
+
+  if (!anchor) {
+    return {
+      left: 20,
+      top: 90,
+      right: window.innerWidth - 20,
+      bottom: window.innerHeight - 60,
+      width: window.innerWidth - 40,
+      height: window.innerHeight - 150
+    };
+  }
+
+  let best = anchor.parentElement;
+
+  for (let el = anchor.parentElement; el && el !== document.body; el = el.parentElement) {
+    const r = el.getBoundingClientRect();
+
+    if (
+      r.width > window.innerWidth * 0.55 &&
+      r.height > 220 &&
+      r.top < window.innerHeight * 0.35
+    ) {
+      best = el;
+    }
+  }
+
+  const r = best.getBoundingClientRect();
+
+  return {
+    left: r.left,
+    top: r.top,
+    right: r.right,
+    bottom: r.bottom,
+    width: r.width,
+    height: r.height
+  };
+}
+
+function getPlayerButtonLeftEdge() {
+  /*
+    Detects where the name/action area begins, so the panel can sit in the
+    empty space to the left of the player list.
+  */
+  const buttons = getVisibleButtons()
+    .filter(btn => {
+      const text = String(btn.textContent || "").trim().toLowerCase();
+      return text === "host" || text === "kick" || text === "in game";
+    });
+
+  if (!buttons.length) return 0;
+
+  return Math.min(...buttons.map(btn => btn.getBoundingClientRect().left));
+}
+  
   function shiftClientIndexMapAfterRemoval(removedIndex) {
     const prev = TTWC.client.byIndex || {};
     const next = {};
@@ -2565,134 +2680,166 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
   }
 
   function injectUniversalClientPanel() {
-    try {
-      if (!isCustomLobbyActive()) {
-        removeUniversalClientPanel();
-        return;
-      }
-
-      const players = getPlayers();
-
-      if (!players.length) {
-        removeUniversalClientPanel();
-        return;
-      }
-
-      let panel = document.getElementById("ttwc-client-status-panel");
-
-      if (!panel) {
-        panel = document.createElement("div");
-        panel.id = "ttwc-client-status-panel";
-
-        Object.assign(panel.style, {
-          position: "fixed",
-          right: "18px",
-          top: "96px",
-          zIndex: "999999",
-          minWidth: "220px",
-          maxWidth: "330px",
-          maxHeight: "60vh",
-          overflowY: "auto",
-          padding: "12px",
-          borderRadius: "16px",
-          background: "rgba(8, 14, 20, 0.88)",
-          border: "1px solid rgba(220, 235, 245, 0.35)",
-          boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-          fontFamily: "Arial, Helvetica, sans-serif",
-          color: "#ffffff",
-          pointerEvents: "none"
-        });
-
-        document.body.appendChild(panel);
-      }
-
-      const rows = players.map((player, index) => {
-        const name = cleanName(player?.name || `Player ${index + 1}`);
-        const label = getClientLabel(index);
-
-        const badgeStyle =
-          label === "TTWC"
-            ? "background:rgba(22,101,52,.88);border:1px solid rgba(74,222,128,.88);"
-            : "background:rgba(55,65,81,.88);border:1px solid rgba(156,163,175,.70);";
-
-        return `
-          <div style="
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:10px;
-            padding:6px 0;
-            border-top:1px solid rgba(255,255,255,0.08);
-          ">
-            <span style="
-              overflow:hidden;
-              text-overflow:ellipsis;
-              white-space:nowrap;
-              font-size:12px;
-              color:#f5fbff;
-            ">${escapeHtml(name)}</span>
-
-            <span style="
-              display:inline-flex;
-              align-items:center;
-              justify-content:center;
-              min-width:52px;
-              height:21px;
-              padding:0 8px;
-              border-radius:999px;
-              color:#fff;
-              font-size:11px;
-              font-weight:800;
-              ${badgeStyle}
-            ">${label}</span>
-          </div>
-        `;
-      }).join("");
-
-      panel.innerHTML = `
-        <div style="
-          font-size:13px;
-          font-weight:900;
-          letter-spacing:.3px;
-          margin-bottom:6px;
-          color:#ffffff;
-        ">
-          TTWC Client Status
-        </div>
-        ${rows}
-      `;
-    } catch (e) {
-      console.log("[TTWC CLIENT] universal panel error:", e);
+  try {
+    if (!isCustomLobbyWaitingRoom()) {
+      removeUniversalClientPanel();
+      return;
     }
+
+    const players = getPlayers();
+
+    if (!players.length) {
+      removeUniversalClientPanel();
+      return;
+    }
+
+    let panel = document.getElementById("ttwc-client-status-panel");
+
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "ttwc-client-status-panel";
+      document.body.appendChild(panel);
+    }
+
+    const lobbyRect = getLobbyPanelRect();
+    const playerLeftEdge = getPlayerButtonLeftEdge();
+
+    /*
+      Position panel inside the custom lobby panel,
+      in the empty space on the left side of the player list.
+    */
+    const left = Math.max(12, Math.round(lobbyRect.left + 18));
+    const top = Math.round(lobbyRect.top + 92);
+
+    let width = 250;
+
+    if (playerLeftEdge > 0) {
+      width = Math.max(
+        180,
+        Math.min(270, Math.round(playerLeftEdge - left - 22))
+      );
+    }
+
+    const bottomPadding = 72;
+    const maxHeight = Math.max(
+      110,
+      Math.round(lobbyRect.bottom - top - bottomPadding)
+    );
+
+    Object.assign(panel.style, {
+      position: "fixed",
+      left: left + "px",
+      top: top + "px",
+      right: "auto",
+      zIndex: "999999",
+      width: width + "px",
+      maxWidth: width + "px",
+      maxHeight: maxHeight + "px",
+      overflowY: "auto",
+      overflowX: "hidden",
+      padding: "10px",
+      borderRadius: "14px",
+      background: "rgba(8, 14, 20, 0.88)",
+      border: "1px solid rgba(220, 235, 245, 0.35)",
+      boxShadow: "0 10px 26px rgba(0,0,0,0.32)",
+      backdropFilter: "blur(10px)",
+      WebkitBackdropFilter: "blur(10px)",
+      fontFamily: "Arial, Helvetica, sans-serif",
+      color: "#ffffff",
+      pointerEvents: "none",
+      boxSizing: "border-box"
+    });
+
+    const rows = players.map((player, index) => {
+      const name = cleanName(player?.name || `Player ${index + 1}`);
+      const label = getClientLabel(index);
+
+      const badgeStyle =
+        label === "TTWC"
+          ? "background:rgba(22,101,52,.88);border:1px solid rgba(74,222,128,.88);"
+          : "background:rgba(55,65,81,.88);border:1px solid rgba(156,163,175,.70);";
+
+      return `
+        <div style="
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:8px;
+          padding:5px 0;
+          border-top:1px solid rgba(255,255,255,0.08);
+        ">
+          <span style="
+            min-width:0;
+            overflow:hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap;
+            font-size:12px;
+            color:#f5fbff;
+          ">${escapeHtml(name)}</span>
+
+          <span style="
+            flex:0 0 auto;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            min-width:50px;
+            height:20px;
+            padding:0 7px;
+            border-radius:999px;
+            color:#fff;
+            font-size:10px;
+            font-weight:800;
+            ${badgeStyle}
+          ">${label}</span>
+        </div>
+      `;
+    }).join("");
+
+    panel.innerHTML = `
+      <div style="
+        font-size:12px;
+        font-weight:900;
+        letter-spacing:.25px;
+        margin-bottom:6px;
+        color:#ffffff;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      ">
+        TTWC Client Status
+      </div>
+      ${rows}
+    `;
+  } catch (e) {
+    console.log("[TTWC CLIENT] universal panel error:", e);
   }
+}
 
   setInterval(() => {
-    try {
-      if (!isCustomLobbyActive()) {
-        removeUniversalClientPanel();
-        return;
-      }
-
-      const now = Date.now();
-
-      if (now - lastPostAt > 2000) {
-        lastPostAt = now;
-        postSelfPresence();
-      }
-
-      if (now - lastPollAt > 1500) {
-        lastPollAt = now;
-        pollLobbyPresence();
-      }
-
-      repairLabels();
-      injectUniversalClientPanel();
-    } catch (e) {
-      console.log("[TTWC PRESENCE] interval error:", e);
+  try {
+    if (!isCustomLobbyWaitingRoom()) {
+      removeUniversalClientPanel();
+      return;
     }
-  }, 500);
+
+    const now = Date.now();
+
+    if (now - lastPostAt > 4000) {
+      lastPostAt = now;
+      postSelfPresence();
+    }
+
+    if (now - lastPollAt > 3000) {
+      lastPollAt = now;
+      pollLobbyPresence();
+    }
+
+    repairLabels();
+    injectUniversalClientPanel();
+  } catch (e) {
+    console.log("[TTWC PRESENCE] interval error:", e);
+  }
+}, 500);
 
   console.log("[TTWC PRESENCE] Google Apps Script presence detector installed");
 })();
