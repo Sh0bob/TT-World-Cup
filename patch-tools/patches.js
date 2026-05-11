@@ -328,18 +328,35 @@ source = replaceOne(
   /function aHf\(\)\s*\{\s*aL\.a69\(\),\s*bY\.aDW\(\[[\s\S]*?\),\s*aj\.xW = new zN,\s*aj\.xW\.dd\(\),\s*aw\.de\(\)\s*\}/,
   `function aHf() {
 		aL.a69(), window.__TTWC = window.__TTWC || {};
-		if (!window.__TTWC.sideButtonImg) {
-			var img = new Image;
-			img.src = "data:image/png;base64,${assets.sideButton}";
-			window.__TTWC.sideButtonImg = img;
+
+		if (!window.__TTWC.sideButtonImg1) {
+			var img1 = new Image;
+			img1.src = "data:image/png;base64,${assets.sideButton1}";
+			window.__TTWC.sideButtonImg1 = img1;
 		}
-		var ttwcImg = window.__TTWC.sideButtonImg,
-			side1 = ttwcImg.complete && ttwcImg.naturalWidth ? ttwcImg : canvas[8],
-			side2 = ttwcImg.complete && ttwcImg.naturalWidth ? ttwcImg : canvas[16],
-			side3 = ttwcImg.complete && ttwcImg.naturalWidth ? ttwcImg : canvas[9];
+
+		if (!window.__TTWC.sideButtonImg2) {
+			var img2 = new Image;
+			img2.src = "data:image/png;base64,${assets.sideButton2}";
+			window.__TTWC.sideButtonImg2 = img2;
+		}
+
+		if (!window.__TTWC.sideButtonImg3) {
+			var img3 = new Image;
+			img3.src = "data:image/png;base64,${assets.sideButton3}";
+			window.__TTWC.sideButtonImg3 = img3;
+		}
+
+		var ttwcImg1 = window.__TTWC.sideButtonImg1,
+			ttwcImg2 = window.__TTWC.sideButtonImg2,
+			ttwcImg3 = window.__TTWC.sideButtonImg3,
+			side1 = ttwcImg1.complete && ttwcImg1.naturalWidth ? ttwcImg1 : canvas[8],
+			side2 = ttwcImg2.complete && ttwcImg2.naturalWidth ? ttwcImg2 : canvas[16],
+			side3 = ttwcImg3.complete && ttwcImg3.naturalWidth ? ttwcImg3 : canvas[9];
+
 		bY.aDW([side1, side2, side3, side3, canvas[10]], [2 !== a0.id, 1 !== a0.id, !0, !0, !0]), aj.xW = new zN, aj.xW.dd(), aw.de()
 	}`,
-  "use raw image for side buttons"
+  "use separate raw images for side buttons"
 );
 
 source = replaceOne(
