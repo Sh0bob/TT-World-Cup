@@ -16,7 +16,9 @@ module.exports = {
 
   crownIcon: pngToBase64("assets/ttwc-crown.png"),
 
-  sideButton: pngToBase64("assets/ad.png"),
+  sideButton1: pngToBase64("assets/ogbutton.png"),
+  sideButton2: pngToBase64("assets/ad.png"),
+  sideButton3: pngToBase64("assets/ad.png"),
 
   partners: pngToBase64("assets/partners.png"),
 };
