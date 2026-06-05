@@ -2274,10 +2274,14 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
 
   function shouldSendFromThisTab() {
   try {
+    const peace = window.__TTWC?.peace || {};
+
     const hostInfo = {
       fxIsHost: window.__fx?.customLobby?.isHost,
       ttwcIsHost: window.__TTWC?.isHost,
-      selfLobbyIndex: window.__TTWC?.selfLobbyIndex
+      ttwcSelfLobbyIndex: window.__TTWC?.selfLobbyIndex,
+      peaceIsHost: peace.isHost,
+      peaceSelfLobbyIndex: peace.selfLobbyIndex
     };
 
     console.log("[TTWC] host check:", hostInfo);
@@ -2285,8 +2289,15 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
     if (window.__fx?.customLobby?.isHost === true) return true;
     if (window.__fx?.customLobby?.isHost === false) return false;
 
+    if (peace.isHost === true) return true;
+    if (peace.isHost === false) return false;
+
     if (window.__TTWC?.isHost === true) return true;
     if (window.__TTWC?.isHost === false) return false;
+
+    if (typeof peace.selfLobbyIndex === "number" && peace.selfLobbyIndex >= 0) {
+      return peace.selfLobbyIndex === 0;
+    }
 
     if (typeof window.__TTWC?.selfLobbyIndex === "number") {
       return window.__TTWC.selfLobbyIndex === 0;
@@ -2295,7 +2306,8 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
     console.log("[TTWC] shouldSendFromThisTab error", e);
   }
 
-  return false;
+  console.log("[TTWC] no host info found, allowing send from this tab as fallback");
+  return true;
 }
 
   async function tick() {
