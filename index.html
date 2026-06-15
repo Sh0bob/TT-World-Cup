@@ -2203,12 +2203,15 @@ const leaderboard = snapshot
     humanPlace: index + 1
   }));
       
-      if (leaderboard.length === 0) {
-        console.log("[TTWC] no usable leaderboard rows");
-        return null;
+     if (leaderboard.length === 0) {
+  console.log("[TTWC] no usable leaderboard rows");
+  console.log("[TTWC] human names:", [...humanNameSet]);
+  console.log("[TTWC] raw snapshot:", snapshot);
+  return null;
+}
+
 console.log("[TTWC] human names:", [...humanNameSet]);
 console.log("[TTWC] filtered leaderboard:", leaderboard);
-      }
 
       const meta = {
         title: "TTWC Custom Lobby Match Finished",
