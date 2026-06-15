@@ -156,30 +156,43 @@ source = replaceOne(
   "replace crown icon"
 );
 
-source = replaceOne(
-  source,
-  /aBA\[aAw\] = kA\[aD\.eo\], aBB\[aAw\] = ag\.gs\[aD\.eo\];/,
-  `aBA[aAw] = kA[aD.eo], aBB[aAw] = ag.gs[aD.eo];
+aBA[aAw] = kA[aD.eo], aBB[aAw] = ag.gs[aD.eo];
+
 window.__TTWC = window.__TTWC || {};
+
 window.__TTWC.getLeaderboardSnapshot = function() {
   try {
     const rows = [];
+
+    const orderList =
+      m0 && typeof m0.length === "number"
+        ? Array.from(m0)
+        : [];
+
     const totalPlayers = Math.max(
-      Array.isArray(kA) ? kA.length : 0,
-      Array.isArray(ag?.a1a) ? ag.a1a.length : 0,
-      Array.isArray(ag?.a1V) ? ag.a1V.length : 0,
-      Array.isArray(ag?.gs) ? ag.gs.length : 0
+      orderList.length,
+      ag?.a1a?.length || 0,
+      ag?.a1V?.length || 0,
+      ag?.gs?.length || 0
     );
 
-    for (let player = 0; player < totalPlayers; player++) {
+    const used = new Set();
+
+    // First priority: use the same m0 order that the game leaderboard draws.
+    for (let pos = 0; pos < orderList.length; pos++) {
+      const player = Number(orderList[pos]);
+      if (!Number.isFinite(player)) continue;
+      if (used.has(player)) continue;
+
       const rawName = String(ag?.a1a?.[player] ?? ag?.a1V?.[player] ?? "").trim();
       if (!rawName) continue;
 
-      const order = Number.isFinite(kA?.[player]) ? Number(kA[player]) : 999999;
+      used.add(player);
+
       const territory = Number(ag?.gs?.[player] ?? 0);
 
       rows.push({
-        place: order + 1,
+        place: rows.length + 1,
         id: player,
         playerId: player,
         name: rawName,
@@ -191,23 +204,34 @@ window.__TTWC.getLeaderboardSnapshot = function() {
       });
     }
 
-    rows.sort((a, b) =>
-      a.place - b.place ||
-      b.territory - a.territory ||
-      a.id - b.id
-    );
+    // Fallback only: catch anyone not in m0.
+    for (let player = 0; player < totalPlayers; player++) {
+      if (used.has(player)) continue;
 
-    return rows.map((row, index) => ({
-      ...row,
-      place: index + 1
-    }));
+      const rawName = String(ag?.a1a?.[player] ?? ag?.a1V?.[player] ?? "").trim();
+      if (!rawName) continue;
+
+      const territory = Number(ag?.gs?.[player] ?? 0);
+
+      rows.push({
+        place: rows.length + 1,
+        id: player,
+        playerId: player,
+        name: rawName,
+        displayName: String(ag?.a1V?.[player] ?? rawName),
+        territory,
+        score: territory,
+        troops: 0,
+        alive: ag?.my?.[player] !== 0
+      });
+    }
+
+    return rows;
   } catch (err) {
     console.error("[TTWC] getLeaderboardSnapshot failed:", err);
     return [];
   }
-};`,
-  "expose full leaderboard snapshot"
-);
+};
 
 source = replaceOne(
   source,
