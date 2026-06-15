@@ -156,7 +156,10 @@ source = replaceOne(
   "replace crown icon"
 );
 
-aBA[aAw] = kA[aD.eo], aBB[aAw] = ag.gs[aD.eo];
+source = replaceOne(
+  source,
+  /aBA\[aAw\]\s*=\s*kA\[aD\.eo\],\s*aBB\[aAw\]\s*=\s*ag\.gs\[aD\.eo\];/,
+  `aBA[aAw] = kA[aD.eo], aBB[aAw] = ag.gs[aD.eo];
 
 window.__TTWC = window.__TTWC || {};
 
@@ -165,64 +168,72 @@ window.__TTWC.getLeaderboardSnapshot = function() {
     const rows = [];
 
     const orderList =
-      m0 && typeof m0.length === "number"
+      typeof m0 !== "undefined" && m0 && typeof m0.length === "number"
         ? Array.from(m0)
         : [];
 
     const totalPlayers = Math.max(
       orderList.length,
-      ag?.a1a?.length || 0,
-      ag?.a1V?.length || 0,
-      ag?.gs?.length || 0
+      ag && ag.a1a ? ag.a1a.length : 0,
+      ag && ag.a1V ? ag.a1V.length : 0,
+      ag && ag.gs ? ag.gs.length : 0
     );
 
     const used = new Set();
 
-    // First priority: use the same m0 order that the game leaderboard draws.
     for (let pos = 0; pos < orderList.length; pos++) {
       const player = Number(orderList[pos]);
       if (!Number.isFinite(player)) continue;
       if (used.has(player)) continue;
 
-      const rawName = String(ag?.a1a?.[player] ?? ag?.a1V?.[player] ?? "").trim();
+      const rawName = String(
+        (ag && ag.a1a && ag.a1a[player]) ||
+        (ag && ag.a1V && ag.a1V[player]) ||
+        ""
+      ).trim();
+
       if (!rawName) continue;
 
       used.add(player);
 
-      const territory = Number(ag?.gs?.[player] ?? 0);
+      const territory = Number((ag && ag.gs && ag.gs[player]) || 0);
 
       rows.push({
         place: rows.length + 1,
         id: player,
         playerId: player,
         name: rawName,
-        displayName: String(ag?.a1V?.[player] ?? rawName),
-        territory,
+        displayName: String((ag && ag.a1V && ag.a1V[player]) || rawName),
+        territory: territory,
         score: territory,
         troops: 0,
-        alive: ag?.my?.[player] !== 0
+        alive: !(ag && ag.my && ag.my[player] === 0)
       });
     }
 
-    // Fallback only: catch anyone not in m0.
     for (let player = 0; player < totalPlayers; player++) {
       if (used.has(player)) continue;
 
-      const rawName = String(ag?.a1a?.[player] ?? ag?.a1V?.[player] ?? "").trim();
+      const rawName = String(
+        (ag && ag.a1a && ag.a1a[player]) ||
+        (ag && ag.a1V && ag.a1V[player]) ||
+        ""
+      ).trim();
+
       if (!rawName) continue;
 
-      const territory = Number(ag?.gs?.[player] ?? 0);
+      const territory = Number((ag && ag.gs && ag.gs[player]) || 0);
 
       rows.push({
         place: rows.length + 1,
         id: player,
         playerId: player,
         name: rawName,
-        displayName: String(ag?.a1V?.[player] ?? rawName),
-        territory,
+        displayName: String((ag && ag.a1V && ag.a1V[player]) || rawName),
+        territory: territory,
         score: territory,
         troops: 0,
-        alive: ag?.my?.[player] !== 0
+        alive: !(ag && ag.my && ag.my[player] === 0)
       });
     }
 
@@ -231,8 +242,10 @@ window.__TTWC.getLeaderboardSnapshot = function() {
     console.error("[TTWC] getLeaderboardSnapshot failed:", err);
     return [];
   }
-};
-
+};`,
+  "expose full leaderboard snapshot using m0 order"
+);
+	
 source = replaceOne(
   source,
   /this\.a1H = function\(\) \{/,
