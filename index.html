@@ -2189,13 +2189,7 @@ if (sent) {
         return null;
       }
 
-      const humanNameSet = new Set(
-  Array.isArray(TTWC.humanNames)
-    ? TTWC.humanNames.map(cleanMatchName).filter(Boolean)
-    : []
-);
-
-const leaderboard = snapshot
+     const leaderboard = snapshot
   .map((p, index) => ({
     id: Number(p.id ?? p.playerId ?? index),
     name: String(p.name ?? p.displayName ?? `Player ${index + 1}`).trim(),
@@ -2205,28 +2199,30 @@ const leaderboard = snapshot
     alive: p.alive === true
   }))
   .filter(row => row.name && !Number.isNaN(row.territory))
-  .filter(row => humanNameSet.size === 0 || humanNameSet.has(cleanMatchName(row.name)))
+
+  // Only keep TTWC-style named players, including unrostered players like [IND] Random.
+  // This avoids sending normal bots, but still allows Apps Script to catch unrostered humans.
+  .filter(row => /^\[[A-Z]{3}\]/i.test(row.name))
+
+  // Use the actual leaderboard score/territory order.
   .sort((a, b) =>
-    a.place - b.place ||
     b.territory - a.territory ||
     a.name.localeCompare(b.name)
   )
+
+  // Preserve the real final leaderboard placement.
   .map((row, index) => ({
     ...row,
-
-    // This is the competition placement among human players only.
-    // Use this if bots should not count in scoring.
-    humanPlace: index + 1
+    place: index + 1
   }));
       
      if (leaderboard.length === 0) {
   console.log("[TTWC] no usable leaderboard rows");
-  console.log("[TTWC] human names:", [...humanNameSet]);
+  console.log("[TTWC] filtered leaderboard:", leaderboard);
   console.log("[TTWC] raw snapshot:", snapshot);
   return null;
 }
 
-console.log("[TTWC] human names:", [...humanNameSet]);
 console.log("[TTWC] filtered leaderboard:", leaderboard);
 
       if (!TTWC.matchReport.matchId) {
