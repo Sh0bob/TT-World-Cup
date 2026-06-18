@@ -2131,13 +2131,15 @@ if (sent) {
 (() => {
   const TTWC = window.__TTWC = window.__TTWC || {};
 
-  TTWC.matchReport = TTWC.matchReport || {};
-  TTWC.matchReport.sentForRound = false;
-  TTWC.matchReport.lastSentAt = 0;
-  TTWC.matchReport.lastPayloadHash = null;
-  TTWC.matchReport.inFlight = false;
-  TTWC.matchReport.matchId = null;
-  TTWC.matchReport.endedAt = null;
+  TTWC.matchReport = TTWC.matchReport || {
+    sentForRound: false,
+    inFlight: false,
+    lockedPayload: null,
+    matchId: null,
+    endedAt: null,
+    finishSeenAt: 0,
+    lastRoundKey: ""
+  };
 
   function getEndpoint() {
     try {
@@ -2155,209 +2157,147 @@ if (sent) {
     try {
       const hash = window.location.hash || "";
       const m = hash.match(/#lobby=([^&]+)/);
-      return m ? m[1] : undefined;
+      return m ? m[1] : "nolobby";
     } catch {
-      return undefined;
+      return "nolobby";
     }
   }
 
-  function cleanMatchName(name) {
-  return String(name || "")
-    .replace(/\[TTWC\]/gi, "")
-    .replace(/\[TT\]/gi, "")
-    .replace(/\u2060/g, "")
-    .replace(/\u200B/g, "")
-    .replace(/\u200C/g, "")
-    .replace(/\u200D/g, "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .toLowerCase();
-}
-
-  function buildPayload() {
-    try {
-      const getter = window.__TTWC?.getLeaderboardSnapshot;
-
-      if (typeof getter !== "function") {
-        console.log("[TTWC] getLeaderboardSnapshot() is not available yet");
-        return null;
-      }
-
-      const snapshot = getter();
-      if (!Array.isArray(snapshot) || snapshot.length === 0) {
-        console.log("[TTWC] leaderboard snapshot empty");
-        return null;
-      }
-
-     const leaderboard = snapshot
-  .map((p, index) => ({
-    id: Number(p.id ?? p.playerId ?? index),
-    name: String(p.name ?? p.displayName ?? `Player ${index + 1}`).trim(),
-    place: Number(p.place ?? index + 1),
-    territory: Number(p.territory ?? p.score ?? 0),
-    troops: Number(p.troops ?? 0),
-    alive: p.alive === true
-  }))
-  .filter(row => row.name && !Number.isNaN(row.territory))
-
-  // Only keep TTWC-style named players, including unrostered players like [IND] Random.
-  // This avoids sending normal bots, but still allows Apps Script to catch unrostered humans.
-  .filter(row => /^\[[A-Z]{3}\]/i.test(row.name))
-
-  // Use the actual leaderboard score/territory order.
-  .sort((a, b) =>
-    b.territory - a.territory ||
-    a.name.localeCompare(b.name)
-  )
-
-  // Preserve the real final leaderboard placement.
-  .map((row, index) => ({
-    ...row,
-    place: index + 1
-  }));
-      
-     if (leaderboard.length === 0) {
-  console.log("[TTWC] no usable leaderboard rows");
-  console.log("[TTWC] filtered leaderboard:", leaderboard);
-  console.log("[TTWC] raw snapshot:", snapshot);
-  return null;
-}
-
-console.log("[TTWC] filtered leaderboard:", leaderboard);
-
-      if (!TTWC.matchReport.matchId) {
-  TTWC.matchReport.endedAt = Date.now();
-  TTWC.matchReport.matchId = `${TTWC.matchReport.endedAt}-${getLobbyCode() || "nolobby"}`;
-}
-
-      const meta = {
-  title: "TTWC Custom Lobby Match Finished",
-  endedAt: TTWC.matchReport.endedAt,
-  lobbyCode: getLobbyCode(),
-  resultType: TTWC.resultType || undefined,
-  mode: window.__fx?.customLobby?.gameInfo?.mode,
-  map: window.__fx?.customLobby?.gameInfo?.map,
-  botCount: window.__fx?.customLobby?.gameInfo?.botCount,
-  matchId: TTWC.matchReport.matchId
-};
-
-      return { meta, leaderboard };
-    } catch (e) {
-      console.log("[TTWC] buildPayload failed", e);
-      return null;
-    }
+  function isTaggedCompetitionName(name) {
+    return /^\[[A-Z]{3}\]/i.test(String(name || "").trim());
   }
 
-  function makePayloadHash(payload) {
-    try {
-      return JSON.stringify({
-        resultType: payload?.meta?.resultType,
-        lobbyCode: payload?.meta?.lobbyCode,
-        leaderboard: (payload?.leaderboard || []).map(p => [
-          p.id,
-          p.name,
-          p.territory,
-          p.troops
-        ])
-      });
-    } catch {
+  function buildPayloadFromFinalSnapshot() {
+    const getter = window.__TTWC?.getLeaderboardSnapshot;
+
+    if (typeof getter !== "function") {
+      console.log("[TTWC] getLeaderboardSnapshot() is not available");
       return null;
     }
+
+    const snapshot = getter();
+
+    if (!Array.isArray(snapshot) || snapshot.length === 0) {
+      console.log("[TTWC] final snapshot empty");
+      return null;
+    }
+
+    /*
+      IMPORTANT:
+      Do not sort here.
+      Do not filter by roster.
+      Do not use humanNameSet.
+      The patched game should return the visible leaderboard order.
+      Apps Script decides rostered vs unmatched.
+    */
+    const leaderboard = snapshot
+      .map((p, index) => ({
+        id: Number(p.id ?? p.playerId ?? index),
+        name: String(p.name ?? p.displayName ?? `Player ${index + 1}`).trim(),
+        place: Number(p.place ?? index + 1),
+        territory: Number(p.territory ?? p.score ?? 0),
+        troops: Number(p.troops ?? 0),
+        alive: p.alive === true
+      }))
+      .filter(row => row.name)
+      .filter(row => isTaggedCompetitionName(row.name))
+      .map((row, index) => ({
+        ...row,
+        place: Number(row.place || index + 1)
+      }));
+
+    if (!leaderboard.length) {
+      console.log("[TTWC] no competition rows in final snapshot", snapshot);
+      return null;
+    }
+
+    if (!TTWC.matchReport.endedAt) {
+      TTWC.matchReport.endedAt = Date.now();
+    }
+
+    if (!TTWC.matchReport.matchId) {
+      TTWC.matchReport.matchId =
+        `${getLobbyCode()}-${TTWC.matchReport.endedAt}`;
+    }
+
+    const meta = {
+      title: "TTWC Custom Lobby Match Finished",
+      endedAt: TTWC.matchReport.endedAt,
+      lobbyCode: getLobbyCode(),
+      resultType: TTWC.resultType || "finished",
+      mode: window.__fx?.customLobby?.gameInfo?.mode,
+      map: window.__fx?.customLobby?.gameInfo?.map,
+      botCount: window.__fx?.customLobby?.gameInfo?.botCount,
+      matchId: TTWC.matchReport.matchId
+    };
+
+    console.log("[TTWC] LOCKED FINAL PAYLOAD:", { meta, leaderboard });
+
+    return { meta, leaderboard };
   }
 
   async function postSnapshot(payload) {
-  const url = getEndpoint();
-  if (!url) {
-    console.log("[TTWC] no endpoint set");
-    return false;
+    const url = getEndpoint();
+
+    if (!url) {
+      console.log("[TTWC] no endpoint set");
+      return false;
+    }
+
+    try {
+      await fetch(url, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "content-type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      console.log("[TTWC] match report sent to Google Sheets");
+      return true;
+    } catch (e) {
+      console.log("[TTWC] match report error", e);
+      return false;
+    }
   }
 
-  try {
-    await fetch(url, {
-      method: "POST",
-      mode: "no-cors",
-      headers: {
-        "content-type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify(payload)
-    });
+  function resetForNextRound(reason) {
+  console.log("[TTWC] resetForNextRound:", reason);
 
-    console.log("[TTWC] match report sent to Google Sheets");
-    return true;
-  } catch (e) {
-    console.log("[TTWC] match report error", e);
-    return false;
-  }
-}
-
-  function resetForNextRound() {
   TTWC.matchReport.sentForRound = false;
   TTWC.matchReport.inFlight = false;
-  TTWC.matchReport.lastPayloadHash = null;
-  TTWC.matchReport.lastSentAt = 0;
+  TTWC.matchReport.lockedPayload = null;
   TTWC.matchReport.matchId = null;
   TTWC.matchReport.endedAt = null;
+  TTWC.matchReport.finishSeenAt = 0;
+  TTWC.matchReport.spawnSeen = false;
+
   TTWC.resultType = null;
   TTWC.endScreenShown = false;
 }
 
-  function isMainMenu() {
+  /*
+    Reset only when a genuinely new round starts.
+    Do NOT reset just because the menu input exists.
+  */
+  const originalFillTextForMatchReport = CanvasRenderingContext2D.prototype.fillText;
+
+CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
   try {
-    const el = document.querySelector('input[placeholder*="Kingdom"]');
-    if (!el) return false;
-
-    const style = getComputedStyle(el);
-    const rect = el.getBoundingClientRect();
-
-    return (
-      rect.width > 0 &&
-      rect.height > 0 &&
-      style.display !== "none" &&
-      style.visibility !== "hidden" &&
-      style.opacity !== "0"
-    );
-  } catch {
-    return false;
-  }
-}
-
-  function shouldSendFromThisTab() {
-  try {
-    const peace = window.__TTWC?.peace || {};
-
-    const hostInfo = {
-      fxIsHost: window.__fx?.customLobby?.isHost,
-      ttwcIsHost: window.__TTWC?.isHost,
-      ttwcSelfLobbyIndex: window.__TTWC?.selfLobbyIndex,
-      peaceIsHost: peace.isHost,
-      peaceSelfLobbyIndex: peace.selfLobbyIndex
-    };
-
-    console.log("[TTWC] host check:", hostInfo);
-
-    if (window.__fx?.customLobby?.isHost === true) return true;
-    if (window.__fx?.customLobby?.isHost === false) return false;
-
-    if (peace.isHost === true) return true;
-    if (peace.isHost === false) return false;
-
-    if (window.__TTWC?.isHost === true) return true;
-    if (window.__TTWC?.isHost === false) return false;
-
-    if (typeof peace.selfLobbyIndex === "number" && peace.selfLobbyIndex >= 0) {
-      return peace.selfLobbyIndex === 0;
+    if (
+      typeof text === "string" &&
+      text.includes("Choose your start position!") &&
+      !TTWC.matchReport.spawnSeen
+    ) {
+      TTWC.matchReport.spawnSeen = true;
+      resetForNextRound("new spawn screen");
+      TTWC.matchReport.spawnSeen = true;
     }
+  } catch {}
 
-    if (typeof window.__TTWC?.selfLobbyIndex === "number") {
-      return window.__TTWC.selfLobbyIndex === 0;
-    }
-  } catch (e) {
-    console.log("[TTWC] shouldSendFromThisTab error", e);
-  }
-
-  console.log("[TTWC] no host info found, allowing send from this tab as fallback");
-  return true;
-}
+  return originalFillTextForMatchReport.call(this, text, x, y, maxWidth);
+};
 
   async function tick() {
     try {
@@ -2366,46 +2306,44 @@ console.log("[TTWC] filtered leaderboard:", leaderboard);
         TTWC.resultType === "victory" ||
         TTWC.resultType === "stalemate";
 
-      if (
-  hasFinished &&
-  shouldSendFromThisTab() &&
-  !TTWC.matchReport.sentForRound &&
-  !TTWC.matchReport.inFlight
-) {
-        const now = Date.now();
-
-        if (now - (TTWC.matchReport.lastSentAt || 0) > 2000) {
-          TTWC.matchReport.lastSentAt = now;
-
-          const payload = buildPayload();
-          if (payload) {
-            const hash = makePayloadHash(payload);
-
-            if (hash && hash === TTWC.matchReport.lastPayloadHash) {
-              console.log("[TTWC] duplicate payload skipped");
-            } else {
-              TTWC.matchReport.inFlight = true;
-              TTWC.matchReport.sentForRound = true;
-
-             const ok = await postSnapshot(payload);
-
-             if (ok) {
-               TTWC.matchReport.lastPayloadHash = hash;
-               } else {
-               TTWC.matchReport.sentForRound = false;
-               }
-
-               TTWC.matchReport.inFlight = false;
-            }
-          }
-        }
+      if (hasFinished && !TTWC.matchReport.finishSeenAt) {
+        TTWC.matchReport.finishSeenAt = Date.now();
       }
 
-      if (isMainMenu() && TTWC.matchReport.sentForRound) {
-        resetForNextRound();
+      /*
+        Wait for the end screen/leaderboard to stabilise before taking snapshot.
+        This prevents reading a moving/live leaderboard.
+      */
+      const stableLongEnough =
+        TTWC.matchReport.finishSeenAt &&
+        Date.now() - TTWC.matchReport.finishSeenAt >= 2500;
+
+      if (
+        hasFinished &&
+        stableLongEnough &&
+        !TTWC.matchReport.lockedPayload
+      ) {
+        TTWC.matchReport.lockedPayload = buildPayloadFromFinalSnapshot();
+      }
+
+      if (
+        TTWC.matchReport.lockedPayload &&
+        !TTWC.matchReport.sentForRound &&
+        !TTWC.matchReport.inFlight
+      ) {
+        TTWC.matchReport.inFlight = true;
+        TTWC.matchReport.sentForRound = true;
+
+        const ok = await postSnapshot(TTWC.matchReport.lockedPayload);
+
+        if (!ok) {
+          TTWC.matchReport.sentForRound = false;
+        }
+
+        TTWC.matchReport.inFlight = false;
       }
     } catch (e) {
-      console.log("[TTWC] tick error", e);
+      console.log("[TTWC] match-report tick error", e);
     }
 
     requestAnimationFrame(tick);
