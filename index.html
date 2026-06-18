@@ -834,65 +834,71 @@ div[style*="white-space: nowrap"] > button:active {
   <script>
 (() => {
   const TTWC = window.__TTWC = window.__TTWC || {};
+
   TTWC.humanNames = [];
   TTWC.anonMap = new Map();
   TTWC.endScreenShown = false;
   TTWC.roundSeeded = false;
-  TTWC.spawnScreenActive = false;
-  TTWC.spawnClearTimer = null;
-  TTWC.wasOnMainMenu = false;
+  TTWC.lastRoundMarker = "";
   TTWC.autoClickDone = false;
 
   function onMainMenu() {
     const el = document.querySelector('input[placeholder*="Kingdom"]');
     if (!el) return false;
+
     const style = getComputedStyle(el);
-    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
+    if (
+      style.display === "none" ||
+      style.visibility === "hidden" ||
+      style.opacity === "0"
+    ) {
+      return false;
+    }
+
     const rect = el.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
   }
 
   function getAnon(realName) {
     if (!TTWC.anonMap.has(realName)) {
-      TTWC.anonMap.set(realName, "Anon " + Math.floor(100 + Math.random() * 900));
+      TTWC.anonMap.set(
+        realName,
+        "Anon " + Math.floor(100 + Math.random() * 900)
+      );
     }
+
     return TTWC.anonMap.get(realName);
   }
 
-  function resetRound(reason = "unknown") {
-  TTWC.humanNames = [];
-  TTWC.anonMap.clear();
-  TTWC.endScreenShown = false;
-  TTWC.roundSeeded = false;
-  TTWC.autoClickDone = false;
-
-  console.log("[TTWC ANON] resetRound:", reason);
-}
-
-  function shouldAnonymise() {
-  const menu = onMainMenu();
-
-  /*
-    Only reset once when entering the main menu.
-    Do not keep clearing state every frame.
-  */
-  if (menu) {
-    if (!TTWC.wasOnMainMenu) {
-      resetRound("main menu");
-      TTWC.wasOnMainMenu = true;
-    }
-    return false;
+  function resetRound() {
+    TTWC.humanNames = [];
+    TTWC.anonMap.clear();
+    TTWC.endScreenShown = false;
+    TTWC.roundSeeded = false;
+    TTWC.autoClickDone = false;
   }
 
-  TTWC.wasOnMainMenu = false;
+  function shouldAnonymise() {
+    if (onMainMenu()) {
+      resetRound();
+      TTWC.lastRoundMarker = "menu";
+      return false;
+    }
 
-  if (TTWC.endScreenShown) return false;
+    if (TTWC.endScreenShown) return false;
 
-  return TTWC.humanNames.length > 0;
-}
+    return TTWC.humanNames.length > 0;
+  }
 
   function replaceExactNames(text) {
     let out = text;
+
+    /*
+      Longest names first prevents partial replacement problems.
+      Example:
+      [IND] Cat
+      [IND] Cat Box
+    */
     const sorted = [...TTWC.humanNames].sort((a, b) => b.length - a.length);
 
     for (const realName of sorted) {
@@ -902,12 +908,24 @@ div[style*="white-space: nowrap"] > button:active {
         out = out.split(realName).join(anon);
       }
 
+      /*
+        Territorial sometimes truncates long names in different ways.
+        Keep these replacements because they were part of the working version.
+      */
       if (realName.length > 4) {
-        const trunc3 = realName.slice(0, Math.max(1, realName.length - 3)) + "...";
-        const trunc1 = realName.slice(0, Math.max(1, realName.length - 1)) + "…";
+        const trunc3 =
+          realName.slice(0, Math.max(1, realName.length - 3)) + "...";
 
-        if (out.includes(trunc3)) out = out.split(trunc3).join(anon);
-        if (out.includes(trunc1)) out = out.split(trunc1).join(anon);
+        const trunc1 =
+          realName.slice(0, Math.max(1, realName.length - 1)) + "…";
+
+        if (out.includes(trunc3)) {
+          out = out.split(trunc3).join(anon);
+        }
+
+        if (out.includes(trunc1)) {
+          out = out.split(trunc1).join(anon);
+        }
       }
     }
 
@@ -930,15 +948,22 @@ div[style*="white-space: nowrap"] > button:active {
 
         if (Array.isArray(names) && match) {
           const humanCount = parseInt(match[1], 10);
+
           TTWC.humanNames = names.slice(0, humanCount);
           TTWC.roundSeeded = true;
 
-          // close the list immediately so users don't see it pop up
+          console.log("[TTWC ANON] seeded human names", TTWC.humanNames);
+
+          /*
+            Close the list immediately so users do not see it pop up.
+          */
           try {
             window.__fx?.WindowManager?.closeWindow?.("playerList");
           } catch {}
         }
-      } catch {}
+      } catch (e) {
+        console.log("[TTWC ANON] playerList seed error", e);
+      }
 
       return result;
     };
@@ -958,49 +983,43 @@ div[style*="white-space: nowrap"] > button:active {
 
       if (img && (img === defeatImg || img === victoryImg)) {
         TTWC.endScreenShown = true;
+
+        /*
+          IMPORTANT FIX:
+          The original bug was that lastRoundMarker stayed stuck as "spawn".
+          When the next match started, the spawn screen did not reset the
+          anonymiser again.
+
+          Setting this to "ended" allows the next spawn screen to reset cleanly.
+        */
+        TTWC.lastRoundMarker = "ended";
+
+        console.log("[TTWC ANON] end screen seen; anonymiser paused");
       }
     } catch {}
 
     return originalDrawImage.apply(this, args);
   };
 
-  function markSpawnScreenSeen() {
-  /*
-    The spawn text is drawn repeatedly, every frame.
-    We only want to reset once per spawn phase.
-  */
-  if (!TTWC.spawnScreenActive) {
-    resetRound("new spawn screen");
-    TTWC.spawnScreenActive = true;
-  }
-
-  /*
-    Once the spawn text stops appearing for a short time,
-    allow the next match's spawn screen to reset again.
-  */
-  if (TTWC.spawnClearTimer) {
-    clearTimeout(TTWC.spawnClearTimer);
-  }
-
-  TTWC.spawnClearTimer = setTimeout(() => {
-    TTWC.spawnScreenActive = false;
-    TTWC.spawnClearTimer = null;
-    console.log("[TTWC ANON] spawn screen cleared");
-  }, 2000);
-}
-
   CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
     try {
       if (typeof text === "string") {
         if (text.includes("Choose your start position!")) {
-  markSpawnScreenSeen();
-}
+          if (TTWC.lastRoundMarker !== "spawn") {
+            resetRound();
+            TTWC.lastRoundMarker = "spawn";
+
+            console.log("[TTWC ANON] new spawn screen; anonymiser reset");
+          }
+        }
 
         if (shouldAnonymise()) {
           text = replaceExactNames(text);
         }
       }
-    } catch {}
+    } catch (e) {
+      console.log("[TTWC ANON] fillText error", e);
+    }
 
     return originalFillText.call(this, text, x, y, maxWidth);
   };
@@ -1008,15 +1027,19 @@ div[style*="white-space: nowrap"] > button:active {
   const hookTimer = setInterval(() => {
     patchPlayerList();
 
-    // Never try anything on menu / lobby
+    /*
+      This keeps your original structure.
+      It does not force anything. It just allows the player-list hook to attach
+      once __fx.playerList is ready.
+    */
     if (!onMainMenu() && TTWC.lastRoundMarker === "spawn" && !TTWC.roundSeeded) {
-      // Wait for one manual or automatic player-list display hook only during round start
+      // Waiting for player list display to seed names.
     }
   }, 500);
 
   console.log("[TTWC] auto-seeding player-list anonymiser active");
 })();
-  </script>
+</script>
   
 <script>
 (() => {
