@@ -838,7 +838,9 @@ div[style*="white-space: nowrap"] > button:active {
   TTWC.anonMap = new Map();
   TTWC.endScreenShown = false;
   TTWC.roundSeeded = false;
-  TTWC.lastRoundMarker = "";
+  TTWC.spawnScreenActive = false;
+  TTWC.spawnClearTimer = null;
+  TTWC.wasOnMainMenu = false;
   TTWC.autoClickDone = false;
 
   function onMainMenu() {
@@ -857,22 +859,37 @@ div[style*="white-space: nowrap"] > button:active {
     return TTWC.anonMap.get(realName);
   }
 
-  function resetRound() {
-    TTWC.humanNames = [];
-    TTWC.anonMap.clear();
-    TTWC.endScreenShown = false;
-    TTWC.roundSeeded = false;
-    TTWC.autoClickDone = false;
-  }
+  function resetRound(reason = "unknown") {
+  TTWC.humanNames = [];
+  TTWC.anonMap.clear();
+  TTWC.endScreenShown = false;
+  TTWC.roundSeeded = false;
+  TTWC.autoClickDone = false;
+
+  console.log("[TTWC ANON] resetRound:", reason);
+}
 
   function shouldAnonymise() {
-    if (onMainMenu()) {
-      resetRound();
-      return false;
+  const menu = onMainMenu();
+
+  /*
+    Only reset once when entering the main menu.
+    Do not keep clearing state every frame.
+  */
+  if (menu) {
+    if (!TTWC.wasOnMainMenu) {
+      resetRound("main menu");
+      TTWC.wasOnMainMenu = true;
     }
-    if (TTWC.endScreenShown) return false;
-    return TTWC.humanNames.length > 0;
+    return false;
   }
+
+  TTWC.wasOnMainMenu = false;
+
+  if (TTWC.endScreenShown) return false;
+
+  return TTWC.humanNames.length > 0;
+}
 
   function replaceExactNames(text) {
     let out = text;
@@ -947,15 +964,37 @@ div[style*="white-space: nowrap"] > button:active {
     return originalDrawImage.apply(this, args);
   };
 
+  function markSpawnScreenSeen() {
+  /*
+    The spawn text is drawn repeatedly, every frame.
+    We only want to reset once per spawn phase.
+  */
+  if (!TTWC.spawnScreenActive) {
+    resetRound("new spawn screen");
+    TTWC.spawnScreenActive = true;
+  }
+
+  /*
+    Once the spawn text stops appearing for a short time,
+    allow the next match's spawn screen to reset again.
+  */
+  if (TTWC.spawnClearTimer) {
+    clearTimeout(TTWC.spawnClearTimer);
+  }
+
+  TTWC.spawnClearTimer = setTimeout(() => {
+    TTWC.spawnScreenActive = false;
+    TTWC.spawnClearTimer = null;
+    console.log("[TTWC ANON] spawn screen cleared");
+  }, 2000);
+}
+
   CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
     try {
       if (typeof text === "string") {
         if (text.includes("Choose your start position!")) {
-          if (TTWC.lastRoundMarker !== "spawn") {
-            resetRound();
-            TTWC.lastRoundMarker = "spawn";
-          }
-        }
+  markSpawnScreenSeen();
+}
 
         if (shouldAnonymise()) {
           text = replaceExactNames(text);
