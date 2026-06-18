@@ -1794,6 +1794,22 @@ if (sent) {
   return TTWC.peace.originalAwHt.apply(this, arguments);
 };
 
+      try {
+  if (
+    isCustomLobbyActive() &&
+    typeof aD !== "undefined" &&
+    player === aD.eo &&
+    isHost() &&
+    window.__TTWC &&
+    window.__TTWC.matchReport &&
+    typeof window.__TTWC.matchReport.sendFromPeaceCall === "function"
+  ) {
+    window.__TTWC.matchReport.sendFromPeaceCall("b8.pG.hp host peace");
+  }
+} catch (e) {
+  console.log("[TTWC MATCH] failed to trigger report from b8.pG.hp", e);
+}
+
       // Enforce host-only at the actual peace-send call site
       b8.pG.hp = function(player) {
         try {
@@ -1847,6 +1863,18 @@ if (sent) {
       self: aD.eo,
       normalCheckAllows
     });
+
+    try {
+  if (
+    window.__TTWC &&
+    window.__TTWC.matchReport &&
+    typeof window.__TTWC.matchReport.sendFromPeaceCall === "function"
+  ) {
+    window.__TTWC.matchReport.sendFromPeaceCall("sendHostPeaceDirect");
+  }
+} catch (e) {
+  console.log("[TTWC MATCH] failed to trigger report from host peace call", e);
+}
 
     // Custom lobby broadcast so other clients see it (custom lobbies may not support vanilla peace packets).
     try {
@@ -2131,15 +2159,13 @@ if (sent) {
 (() => {
   const TTWC = window.__TTWC = window.__TTWC || {};
 
-  TTWC.matchReport = TTWC.matchReport || {
-    sentForRound: false,
-    inFlight: false,
-    lockedPayload: null,
-    matchId: null,
-    endedAt: null,
-    finishSeenAt: 0,
-    lastRoundKey: ""
-  };
+  TTWC.matchReport = TTWC.matchReport || {};
+  TTWC.matchReport.sentForRound = false;
+  TTWC.matchReport.inFlight = false;
+  TTWC.matchReport.lockedPayload = null;
+  TTWC.matchReport.matchId = null;
+  TTWC.matchReport.endedAt = null;
+  TTWC.matchReport.lastSpawnSeenAt = 0;
 
   function getEndpoint() {
     try {
@@ -2167,47 +2193,57 @@ if (sent) {
     return /^\[[A-Z]{3}\]/i.test(String(name || "").trim());
   }
 
-  function buildPayloadFromFinalSnapshot() {
+  function resetForNextRound(reason) {
+    console.log("[TTWC MATCH] resetForNextRound:", reason);
+
+    TTWC.matchReport.sentForRound = false;
+    TTWC.matchReport.inFlight = false;
+    TTWC.matchReport.lockedPayload = null;
+    TTWC.matchReport.matchId = null;
+    TTWC.matchReport.endedAt = null;
+  }
+
+  function buildPeacePayload() {
     const getter = window.__TTWC?.getLeaderboardSnapshot;
 
     if (typeof getter !== "function") {
-      console.log("[TTWC] getLeaderboardSnapshot() is not available");
+      console.log("[TTWC MATCH] getLeaderboardSnapshot() is not available");
       return null;
     }
 
     const snapshot = getter();
 
     if (!Array.isArray(snapshot) || snapshot.length === 0) {
-      console.log("[TTWC] final snapshot empty");
+      console.log("[TTWC MATCH] snapshot empty");
       return null;
     }
 
     /*
       IMPORTANT:
-      Do not sort here.
-      Do not filter by roster.
-      Do not use humanNameSet.
-      The patched game should return the visible leaderboard order.
+      No sorting here.
+      No humanNameSet.
+      No roster filtering.
+      No humanPlace.
       Apps Script decides rostered vs unmatched.
     */
     const leaderboard = snapshot
-      .map((p, index) => ({
-        id: Number(p.id ?? p.playerId ?? index),
-        name: String(p.name ?? p.displayName ?? `Player ${index + 1}`).trim(),
-        place: Number(p.place ?? index + 1),
-        territory: Number(p.territory ?? p.score ?? 0),
-        troops: Number(p.troops ?? 0),
-        alive: p.alive === true
-      }))
+      .map((p, index) => {
+        const place = Number(p.place ?? index + 1);
+
+        return {
+          id: Number(p.id ?? p.playerId ?? index),
+          name: String(p.name ?? p.displayName ?? `Player ${index + 1}`).trim(),
+          place: place > 0 ? place : index + 1,
+          territory: Number(p.territory ?? p.score ?? 0),
+          troops: Number(p.troops ?? 0),
+          alive: p.alive === true
+        };
+      })
       .filter(row => row.name)
-      .filter(row => isTaggedCompetitionName(row.name))
-      .map((row, index) => ({
-        ...row,
-        place: Number(row.place || index + 1)
-      }));
+      .filter(row => isTaggedCompetitionName(row.name));
 
     if (!leaderboard.length) {
-      console.log("[TTWC] no competition rows in final snapshot", snapshot);
+      console.log("[TTWC MATCH] no tagged competition players in snapshot", snapshot);
       return null;
     }
 
@@ -2221,26 +2257,29 @@ if (sent) {
     }
 
     const meta = {
-      title: "TTWC Custom Lobby Match Finished",
+      title: "TTWC Custom Lobby Match Reported by Host Peace Call",
       endedAt: TTWC.matchReport.endedAt,
       lobbyCode: getLobbyCode(),
-      resultType: TTWC.resultType || "finished",
+      resultType: "peace",
       mode: window.__fx?.customLobby?.gameInfo?.mode,
       map: window.__fx?.customLobby?.gameInfo?.map,
       botCount: window.__fx?.customLobby?.gameInfo?.botCount,
-      matchId: TTWC.matchReport.matchId
+      matchId: TTWC.matchReport.matchId,
+      trigger: "host_call_for_peace"
     };
 
-    console.log("[TTWC] LOCKED FINAL PAYLOAD:", { meta, leaderboard });
+    const payload = { meta, leaderboard };
 
-    return { meta, leaderboard };
+    console.log("[TTWC MATCH] LOCKED PEACE PAYLOAD:", payload);
+
+    return payload;
   }
 
   async function postSnapshot(payload) {
     const url = getEndpoint();
 
     if (!url) {
-      console.log("[TTWC] no endpoint set");
+      console.log("[TTWC MATCH] no endpoint set");
       return false;
     }
 
@@ -2254,102 +2293,84 @@ if (sent) {
         body: JSON.stringify(payload)
       });
 
-      console.log("[TTWC] match report sent to Google Sheets");
+      console.log("[TTWC MATCH] peace match report sent to Google Sheets");
       return true;
     } catch (e) {
-      console.log("[TTWC] match report error", e);
+      console.log("[TTWC MATCH] peace match report error", e);
       return false;
     }
   }
 
-  function resetForNextRound(reason) {
-  console.log("[TTWC] resetForNextRound:", reason);
-
-  TTWC.matchReport.sentForRound = false;
-  TTWC.matchReport.inFlight = false;
-  TTWC.matchReport.lockedPayload = null;
-  TTWC.matchReport.matchId = null;
-  TTWC.matchReport.endedAt = null;
-  TTWC.matchReport.finishSeenAt = 0;
-  TTWC.matchReport.spawnSeen = false;
-
-  TTWC.resultType = null;
-  TTWC.endScreenShown = false;
-}
-
-  /*
-    Reset only when a genuinely new round starts.
-    Do NOT reset just because the menu input exists.
-  */
-  const originalFillTextForMatchReport = CanvasRenderingContext2D.prototype.fillText;
-
-CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
-  try {
-    if (
-      typeof text === "string" &&
-      text.includes("Choose your start position!") &&
-      !TTWC.matchReport.spawnSeen
-    ) {
-      TTWC.matchReport.spawnSeen = true;
-      resetForNextRound("new spawn screen");
-      TTWC.matchReport.spawnSeen = true;
-    }
-  } catch {}
-
-  return originalFillTextForMatchReport.call(this, text, x, y, maxWidth);
-};
-
-  async function tick() {
+  async function sendFromPeaceCall(reason = "host peace call") {
     try {
-      const hasFinished =
-        TTWC.endScreenShown ||
-        TTWC.resultType === "victory" ||
-        TTWC.resultType === "stalemate";
-
-      if (hasFinished && !TTWC.matchReport.finishSeenAt) {
-        TTWC.matchReport.finishSeenAt = Date.now();
+      if (TTWC.matchReport.sentForRound || TTWC.matchReport.inFlight) {
+        console.log("[TTWC MATCH] peace report already sent/in-flight, skipping", {
+          reason,
+          sentForRound: TTWC.matchReport.sentForRound,
+          inFlight: TTWC.matchReport.inFlight
+        });
+        return false;
       }
+
+      TTWC.matchReport.inFlight = true;
 
       /*
-        Wait for the end screen/leaderboard to stabilise before taking snapshot.
-        This prevents reading a moving/live leaderboard.
+        Small delay lets the live leaderboard settle after the host action.
+        Keep it short because your rule is: peace call locks the result.
       */
-      const stableLongEnough =
-        TTWC.matchReport.finishSeenAt &&
-        Date.now() - TTWC.matchReport.finishSeenAt >= 2500;
+      await new Promise(resolve => setTimeout(resolve, 700));
 
-      if (
-        hasFinished &&
-        stableLongEnough &&
-        !TTWC.matchReport.lockedPayload
-      ) {
-        TTWC.matchReport.lockedPayload = buildPayloadFromFinalSnapshot();
-      }
+      const payload = buildPeacePayload();
 
-      if (
-        TTWC.matchReport.lockedPayload &&
-        !TTWC.matchReport.sentForRound &&
-        !TTWC.matchReport.inFlight
-      ) {
-        TTWC.matchReport.inFlight = true;
-        TTWC.matchReport.sentForRound = true;
-
-        const ok = await postSnapshot(TTWC.matchReport.lockedPayload);
-
-        if (!ok) {
-          TTWC.matchReport.sentForRound = false;
-        }
-
+      if (!payload) {
         TTWC.matchReport.inFlight = false;
+        return false;
       }
-    } catch (e) {
-      console.log("[TTWC] match-report tick error", e);
-    }
 
-    requestAnimationFrame(tick);
+      TTWC.matchReport.lockedPayload = payload;
+      TTWC.matchReport.sentForRound = true;
+
+      const ok = await postSnapshot(payload);
+
+      if (!ok) {
+        TTWC.matchReport.sentForRound = false;
+      }
+
+      TTWC.matchReport.inFlight = false;
+      return ok;
+    } catch (e) {
+      console.log("[TTWC MATCH] sendFromPeaceCall error", e);
+      TTWC.matchReport.inFlight = false;
+      return false;
+    }
   }
 
-  requestAnimationFrame(tick);
+  TTWC.matchReport.sendFromPeaceCall = sendFromPeaceCall;
+  TTWC.matchReport.buildPeacePayload = buildPeacePayload;
+  TTWC.matchReport.resetForNextRound = resetForNextRound;
+
+  /*
+    Reset only for a new round.
+    This does NOT send a report.
+  */
+  const originalFillTextForPeaceReporter = CanvasRenderingContext2D.prototype.fillText;
+
+  CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+    try {
+      if (typeof text === "string" && text.includes("Choose your start position!")) {
+        const now = Date.now();
+
+        if (now - (TTWC.matchReport.lastSpawnSeenAt || 0) > 5000) {
+          TTWC.matchReport.lastSpawnSeenAt = now;
+          resetForNextRound("new spawn screen");
+        }
+      }
+    } catch {}
+
+    return originalFillTextForPeaceReporter.call(this, text, x, y, maxWidth);
+  };
+
+  console.log("[TTWC MATCH] peace-call-only match reporter installed");
 })();
 </script>
 
