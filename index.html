@@ -840,6 +840,7 @@ div[style*="white-space: nowrap"] > button:active {
   TTWC.endScreenShown = false;
   TTWC.roundSeeded = false;
   TTWC.lastRoundMarker = "";
+  TTWC.lastSpawnTextAt = 0;
   TTWC.autoClickDone = false;
 
   function onMainMenu() {
@@ -893,12 +894,6 @@ div[style*="white-space: nowrap"] > button:active {
   function replaceExactNames(text) {
     let out = text;
 
-    /*
-      Longest names first prevents partial replacement problems.
-      Example:
-      [IND] Cat
-      [IND] Cat Box
-    */
     const sorted = [...TTWC.humanNames].sort((a, b) => b.length - a.length);
 
     for (const realName of sorted) {
@@ -908,10 +903,6 @@ div[style*="white-space: nowrap"] > button:active {
         out = out.split(realName).join(anon);
       }
 
-      /*
-        Territorial sometimes truncates long names in different ways.
-        Keep these replacements because they were part of the working version.
-      */
       if (realName.length > 4) {
         const trunc3 =
           realName.slice(0, Math.max(1, realName.length - 3)) + "...";
@@ -954,9 +945,6 @@ div[style*="white-space: nowrap"] > button:active {
 
           console.log("[TTWC ANON] seeded human names", TTWC.humanNames);
 
-          /*
-            Close the list immediately so users do not see it pop up.
-          */
           try {
             window.__fx?.WindowManager?.closeWindow?.("playerList");
           } catch {}
@@ -983,15 +971,6 @@ div[style*="white-space: nowrap"] > button:active {
 
       if (img && (img === defeatImg || img === victoryImg)) {
         TTWC.endScreenShown = true;
-
-        /*
-          IMPORTANT FIX:
-          The original bug was that lastRoundMarker stayed stuck as "spawn".
-          When the next match started, the spawn screen did not reset the
-          anonymiser again.
-
-          Setting this to "ended" allows the next spawn screen to reset cleanly.
-        */
         TTWC.lastRoundMarker = "ended";
 
         console.log("[TTWC ANON] end screen seen; anonymiser paused");
@@ -1005,6 +984,8 @@ div[style*="white-space: nowrap"] > button:active {
     try {
       if (typeof text === "string") {
         if (text.includes("Choose your start position!")) {
+          TTWC.lastSpawnTextAt = Date.now();
+
           if (TTWC.lastRoundMarker !== "spawn") {
             resetRound();
             TTWC.lastRoundMarker = "spawn";
@@ -1028,12 +1009,21 @@ div[style*="white-space: nowrap"] > button:active {
     patchPlayerList();
 
     /*
-      This keeps your original structure.
-      It does not force anything. It just allows the player-list hook to attach
-      once __fx.playerList is ready.
+      IMPORTANT FIX:
+      The spawn text is drawn repeatedly during the spawn phase.
+      Once it has not appeared for 2.5 seconds, the match has moved past
+      spawn selection. We mark the round as "playing".
+
+      This prevents lastRoundMarker getting stuck as "spawn" when a player
+      survives until peace/end of game.
     */
-    if (!onMainMenu() && TTWC.lastRoundMarker === "spawn" && !TTWC.roundSeeded) {
-      // Waiting for player list display to seed names.
+    if (
+      TTWC.lastRoundMarker === "spawn" &&
+      TTWC.lastSpawnTextAt &&
+      Date.now() - TTWC.lastSpawnTextAt > 2500
+    ) {
+      TTWC.lastRoundMarker = "playing";
+      console.log("[TTWC ANON] spawn screen cleared; round is now playing");
     }
   }, 500);
 
