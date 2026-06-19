@@ -837,17 +837,29 @@ div[style*="white-space: nowrap"] > button:active {
 
   TTWC.humanNames = [];
   TTWC.anonMap = new Map();
+
   TTWC.endScreenShown = false;
   TTWC.roundSeeded = false;
   TTWC.lastRoundMarker = "";
   TTWC.lastSpawnTextAt = 0;
+  TTWC.ignoreEndImagesUntil = 0;
   TTWC.autoClickDone = false;
+
+  /*
+    Round phases:
+    - menu
+    - spawn
+    - playing
+    - ended
+  */
+  TTWC.anonPhase = "menu";
 
   function onMainMenu() {
     const el = document.querySelector('input[placeholder*="Kingdom"]');
     if (!el) return false;
 
     const style = getComputedStyle(el);
+
     if (
       style.display === "none" ||
       style.visibility === "hidden" ||
@@ -871,21 +883,93 @@ div[style*="white-space: nowrap"] > button:active {
     return TTWC.anonMap.get(realName);
   }
 
-  function resetRound() {
+  function resetRound(reason = "unknown") {
     TTWC.humanNames = [];
     TTWC.anonMap.clear();
+
     TTWC.endScreenShown = false;
     TTWC.roundSeeded = false;
     TTWC.autoClickDone = false;
+
+    console.log("[TTWC ANON] resetRound:", reason);
+  }
+
+  function beginSpawnPhase() {
+    const now = Date.now();
+
+    TTWC.lastSpawnTextAt = now;
+
+    if (TTWC.anonPhase !== "spawn") {
+      resetRound("new spawn screen");
+
+      TTWC.anonPhase = "spawn";
+      TTWC.lastRoundMarker = "spawn";
+
+      /*
+        Important:
+        After a defeat/surrender, the old defeat image can still draw briefly.
+        Ignore defeat/victory images during the start of the next round.
+      */
+      TTWC.ignoreEndImagesUntil = now + 4000;
+
+      console.log("[TTWC ANON] new spawn screen; anonymiser reset");
+    }
+  }
+
+  function markPlayingIfSpawnCleared() {
+    if (
+      TTWC.anonPhase === "spawn" &&
+      TTWC.lastSpawnTextAt &&
+      Date.now() - TTWC.lastSpawnTextAt > 2500
+    ) {
+      TTWC.anonPhase = "playing";
+      TTWC.lastRoundMarker = "playing";
+      TTWC.endScreenShown = false;
+
+      console.log("[TTWC ANON] spawn cleared; round is now playing");
+    }
+  }
+
+  function markRoundEnded(reason) {
+    /*
+      Do not let stale defeat/victory images from the previous match
+      immediately break the next match.
+    */
+    if (Date.now() < (TTWC.ignoreEndImagesUntil || 0)) {
+      console.log("[TTWC ANON] ignored stale end image:", reason);
+      return;
+    }
+
+    /*
+      Only end anonymising after the round has actually moved past spawn.
+    */
+    if (TTWC.anonPhase !== "playing") {
+      console.log("[TTWC ANON] ignored end image outside playing phase:", {
+        reason,
+        phase: TTWC.anonPhase
+      });
+      return;
+    }
+
+    TTWC.endScreenShown = true;
+    TTWC.anonPhase = "ended";
+    TTWC.lastRoundMarker = "ended";
+
+    console.log("[TTWC ANON] end screen seen; anonymiser paused:", reason);
   }
 
   function shouldAnonymise() {
     if (onMainMenu()) {
-      resetRound();
+      if (TTWC.anonPhase !== "menu") {
+        resetRound("main menu");
+      }
+
+      TTWC.anonPhase = "menu";
       TTWC.lastRoundMarker = "menu";
       return false;
     }
 
+    if (TTWC.anonPhase === "ended") return false;
     if (TTWC.endScreenShown) return false;
 
     return TTWC.humanNames.length > 0;
@@ -969,13 +1053,16 @@ div[style*="white-space: nowrap"] > button:active {
       const defeatImg = window.ab?.aHK?.("defeat");
       const victoryImg = window.ab?.aHK?.("victory");
 
-      if (img && (img === defeatImg || img === victoryImg)) {
-        TTWC.endScreenShown = true;
-        TTWC.lastRoundMarker = "ended";
-
-        console.log("[TTWC ANON] end screen seen; anonymiser paused");
+      if (img && img === defeatImg) {
+        markRoundEnded("defeat");
       }
-    } catch {}
+
+      if (img && img === victoryImg) {
+        markRoundEnded("victory");
+      }
+    } catch (e) {
+      console.log("[TTWC ANON] drawImage error", e);
+    }
 
     return originalDrawImage.apply(this, args);
   };
@@ -984,14 +1071,7 @@ div[style*="white-space: nowrap"] > button:active {
     try {
       if (typeof text === "string") {
         if (text.includes("Choose your start position!")) {
-          TTWC.lastSpawnTextAt = Date.now();
-
-          if (TTWC.lastRoundMarker !== "spawn") {
-            resetRound();
-            TTWC.lastRoundMarker = "spawn";
-
-            console.log("[TTWC ANON] new spawn screen; anonymiser reset");
-          }
+          beginSpawnPhase();
         }
 
         if (shouldAnonymise()) {
@@ -1005,26 +1085,9 @@ div[style*="white-space: nowrap"] > button:active {
     return originalFillText.call(this, text, x, y, maxWidth);
   };
 
-  const hookTimer = setInterval(() => {
+  setInterval(() => {
     patchPlayerList();
-
-    /*
-      IMPORTANT FIX:
-      The spawn text is drawn repeatedly during the spawn phase.
-      Once it has not appeared for 2.5 seconds, the match has moved past
-      spawn selection. We mark the round as "playing".
-
-      This prevents lastRoundMarker getting stuck as "spawn" when a player
-      survives until peace/end of game.
-    */
-    if (
-      TTWC.lastRoundMarker === "spawn" &&
-      TTWC.lastSpawnTextAt &&
-      Date.now() - TTWC.lastSpawnTextAt > 2500
-    ) {
-      TTWC.lastRoundMarker = "playing";
-      console.log("[TTWC ANON] spawn screen cleared; round is now playing");
-    }
+    markPlayingIfSpawnCleared();
   }, 500);
 
   console.log("[TTWC] auto-seeding player-list anonymiser active");
